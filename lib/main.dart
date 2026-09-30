@@ -8,7 +8,10 @@ import 'providers/inventory_provider.dart';
 import 'providers/pos_provider.dart';
 import 'providers/accounting_provider.dart';
 import 'providers/customer_provider.dart';
+import 'providers/company_profile_provider.dart';
+import 'providers/pharmacist_provider.dart';
 import 'providers/super_admin_provider.dart';
+import 'providers/subscription_provider.dart';
 import 'services/supabase_service.dart';
 import 'services/sync_service.dart';
 import 'services/ota_service.dart';
@@ -45,12 +48,39 @@ class BillSproutApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => AuthProvider()),
-        ChangeNotifierProvider(create: (_) => InventoryProvider()),
+        ChangeNotifierProxyProvider<AuthProvider, InventoryProvider>(
+          create: (context) => InventoryProvider(
+            authProvider: Provider.of<AuthProvider>(context, listen: false),
+          ),
+          update: (_, auth, previous) => previous ?? InventoryProvider(authProvider: auth),
+        ),
         ChangeNotifierProvider(create: (_) => PosProvider()),
         ChangeNotifierProvider(create: (_) => AccountingProvider()),
-        ChangeNotifierProvider(create: (_) => CustomerProvider()),
+        ChangeNotifierProxyProvider<AuthProvider, CustomerProvider>(
+          create: (context) => CustomerProvider(
+            Provider.of<AuthProvider>(context, listen: false),
+          ),
+          update: (_, auth, previous) =>
+              (previous ?? CustomerProvider(auth))..updateAuth(auth),
+        ),
+        // Supplies the tenant's own name/GSTIN/licence to invoices. Previously
+        // unregistered, so anything reading it would have thrown at runtime.
+        ChangeNotifierProvider(create: (_) => CompanyProfileProvider()),
+        ChangeNotifierProxyProvider<AuthProvider, PharmacistProvider>(
+          create: (context) => PharmacistProvider(
+            Provider.of<AuthProvider>(context, listen: false),
+          ),
+          update: (_, auth, previous) =>
+              (previous ?? PharmacistProvider(auth))..updateAuth(auth),
+        ),
         ChangeNotifierProvider(create: (_) => SuperAdminProvider()),
-        ChangeNotifierProvider(create: (_) => SyncService()),
+        ChangeNotifierProvider(create: (_) => SubscriptionProvider()),
+        ChangeNotifierProxyProvider<AuthProvider, SyncService>(
+          create: (context) => SyncService(
+            authProvider: Provider.of<AuthProvider>(context, listen: false),
+          ),
+          update: (_, auth, previous) => previous ?? SyncService(authProvider: auth),
+        ),
         ChangeNotifierProvider(create: (_) => OtaService()),
       ],
       child: MaterialApp(

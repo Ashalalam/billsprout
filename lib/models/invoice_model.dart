@@ -73,6 +73,12 @@ class InvoiceModel {
   final bool isSynced;
   final String? pharmacistPinApprovedBy;
   final String branch;           // Dispensing branch name
+  final String billingType;      // 'retail' | 'wholesale'
+  final String? customerGstin;   // Required for wholesale trade invoices
+
+  /// pharmacists.id of the authoriser for Schedule H / H1 / narcotic sales.
+  /// Separate from [pharmacistPinApprovedBy], which is the display label.
+  final String? authorizedPharmacistId;
 
   InvoiceModel({
     required this.id,
@@ -88,12 +94,92 @@ class InvoiceModel {
     this.isSynced = false,
     this.pharmacistPinApprovedBy,
     this.branch = 'Main Store',
+    this.billingType = 'retail',
+    this.customerGstin,
+    this.authorizedPharmacistId,
   });
+
+  bool get isWholesale => billingType == 'wholesale';
 
   double get subtotal    => items.fold(0, (s, i) => s + i.lineTotal);
   double get totalTax    => items.fold(0, (s, i) => s + i.taxAmount);
   double get totalLineDiscounts => items.fold(0, (s, i) => s + i.lineDiscount);
-  double get grandTotal  => subtotal - discountAmount;
+
+  /// Invoice-level discount is capped at the subtotal. Without the clamp an
+  /// over-entered discount produces a negative payable, which then reaches the
+  /// sales table and the GST totals.
+  double get effectiveDiscount =>
+      discountAmount > subtotal ? subtotal : discountAmount;
+
+  double get grandTotal => subtotal - effectiveDiscount;
+
+  /// Difference between the payable rupee amount and the computed total.
+  /// Indian pharmacy invoices settle to the nearest rupee in cash.
+  double get roundOff {
+    final rounded = grandTotal.roundToDouble();
+    return double.parse((rounded - grandTotal).toStringAsFixed(2));
+  }
+
+  /// Amount actually collected, after rounding to the nearest rupee.
+  double get payableTotal => grandTotal.roundToDouble();
+
+  /// Payable amount in words, for the statutory "Amount in Words" line.
+  String get amountInWords => _rupeesToWords(payableTotal);
+
+  static String _rupeesToWords(double amount) {
+    final rupees = amount.floor();
+    final paise = ((amount - rupees) * 100).round();
+
+    final words = StringBuffer(_indianNumberToWords(rupees));
+    words.write(' Rupees');
+    if (paise > 0) {
+      words.write(' and ${_indianNumberToWords(paise)} Paise');
+    }
+    words.write(' Only');
+    return words.toString();
+  }
+
+  /// Indian numbering: crore / lakh / thousand / hundred.
+  static String _indianNumberToWords(int n) {
+    if (n == 0) return 'Zero';
+
+    const units = [
+      '', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight',
+      'Nine', 'Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen',
+      'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen',
+    ];
+    const tens = [
+      '', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy',
+      'Eighty', 'Ninety',
+    ];
+
+    String twoDigits(int v) {
+      if (v < 20) return units[v];
+      final t = tens[v ~/ 10];
+      final u = v % 10;
+      return u == 0 ? t : '$t ${units[u]}';
+    }
+
+    final parts = <String>[];
+    var rest = n;
+
+    final crore = rest ~/ 10000000;
+    rest %= 10000000;
+    final lakh = rest ~/ 100000;
+    rest %= 100000;
+    final thousand = rest ~/ 1000;
+    rest %= 1000;
+    final hundred = rest ~/ 100;
+    final remainder = rest % 100;
+
+    if (crore > 0) parts.add('${_indianNumberToWords(crore)} Crore');
+    if (lakh > 0) parts.add('${twoDigits(lakh)} Lakh');
+    if (thousand > 0) parts.add('${twoDigits(thousand)} Thousand');
+    if (hundred > 0) parts.add('${units[hundred]} Hundred');
+    if (remainder > 0) parts.add(twoDigits(remainder));
+
+    return parts.join(' ');
+  }
 
   bool get containsRestrictedDrugs =>
       items.any((i) => i.product.requiresPharmacistPin);
@@ -115,6 +201,9 @@ class InvoiceModel {
         'isSynced': isSynced,
         'pharmacistPinApprovedBy': pharmacistPinApprovedBy,
         'branch': branch,
+        'billingType': billingType,
+        'customerGstin': customerGstin,
+        'authorizedPharmacistId': authorizedPharmacistId,
       };
 
   factory InvoiceModel.fromJson(Map<String, dynamic> json) => InvoiceModel(
@@ -136,5 +225,8 @@ class InvoiceModel {
         isSynced: json['isSynced'] ?? false,
         pharmacistPinApprovedBy: json['pharmacistPinApprovedBy'],
         branch: json['branch'] ?? 'Main Store',
+        billingType: json['billingType'] ?? 'retail',
+        customerGstin: json['customerGstin'],
+        authorizedPharmacistId: json['authorizedPharmacistId'],
       );
 }

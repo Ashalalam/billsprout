@@ -48,3 +48,12 @@ app.*.map.json
 
 # Widget Preview related
 .widget_preview/
+
+# Credentials — never commit. Contains Supabase keys.
+.env
+.env.*
+!.env.example
+
+# Node tooling used by the database verification scripts in tool/
+node_modules/
+package-lock.json

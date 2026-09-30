@@ -6,10 +6,15 @@ import '../services/supabase_service.dart';
 
 class AuthProvider extends ChangeNotifier {
   AppUser? _currentUser;
+  String? _tenantId;
+  String? _branchId;
   bool _isPinVerified = false;
   bool _isLoading = false;
 
   AppUser? get currentUser => _currentUser;
+  String? get tenantId => _tenantId;
+  String? get branchId => _branchId;
+  String get userId => _currentUser?.id ?? '';
   bool get isLoggedIn => _currentUser != null;
   bool get isPinVerified => _isPinVerified;
   bool get isLoading => _isLoading;
@@ -23,6 +28,8 @@ class AuthProvider extends ChangeNotifier {
 
   // ── Demo login (no backend) ───────────────────────────────────────────────
   void login({required String email, required UserRole role}) {
+    _tenantId = role == UserRole.superAdmin ? null : 'comp_lifesprout_01';
+    _branchId = role == UserRole.superAdmin ? null : 'branch_main_01';
     _currentUser = AppUser(
       id: 'usr_${DateTime.now().millisecondsSinceEpoch}',
       name: role == UserRole.superAdmin
@@ -33,7 +40,7 @@ class AuthProvider extends ChangeNotifier {
       email: email,
       phone: '+44 7747 571513',
       role: role,
-      companyId: role == UserRole.superAdmin ? null : 'comp_lifesprout_01',
+      companyId: _tenantId,
       licenseNo: role == UserRole.pharmacist || role == UserRole.businessAdmin
           ? 'PH-UK-984721'
           : null,
@@ -129,8 +136,10 @@ class AuthProvider extends ChangeNotifier {
   }
 
   // ── PIN verification ──────────────────────────────────────────────────────
+  /// Compares against the stored salted hash. The plaintext PIN is never held
+  /// anywhere outside this call.
   bool verifyPharmacistPin(String pin) {
-    if (pin == AppConfig.pharmacistPin) {
+    if (AppConfig.verifyPharmacistPin(pin)) {
       _isPinVerified = true;
       notifyListeners();
       return true;
@@ -169,6 +178,8 @@ class AuthProvider extends ChangeNotifier {
 
   AppUser _userFromSupabase(User user, UserRole role) {
     final meta = user.userMetadata ?? {};
+    _tenantId = meta['tenant_id'] as String? ?? meta['companyId'] as String?;
+    _branchId = meta['branch_id'] as String?;
     return AppUser(
       id: user.id,
       name: (meta['name'] as String?) ??
@@ -178,7 +189,7 @@ class AuthProvider extends ChangeNotifier {
       email: user.email ?? '',
       phone: (meta['phone'] as String?) ?? '',
       role: role,
-      companyId: meta['companyId'] as String?,
+      companyId: _tenantId,
       licenseNo: meta['licenseNo'] as String?,
     );
   }

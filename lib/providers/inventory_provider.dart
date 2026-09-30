@@ -1,45 +1,64 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/product_model.dart';
 import '../models/batch_model.dart';
 import '../models/rtv_model.dart';
 import '../models/stock_transfer_model.dart';
+import '../services/supabase_service.dart';
+import '../providers/auth_provider.dart';
 
 class InventoryProvider extends ChangeNotifier {
+  final AuthProvider? authProvider; // Optional - for Supabase sync
+  
   final List<ProductModel> _products = [];
   final List<RtvNoteModel> _rtvNotes = [];
   final List<StockTransferModel> _transfers = [];
   String _pricingTier = 'Retail'; // mutable — user can switch tier at runtime
+  bool _isSyncing = false;
 
   List<ProductModel> get products => List.unmodifiable(_products);
   List<RtvNoteModel> get rtvNotes => List.unmodifiable(_rtvNotes);
   List<StockTransferModel> get transfers => List.unmodifiable(_transfers);
   String get pricingTier => _pricingTier;
+  bool get isSyncing => _isSyncing;
 
   void setPricingTier(String tier) {
     _pricingTier = tier;
     notifyListeners();
   }
 
-  InventoryProvider() {
+  InventoryProvider({this.authProvider}) {
     _loadFromDisk();
+    // Auto-sync from Supabase if configured
+    if (authProvider != null && authProvider!.tenantId != null) {
+      _syncFromSupabase();
+    }
   }
 
   /// Adds a brand-new product to the catalogue and persists to disk.
-  void addProduct(ProductModel product) {
+  /// Also syncs to Supabase if configured.
+  Future<void> addProduct(ProductModel product) async {
     _products.add(product);
-    _saveToDisk();
+    await _saveToDisk();
     notifyListeners();
+    
+    // Sync to Supabase in background
+    _syncProductToSupabase(product);
   }
 
   /// Adds a new [batch] to an existing product and persists to disk.
-  void addBatchToProduct(String productId, BatchModel batch) {
+  /// Also syncs to Supabase if configured.
+  Future<void> addBatchToProduct(String productId, BatchModel batch) async {
     final index = _products.indexWhere((p) => p.id == productId);
     if (index < 0) return;
     _products[index].batches.add(batch);
-    _saveToDisk();
+    await _saveToDisk();
     notifyListeners();
+    
+    // Sync batch to Supabase in background
+    _syncBatchToSupabase(productId, batch);
   }
 
   /// Update stock quantity for an existing batch (e.g. stock-in).
@@ -309,5 +328,186 @@ class InventoryProvider extends ChangeNotifier {
         ],
       ),
     ]);
+  }
+
+  // ── Supabase Sync ──────────────────────────────────────────────────────────
+
+  /// Sync products from Supabase to local state
+  Future<void> _syncFromSupabase() async {
+    if (authProvider == null || authProvider!.tenantId == null) return;
+    
+    _isSyncing = true;
+    notifyListeners();
+    
+    try {
+      final tenantId = authProvider!.tenantId!;
+      final productsData = await SupabaseService().fetchProducts(tenantId);
+      
+      if (productsData.isNotEmpty) {
+        _products.clear();
+        
+        for (final productRow in productsData) {
+          // Convert snake_case DB fields to camelCase for model
+          final product = _productFromDbRow(productRow);
+          _products.add(product);
+        }
+        
+        await _saveToDisk();
+        debugPrint('[Inventory] Synced ${_products.length} products from Supabase');
+      }
+    } on PostgrestException catch (e) {
+      debugPrint('[Inventory] Supabase sync error: ${e.message}');
+    } catch (e) {
+      debugPrint('[Inventory] Sync error: $e');
+    } finally {
+      _isSyncing = false;
+      notifyListeners();
+    }
+  }
+
+  /// Sync a single product to Supabase
+  Future<void> _syncProductToSupabase(ProductModel product) async {
+    if (authProvider == null || authProvider!.tenantId == null) {
+      debugPrint('[Inventory] Cannot sync product: missing tenant context');
+      return;
+    }
+    
+    try {
+      final tenantId = authProvider!.tenantId!;
+      final productRow = _productToDbRow(product, tenantId);
+      
+      await SupabaseService().upsertProduct(productRow);
+      debugPrint('[Inventory] Product synced to Supabase: ${product.name}');
+      
+      // Sync batches
+      for (final batch in product.batches) {
+        await _syncBatchToSupabase(product.id, batch);
+      }
+    } on PostgrestException catch (e) {
+      debugPrint('[Inventory] Product sync failed: ${e.message}');
+    } catch (e) {
+      debugPrint('[Inventory] Product sync error: $e');
+    }
+  }
+
+  /// Sync a single batch to Supabase
+  Future<void> _syncBatchToSupabase(String productId, BatchModel batch) async {
+    if (authProvider == null || authProvider!.tenantId == null || authProvider!.branchId == null) {
+      debugPrint('[Inventory] Cannot sync batch: missing tenant/branch context');
+      return;
+    }
+    
+    try {
+      final tenantId = authProvider!.tenantId!;
+      final branchId = authProvider!.branchId!;
+      final batchRow = _batchToDbRow(batch, productId, tenantId, branchId);
+      
+      await SupabaseService().upsertBatch(batchRow);
+      debugPrint('[Inventory] Batch synced to Supabase: ${batch.batchNumber}');
+    } on PostgrestException catch (e) {
+      debugPrint('[Inventory] Batch sync failed: ${e.message}');
+    } catch (e) {
+      debugPrint('[Inventory] Batch sync error: $e');
+    }
+  }
+
+  // ── DB Mapping Helpers ────────────────────────────────────────────────────
+
+  /// Convert database row (snake_case) to ProductModel (camelCase)
+  ProductModel _productFromDbRow(Map<String, dynamic> row) {
+    // Extract batches if present
+    final batchesData = row['batches'] as List<dynamic>? ?? [];
+    final batches = batchesData.map((b) => _batchFromDbRow(b as Map<String, dynamic>)).toList();
+    
+    return ProductModel(
+      id: row['id'] as String,
+      name: row['name'] as String,
+      genericSalt: row['generic_salt'] as String? ?? '',
+      barcode: row['barcode'] as String? ?? '',
+      hsnCode: row['hsn_code'] as String? ?? '',
+      taxPercent: (row['gst_percent'] as num?)?.toDouble() ?? 0.0,
+      manufacturer: row['manufacturer'] as String? ?? '',
+      isScheduleH: row['is_schedule_h'] as bool? ?? false,
+      isScheduleH1: row['is_schedule_h1'] as bool? ?? false,
+      isNarcotic: row['is_narcotic'] as bool? ?? false,
+      batches: batches,
+    );
+  }
+
+  /// Convert database row (snake_case) to BatchModel (camelCase)
+  BatchModel _batchFromDbRow(Map<String, dynamic> row) {
+    return BatchModel(
+      id: row['id'] as String,
+      batchNumber: row['batch_number'] as String,
+      // BatchModel.mfgDate is non-nullable. mfg_date is optional in the schema,
+      // so fall back to the expiry date rather than passing null.
+      mfgDate: row['mfg_date'] != null
+          ? DateTime.parse(row['mfg_date'] as String)
+          : DateTime.parse(row['exp_date'] as String),
+      expDate: DateTime.parse(row['exp_date'] as String),
+      mrp: (row['mrp'] as num).toDouble(),
+      purchasePrice: (row['purchase_price'] as num).toDouble(),
+      wholesalePrice: (row['wholesale_price'] as num?)?.toDouble() ?? 0.0,
+      ptrPrice: (row['ptr_price'] as num?)?.toDouble() ?? 0.0,
+      stockCount: row['stock_quantity'] as int? ?? 0,
+      rackLocation: row['rack_location'] as String? ?? '',
+    );
+  }
+
+  /// Convert ProductModel to database row (snake_case)
+  Map<String, dynamic> _productToDbRow(ProductModel product, String tenantId) {
+    return {
+      'id': product.id,
+      'tenant_id': tenantId,
+      'name': product.name,
+      'generic_salt': product.genericSalt,
+      'barcode': product.barcode,
+      'hsn_code': product.hsnCode,
+      'gst_percent': product.taxPercent,
+      'manufacturer': product.manufacturer,
+      'is_schedule_h': product.isScheduleH,
+      'is_schedule_h1': product.isScheduleH1,
+      'is_narcotic': product.isNarcotic,
+      'is_prescription_required': product.requiresPharmacistPin,
+      // Product master fields added by migration 008. Without these the dosage
+      // form and pack configuration entered in the UI were never persisted.
+      'dosage_form': product.doseType.name,
+      'dose_type': product.doseType.name,
+      'packaging_label': product.packagingConfig?.label,
+      'packaging_units_per_strip': product.packagingConfig?.unitsPerStrip,
+      'packaging_strips_per_box': product.packagingConfig?.stripsPerBox,
+      'pack_size': product.packagingConfig?.label,
+      'created_at': DateTime.now().toIso8601String(),
+      'updated_at': DateTime.now().toIso8601String(),
+    };
+  }
+
+  /// Convert BatchModel to database row (snake_case)
+  Map<String, dynamic> _batchToDbRow(
+    BatchModel batch,
+    String productId,
+    String tenantId,
+    String branchId,
+  ) {
+    return {
+      'id': batch.id,
+      'product_id': productId,
+      'tenant_id': tenantId,
+      'branch_id': branchId,
+      'batch_number': batch.batchNumber,
+      'mfg_date': batch.mfgDate.toIso8601String(),
+      // expDate is the DateTime; batch.expiryDate is a display string (MM/YYYY)
+      // and would be rejected by a DATE column.
+      'exp_date': batch.expDate.toIso8601String(),
+      'purchase_price': batch.purchasePrice,
+      'ptr_price': batch.ptrPrice,
+      'mrp': batch.mrp,
+      'selling_price': batch.mrp, // Default selling price to MRP
+      'wholesale_price': batch.wholesalePrice,
+      'stock_quantity': batch.stockCount,
+      'rack_location': batch.rackLocation,
+      'created_at': DateTime.now().toIso8601String(),
+      'updated_at': DateTime.now().toIso8601String(),
+    };
   }
 }

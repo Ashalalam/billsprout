@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../config/app_theme.dart';
 import '../../config/responsive_layout.dart';
@@ -36,6 +36,16 @@ class _CustomerPortalViewState extends State<CustomerPortalView>
   Widget build(BuildContext context) {
     final customerProvider = Provider.of<CustomerProvider>(context);
     final customer = customerProvider.currentCustomer;
+    final auth = Provider.of<AuthProvider>(context);
+
+    // currentCustomer is null until the record is loaded from Supabase, and
+    // stays null when the signed-in login has no matching customer row. Both are
+    // real states now that this is not hardcoded demo data.
+    final displayName = customer?.name ?? auth.currentUser?.name ?? 'Customer';
+    final displayContact = [
+      customer?.phone ?? auth.currentUser?.phone ?? '',
+      customer?.email ?? auth.currentUser?.email ?? '',
+    ].where((s) => s.isNotEmpty).join('  �  ');
 
     return Scaffold(
       appBar: AppBar(
@@ -43,7 +53,7 @@ class _CustomerPortalViewState extends State<CustomerPortalView>
           children: const [
             Icon(Icons.person_pin, color: AppTheme.accentOrange),
             SizedBox(width: 10),
-            Text('Lifesprout Care â€” Patient Portal'),
+            Text('Patient Portal'),
           ],
         ),
         actions: [
@@ -90,7 +100,7 @@ class _CustomerPortalViewState extends State<CustomerPortalView>
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Welcome back, ${customer.name}',
+                        'Welcome back, $displayName',
                         style: const TextStyle(
                           fontSize: 17,
                           fontWeight: FontWeight.bold,
@@ -98,7 +108,7 @@ class _CustomerPortalViewState extends State<CustomerPortalView>
                         ),
                       ),
                       Text(
-                        '${customer.phone}  â€¢  ${customer.email}',
+                        displayContact,
                         style:
                             const TextStyle(color: Colors.white70, fontSize: 12),
                       ),
@@ -121,30 +131,76 @@ class _CustomerPortalViewState extends State<CustomerPortalView>
           ),
 
           Expanded(
-            child: TabBarView(
-              controller: _tabController,
-              children: [
-                // â”€â”€ Tab 1: Chronic Refill Reminders â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-                _RefillRemindersTab(customer: customer),
-
-                // â”€â”€ Tab 2: Prescriptions / Rx Upload â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-                _PrescriptionsTab(customer: customer),
-
-                // â”€â”€ Tab 3: Purchase History â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-                _PurchaseHistoryTab(
-                    invoices: customerProvider.customerInvoices),
-              ],
-            ),
+            child: customerProvider.isLoading && customer == null
+                ? const Center(child: CircularProgressIndicator())
+                : customer == null
+                    ? _noProfileLinked(context, customerProvider)
+                    : TabBarView(
+                        controller: _tabController,
+                        children: [
+                          _RefillRemindersTab(customer: customer),
+                          _PrescriptionsTab(customer: customer),
+                          _PurchaseHistoryTab(
+                              invoices: customerProvider.customerInvoices),
+                        ],
+                      ),
           ),
         ],
       ),
     );
   }
+
+  Widget _noProfileLinked(BuildContext context, CustomerProvider customerProvider) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(40),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.person_off_outlined, size: 80, color: Colors.grey.shade300),
+            const SizedBox(height: 24),
+            const Text(
+              'No Customer Profile Linked',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: AppTheme.textMuted,
+              ),
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              'Your account is not yet linked to a customer profile.\n\n'
+              'Please contact the pharmacy to create your customer profile,\n'
+              'or make a purchase at the POS to automatically create one.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: AppTheme.textMuted,
+                fontSize: 14,
+                height: 1.5,
+              ),
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF25D366),
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+              ),
+              onPressed: () => SupportService.openWhatsApp(
+                text: 'Hello, I need help linking my customer profile to my account.',
+              ),
+              icon: const Icon(Icons.chat),
+              label: const Text('Contact Support via WhatsApp'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-// Tab 1 â€” Chronic Refill Reminders
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─────────────────────────────────────────────────────────────────────────────
+// Tab 1 — Chronic Refill Reminders
+// ─────────────────────────────────────────────────────────────────────────────
 class _RefillRemindersTab extends StatelessWidget {
   final CustomerModel customer;
   const _RefillRemindersTab({required this.customer});
@@ -209,7 +265,7 @@ class _RefillRemindersTab extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Refill every ${item.refillIntervalDays} days  â€¢  '
+                          'Refill every ${item.refillIntervalDays} days  •  '
                           'Due: ${item.nextRefillDueDate.day}/${item.nextRefillDueDate.month}/${item.nextRefillDueDate.year}',
                           style: TextStyle(fontSize: 12),
                         ),
@@ -224,8 +280,8 @@ class _RefillRemindersTab extends StatelessWidget {
                             ),
                             child: Text(
                               daysLeft < 0
-                                  ? 'OVERDUE â€” Refill Now!'
-                                  : 'âš  Due in $daysLeft day${daysLeft == 1 ? '' : 's'}',
+                                  ? 'OVERDUE — Refill Now!'
+                                  : '⚠ Due in $daysLeft day${daysLeft == 1 ? '' : 's'}',
                               style: const TextStyle(
                                   color: AppTheme.errorRed,
                                   fontSize: 11,
@@ -258,9 +314,9 @@ class _RefillRemindersTab extends StatelessWidget {
   }
 }
 
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-// Tab 2 â€” Prescriptions / Rx Upload
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─────────────────────────────────────────────────────────────────────────────
+// Tab 2 — Prescriptions / Rx Upload
+// ─────────────────────────────────────────────────────────────────────────────
 class _PrescriptionsTab extends StatelessWidget {
   final CustomerModel customer;
   const _PrescriptionsTab({required this.customer});
@@ -337,7 +393,7 @@ class _PrescriptionsTab extends StatelessWidget {
           children: [
             const Icon(Icons.description, color: AppTheme.primaryBlue),
             const SizedBox(width: 10),
-            Text('Rx â€” Dr. ${rx.doctorName}'),
+            Text('Rx — Dr. ${rx.doctorName}'),
           ],
         ),
         content: Column(
@@ -432,9 +488,9 @@ class _PrescriptionsTab extends StatelessWidget {
   }
 }
 
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-// Tab 3 â€” Purchase History
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─────────────────────────────────────────────────────────────────────────────
+// Tab 3 — Purchase History
+// ─────────────────────────────────────────────────────────────────────────────
 class _PurchaseHistoryTab extends StatelessWidget {
   final List<InvoiceModel> invoices;
   const _PurchaseHistoryTab({required this.invoices});
@@ -482,7 +538,7 @@ class _PurchaseHistoryTab extends StatelessWidget {
                 child: _statCard(
                   Icons.payments,
                   'Total Spent',
-                  'â‚¹${totalSpent.toStringAsFixed(2)}',
+                  '₹${totalSpent.toStringAsFixed(2)}',
                   AppTheme.successGreen,
                 ),
               ),
@@ -493,7 +549,7 @@ class _PurchaseHistoryTab extends StatelessWidget {
                   'Last Purchase',
                   invoices.isNotEmpty
                       ? '${invoices.last.timestamp.day}/${invoices.last.timestamp.month}/${invoices.last.timestamp.year}'
-                      : 'â€”',
+                      : '—',
                   AppTheme.accentOrange,
                 ),
               ),
@@ -522,8 +578,8 @@ class _PurchaseHistoryTab extends StatelessWidget {
                     style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
                   ),
                   subtitle: Text(
-                    '${inv.timestamp.day}/${inv.timestamp.month}/${inv.timestamp.year}  â€¢  '
-                    '${inv.paymentMode.name.toUpperCase()}  â€¢  '
+                    '${inv.timestamp.day}/${inv.timestamp.month}/${inv.timestamp.year}  •  '
+                    '${inv.paymentMode.name.toUpperCase()}  •  '
                     '${inv.items.length} item${inv.items.length == 1 ? '' : 's'}',
                     style: TextStyle(fontSize: 12),
                   ),
@@ -532,7 +588,7 @@ class _PurchaseHistoryTab extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
                       Text(
-                        'â‚¹${inv.grandTotal.toStringAsFixed(2)}',
+                        '₹${inv.grandTotal.toStringAsFixed(2)}',
                         style: const TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 15,
@@ -549,7 +605,7 @@ class _PurchaseHistoryTab extends StatelessWidget {
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: Text(
-                          inv.isSynced ? 'â˜ Synced' : 'â³ Pending',
+                          inv.isSynced ? '☁ Synced' : '⏳ Pending',
                           style: TextStyle(
                             fontSize: 10,
                             color: inv.isSynced
@@ -632,7 +688,7 @@ class _PurchaseHistoryTab extends StatelessWidget {
                                   Padding(
                                     padding: const EdgeInsets.all(6),
                                     child: Text(
-                                        'â‚¹${item.lineTotal.toStringAsFixed(2)}',
+                                        '₹${item.lineTotal.toStringAsFixed(2)}',
                                         style:
                                             TextStyle(fontSize: 12)),
                                   ),
@@ -645,8 +701,8 @@ class _PurchaseHistoryTab extends StatelessWidget {
                             mainAxisAlignment: MainAxisAlignment.end,
                             children: [
                               Text(
-                                'GST: â‚¹${inv.totalTax.toStringAsFixed(2)}   '
-                                'Total: â‚¹${inv.grandTotal.toStringAsFixed(2)}',
+                                'GST: ₹${inv.totalTax.toStringAsFixed(2)}   '
+                                'Total: ₹${inv.grandTotal.toStringAsFixed(2)}',
                                 style: const TextStyle(
                                     fontWeight: FontWeight.bold,
                                     fontSize: 13,
@@ -732,9 +788,9 @@ class _PurchaseHistoryTab extends StatelessWidget {
   }
 }
 
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─────────────────────────────────────────────────────────────────────────────
 // Shared helper
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─────────────────────────────────────────────────────────────────────────────
 Widget _emptyState(IconData icon, String message) {
   return Center(
     child: Padding(

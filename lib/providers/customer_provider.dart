@@ -1,52 +1,174 @@
 ﻿import 'package:flutter/foundation.dart';
+
 import '../models/customer_model.dart';
 import '../models/invoice_model.dart';
+import '../services/supabase_service.dart';
+import 'auth_provider.dart';
 
+/// Customer portal state, backed by real Supabase data.
+///
+/// Previously this held a hardcoded "John Doe" record with invented
+/// prescriptions and refills, which meant every logged-in patient saw the same
+/// fictional history. The customer is now resolved from the signed-in user, and
+/// purchase history comes from the `sales` table under RLS.
 class CustomerProvider extends ChangeNotifier {
-  final CustomerModel _currentCustomer = CustomerModel(
-    id: 'cust_77',
-    name: 'John Doe',
-    phone: '+44 7747 571513',
-    email: 'info@lifesproutcare.com',
-    address: '221B Baker Street, London / Healthcare Sector 4',
-    prescriptions: [
-      PrescriptionRx(
-        id: 'rx_101',
-        doctorName: 'Dr. Arthur Conan',
-        doctorMci: 'MCI-99410',
-        uploadDate: DateTime.now().subtract(const Duration(days: 15)),
-        imageUrl: 'assets/images/lifesprout_logo.png',
-        prescribedMedications: ['Metformin 500mg SR', 'Amoxicillin 500mg'],
-      ),
-    ],
-    chronicRefills: [
-      ChronicRefillItem(
-        medicineName: 'Metformin 500mg SR',
-        refillIntervalDays: 30,
-        lastPurchasedDate: DateTime.now().subtract(const Duration(days: 25)),
-        nextRefillDueDate: DateTime.now().add(const Duration(days: 5)),
-      ),
-      ChronicRefillItem(
-        medicineName: 'Atorvastatin 10mg',
-        refillIntervalDays: 30,
-        lastPurchasedDate: DateTime.now().subtract(const Duration(days: 28)),
-        nextRefillDueDate: DateTime.now().add(const Duration(days: 2)),
-      ),
-    ],
-  );
+  CustomerProvider(this._auth);
 
+  AuthProvider _auth;
+
+  CustomerModel? _currentCustomer;
   final List<InvoiceModel> _customerInvoices = [];
+  final List<Map<String, dynamic>> _purchaseHistory = [];
 
-  CustomerModel get currentCustomer => _currentCustomer;
+  bool _isLoading = false;
+  String? _error;
+
+  CustomerModel? get currentCustomer => _currentCustomer;
   List<InvoiceModel> get customerInvoices => List.unmodifiable(_customerInvoices);
+
+  /// Raw sale rows for this customer, newest first.
+  List<Map<String, dynamic>> get purchaseHistory =>
+      List.unmodifiable(_purchaseHistory);
+
+  bool get isLoading => _isLoading;
+  String? get error => _error;
+
+  double get lifetimeSpend => _purchaseHistory.fold<double>(
+      0, (sum, r) => sum + ((r['grand_total'] as num?)?.toDouble() ?? 0));
+
+  int get orderCount => _purchaseHistory.length;
+
+  /// Chronic refill reminders derived from actual purchases of products flagged
+  /// is_chronic, rather than a hardcoded list.
+  final List<ChronicRefillItem> _chronicRefills = [];
+  List<ChronicRefillItem> get chronicRefills =>
+      List.unmodifiable(_chronicRefills);
+  List<ChronicRefillItem> get refillsDueSoon =>
+      _chronicRefills.where((r) => r.isDueSoon).toList();
+
+  void updateAuth(AuthProvider auth) {
+    final changed = _auth.currentUser?.id != auth.currentUser?.id ||
+        _auth.tenantId != auth.tenantId;
+    _auth = auth;
+    if (changed) {
+      _currentCustomer = null;
+      _customerInvoices.clear();
+      _purchaseHistory.clear();
+      _chronicRefills.clear();
+      if (auth.isLoggedIn) load();
+    }
+  }
+
+  /// Load the signed-in customer and their purchase history.
+  Future<void> load() async {
+    final tenantId = _auth.tenantId;
+    final user = _auth.currentUser;
+    if (tenantId == null || user == null) return;
+
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      final service = SupabaseService();
+
+      // Match the customer record on the signed-in user's phone or email.
+      final matches = await service.findCustomer(
+        tenantId: tenantId,
+        phone: user.phone,
+        email: user.email,
+      );
+      if (matches.isNotEmpty) {
+        _currentCustomer = CustomerModel.fromJson(matches.first);
+      }
+
+      final history = await service.fetchCustomerPurchaseHistory(
+        tenantId: tenantId,
+        customerId: _currentCustomer?.id,
+        customerPhone: user.phone.isNotEmpty ? user.phone : null,
+      );
+      _purchaseHistory
+        ..clear()
+        ..addAll(history);
+
+      _rebuildChronicRefills();
+    } catch (e) {
+      _error = SupabaseService.describeError(e);
+      debugPrint('[Customer] load failed: $e');
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  /// Derives refill reminders from real purchases of chronic medicines.
+  ///
+  /// The interval is taken as 30 days, which is the standard chronic dispensing
+  /// cycle; the due date is computed from the most recent actual purchase.
+  void _rebuildChronicRefills() {
+    const intervalDays = 30;
+    final latest = <String, DateTime>{};
+
+    for (final sale in _purchaseHistory) {
+      final items = sale['sale_items'];
+      if (items is! List) continue;
+      final saleDate = DateTime.tryParse('${sale['invoice_date']}');
+      if (saleDate == null) continue;
+
+      for (final item in items) {
+        if (item is! Map) continue;
+        final product = item['products'];
+        final isChronic =
+            product is Map ? product['is_chronic'] == true : false;
+        if (!isChronic) continue;
+
+        final name = '${item['product_name']}';
+        final existing = latest[name];
+        if (existing == null || saleDate.isAfter(existing)) {
+          latest[name] = saleDate;
+        }
+      }
+    }
+
+    _chronicRefills
+      ..clear()
+      ..addAll(latest.entries.map((e) => ChronicRefillItem(
+            medicineName: e.key,
+            refillIntervalDays: intervalDays,
+            lastPurchasedDate: e.value,
+            nextRefillDueDate: e.value.add(const Duration(days: intervalDays)),
+          )))
+      ..sort((a, b) => a.nextRefillDueDate.compareTo(b.nextRefillDueDate));
+  }
 
   void addCustomerInvoice(InvoiceModel invoice) {
     _customerInvoices.add(invoice);
     notifyListeners();
   }
 
-  void requestChronicRefill(ChronicRefillItem item) {
-    // Triggers WhatsApp message or notification
-    notifyListeners();
+  /// Records a refill request against the customer's record so staff can act on
+  /// it. Returns false when there is no customer context.
+  Future<bool> requestChronicRefill(ChronicRefillItem item) async {
+    final tenantId = _auth.tenantId;
+    final customer = _currentCustomer;
+    if (tenantId == null || customer == null) {
+      _error = 'No customer profile is linked to this login yet.';
+      notifyListeners();
+      return false;
+    }
+
+    try {
+      await SupabaseService().insertRefillRequest(
+        tenantId: tenantId,
+        customerId: customer.id,
+        medicineName: item.medicineName,
+      );
+      return true;
+    } catch (e) {
+      _error = SupabaseService.describeError(e);
+      debugPrint('[Customer] refill request failed: $e');
+      notifyListeners();
+      return false;
+    }
   }
 }

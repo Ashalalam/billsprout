@@ -6,6 +6,7 @@ import '../../config/responsive_layout.dart';
 import '../../models/invoice_model.dart';
 import '../../providers/accounting_provider.dart';
 import '../../providers/inventory_provider.dart';
+import '../../widgets/subscription/subscription_status_widget.dart';
 
 class SalesDashboardView extends StatefulWidget {
   const SalesDashboardView({super.key});
@@ -61,6 +62,10 @@ class _SalesDashboardViewState extends State<SalesDashboardView> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // ── Subscription Status ─────────────────────────────────────────
+            const SubscriptionStatusWidget(),
+            const SizedBox(height: 16),
+            
             // ── Header ──────────────────────────────────────────────────────
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,

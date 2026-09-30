@@ -6,7 +6,9 @@ import '../../models/invoice_model.dart';
 import '../../providers/inventory_provider.dart';
 import '../../providers/pos_provider.dart';
 import '../../providers/accounting_provider.dart';
+import '../../providers/company_profile_provider.dart';
 import '../../services/sync_service.dart';
+import 'inventory_view.dart';
 import '../../services/printing_service.dart';
 import '../../services/support_service.dart';
 import '../common/pharmacist_pin_dialog.dart';
@@ -24,6 +26,7 @@ class _PosBillingViewState extends State<PosBillingView> {
   final _discountCtrl = TextEditingController();
   final _custNameCtrl  = TextEditingController(text: 'Walk-in Customer');
   final _custPhoneCtrl = TextEditingController(text: '+447747571513');
+  final _custGstinCtrl = TextEditingController();
   final _docNameCtrl   = TextEditingController(text: 'Dr. A. Smith');
   final _docMciCtrl    = TextEditingController(text: 'MCI-88492');
   String _searchQuery  = '';
@@ -34,6 +37,7 @@ class _PosBillingViewState extends State<PosBillingView> {
     _discountCtrl.dispose();
     _custNameCtrl.dispose();
     _custPhoneCtrl.dispose();
+    _custGstinCtrl.dispose();
     _docNameCtrl.dispose();
     _docMciCtrl.dispose();
     super.dispose();
@@ -178,10 +182,19 @@ class _PosBillingViewState extends State<PosBillingView> {
           ),
           onPressed: () async {
             final code = await BarcodeScannerModal.show(context);
-            if (code != null && mounted) {
-              _searchCtrl.text = code;
-              setState(() => _searchQuery = code);
-            }
+            if (code == null || !mounted) return;
+            final scanned = code.trim();
+            if (scanned.isEmpty) return;
+
+            _searchCtrl.text = scanned;
+            setState(() => _searchQuery = scanned);
+
+            // A scan that matches nothing in the catalogue almost always means
+            // the medicine has not been added yet. Offer to create it with the
+            // barcode already filled in, instead of leaving an empty grid.
+            final known = inv.products.any((p) =>
+                p.barcode.trim().toLowerCase() == scanned.toLowerCase());
+            if (!known) _promptAddUnknownBarcode(scanned);
           },
           icon: const Icon(Icons.camera_alt, size: 18),
           label: const Text('Scan'),
@@ -189,19 +202,101 @@ class _PosBillingViewState extends State<PosBillingView> {
         const SizedBox(width: 8),
         Flexible(
           child: DropdownButton<String>(
-            value: inv.pricingTier,
+            value: context.watch<PosProvider>().pricingTier,
             isDense: true,
-            items: ['Retail', 'Wholesale', 'Distributor', 'Loyalty']
+            items: ['Retail', 'PTR', 'Wholesale', 'Distributor', 'Loyalty']
                 .map((t) => DropdownMenuItem(
                     value: t,
-                    child: Text(t, style: TextStyle(fontSize: 12))))
+                    child: Text(t, style: const TextStyle(fontSize: 12))))
                 .toList(),
+            // Writes to PosProvider, which is what actually resolves line
+            // prices. It previously set InventoryProvider.pricingTier, which no
+            // pricing path reads, so changing the tier did nothing to the cart.
             onChanged: (t) {
-              if (t != null) inv.setPricingTier(t);
+              if (t == null) return;
+              context.read<PosProvider>().setPricingTier(t);
+              inv.setPricingTier(t);
             },
           ),
         ),
       ],
+    );
+  }
+
+  /// Unknown barcode -> offer to add the medicine with the code prefilled.
+  void _promptAddUnknownBarcode(String barcode) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        duration: const Duration(seconds: 6),
+        backgroundColor: AppTheme.warningAmber,
+        content: Text('No product matches barcode $barcode.'),
+        action: SnackBarAction(
+          label: 'Add Medicine',
+          textColor: Colors.white,
+          onPressed: () {
+            // Hand the scanned code to Inventory so the operator does not have
+            // to retype a 13 digit number.
+            InventoryView.pendingBarcode = barcode;
+            Navigator.of(context).push(
+              MaterialPageRoute<void>(builder: (_) => const InventoryView()),
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  // ── Retail / wholesale mode switch ─────────────────────────────────────────
+  Widget _billingModeBar(BuildContext context, PosProvider pos) {
+    final profile = context.watch<CompanyProfileProvider>().profile;
+    // A retail-only pharmacy has no use for the wholesale switch.
+    final wholesaleAllowed =
+        profile.businessType.toLowerCase() != 'retail';
+
+    if (!wholesaleAllowed) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SegmentedButton<String>(
+            segments: const [
+              ButtonSegment(
+                value: 'retail',
+                label: Text('Retail', style: TextStyle(fontSize: 12)),
+                icon: Icon(Icons.storefront, size: 14),
+              ),
+              ButtonSegment(
+                value: 'wholesale',
+                label: Text('Wholesale', style: TextStyle(fontSize: 12)),
+                icon: Icon(Icons.warehouse, size: 14),
+              ),
+            ],
+            selected: {pos.billingType},
+            onSelectionChanged: (s) => pos.setBillingType(s.first),
+          ),
+          if (pos.isWholesale) ...[
+            const SizedBox(height: 8),
+            TextField(
+              controller: _custGstinCtrl,
+              textCapitalization: TextCapitalization.characters,
+              decoration: const InputDecoration(
+                isDense: true,
+                labelText: 'Buyer GSTIN (required for wholesale)',
+                prefixIcon: Icon(Icons.badge_outlined, size: 18),
+              ),
+              style: const TextStyle(fontSize: 12),
+              onChanged: pos.setCustomerGstin,
+            ),
+            const SizedBox(height: 4),
+            const Text(
+              'Wholesale lines are priced at PTR.',
+              style: TextStyle(fontSize: 11, color: AppTheme.textMuted),
+            ),
+          ],
+        ],
+      ),
     );
   }
 
@@ -360,6 +455,7 @@ class _PosBillingViewState extends State<PosBillingView> {
           ],
         ),
         const Divider(height: 10),
+        _billingModeBar(context, pos),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
@@ -474,7 +570,7 @@ class _PosBillingViewState extends State<PosBillingView> {
         const Divider(height: 12),
         // Totals
         _totalRow('Subtotal (Gross):',
-            'Rs.${(pos.subtotal + pos.discountAmount + pos.cartItems.fold<double>(0, (s, i) => s + i.lineDiscount)).toStringAsFixed(2)}', bold: false),
+            'Rs.${(pos.subtotal + pos.effectiveDiscount + pos.cartItems.fold<double>(0, (s, i) => s + i.lineDiscount)).toStringAsFixed(2)}', bold: false),
         if (pos.cartItems.any((i) => i.lineDiscount > 0))
           _totalRow('Item Discounts:', '-Rs.${pos.cartItems.fold<double>(0, (s, i) => s + i.lineDiscount).toStringAsFixed(2)}',
               bold: false, valueColor: AppTheme.accentOrange),
@@ -491,10 +587,18 @@ class _PosBillingViewState extends State<PosBillingView> {
               decoration: const InputDecoration(isDense: true, hintText: '0.00'),
               onChanged: (v) => pos.setDiscount(double.tryParse(v) ?? 0))),
         ]),
-        if (pos.discountAmount > 0)
+        if (pos.effectiveDiscount > 0)
           Padding(padding: const EdgeInsets.only(top: 4),
-            child: _totalRow('Invoice Discount:', '-Rs.${pos.discountAmount.toStringAsFixed(2)}',
+            child: _totalRow('Invoice Discount:', '-Rs.${pos.effectiveDiscount.toStringAsFixed(2)}',
                 bold: false, valueColor: AppTheme.accentOrange)),
+        if (pos.discountAmount > pos.subtotal && pos.subtotal > 0)
+          Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: Text(
+              'Discount capped at the subtotal (Rs.${pos.subtotal.toStringAsFixed(2)}).',
+              style: const TextStyle(fontSize: 11, color: AppTheme.errorRed),
+            ),
+          ),
         const SizedBox(height: 8),
         // Grand total
         Container(
@@ -592,18 +696,40 @@ class _PosBillingViewState extends State<PosBillingView> {
       BuildContext context, PosProvider pos) async {
     final sync       = Provider.of<SyncService>(context, listen: false);
     final accounting = Provider.of<AccountingProvider>(context, listen: false);
-
-    String? pinBy;
-    if (pos.requiresPharmacistPin) {
-      final approved = await PharmacistPinDialog.show(context);
-      if (!approved) return;
-      pinBy = 'Pharmacist PIN #1234';
+    // A wholesale tax invoice without the buyer's GSTIN is not filable, so the
+    // sale is blocked here rather than persisted and corrected later.
+    if (pos.isWholesale &&
+        (pos.customerGstin == null || pos.customerGstin!.length != 15)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Enter the buyer 15 character GSTIN for a wholesale sale.'),
+          backgroundColor: AppTheme.errorRed,
+        ),
+      );
+      return;
     }
 
-    final invoice =
-        pos.checkout(isOnline: sync.isOnline, pinApprovedBy: pinBy);
+    String? pinBy;
+    String? pharmacistId;
+    if (pos.requiresPharmacistPin) {
+      // Records who actually authorised. The old value wrote the demo PIN onto
+      // the Schedule H register, which leaked the secret and was useless as an
+      // audit trail.
+      final result = await PharmacistPinDialog.show(context);
+      if (!result.approved) return;
+      pinBy = result.pharmacistName;
+      pharmacistId = result.pharmacistId;
+    }
+
+    final invoice = pos.checkout(
+      isOnline: sync.isOnline,
+      pinApprovedBy: pinBy,
+      authorizedPharmacistId: pharmacistId,
+    );
     sync.queueInvoiceForSync(invoice);
     accounting.recordInvoiceSale(invoice);
+    _discountCtrl.clear();
+    _custGstinCtrl.clear();
 
     if (!mounted) return;
     // ignore: use_build_context_synchronously
@@ -641,7 +767,10 @@ class _PosBillingViewState extends State<PosBillingView> {
           IconButton(
             icon: const Icon(Icons.print, color: AppTheme.primaryBlue),
             tooltip: 'Print PDF',
-            onPressed: () => PrintingService.printInvoice(invoice),
+            onPressed: () => PrintingService.printInvoice(
+              invoice,
+              profile: context.read<CompanyProfileProvider>().profile,
+            ),
           ),
           ElevatedButton.icon(
             style: ElevatedButton.styleFrom(

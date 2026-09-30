@@ -6,6 +6,8 @@ import '../../config/responsive_layout.dart';
 import '../../models/user_model.dart';
 import '../../providers/auth_provider.dart';
 import '../common/support_contact_modal.dart';
+import '../public/demo_request_form.dart';
+import '../public/pricing_section.dart';
 
 class LoginView extends StatefulWidget {
   const LoginView({super.key});
@@ -210,13 +212,20 @@ class _LoginViewState extends State<LoginView>
             padding: const EdgeInsets.fromLTRB(20, 48, 20, 24),
             child: Row(
               children: [
-                Image.asset(
-                  'assets/images/lifesprout_logo.png',
-                  height: 44,
-                  errorBuilder: (_, __, ___) => const Icon(
-                      Icons.medical_services,
-                      size: 44,
-                      color: Colors.white),
+                Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Image.asset(
+                    'assets/images/lifesprout_logo.png',
+                    height: 44,
+                    errorBuilder: (_, __, ___) => const Icon(
+                        Icons.medical_services,
+                        size: 44,
+                        color: Colors.blue),
+                  ),
                 ),
                 const SizedBox(width: 12),
                 const Expanded(
@@ -393,14 +402,80 @@ class _LoginViewState extends State<LoginView>
         Center(
           child: TextButton.icon(
             onPressed: () => SupportContactModal.show(context),
-            icon: Icon(Icons.help_outline, size: 16),
-            label: Text(
+            icon: const Icon(Icons.help_outline, size: 16),
+            label: const Text(
               'Need Help? Contact Lifesprout Care Support',
               style: TextStyle(fontSize: 12),
             ),
           ),
         ),
+        Center(
+          child: Wrap(
+            alignment: WrapAlignment.center,
+            children: [
+              TextButton.icon(
+                onPressed: () => _showPublicPage(
+                  title: 'Request a Demo',
+                  child: const DemoRequestForm(),
+                ),
+                icon: const Icon(Icons.play_circle_outline, size: 16),
+                label: const Text('Request a Demo',
+                    style: TextStyle(fontSize: 12)),
+              ),
+              TextButton.icon(
+                onPressed: () => _showPublicPage(
+                  title: 'Pricing',
+                  child: const PricingSection(),
+                ),
+                icon: const Icon(Icons.sell_outlined, size: 16),
+                label: const Text('View Pricing',
+                    style: TextStyle(fontSize: 12)),
+              ),
+            ],
+          ),
+        ),
       ],
+    );
+  }
+
+  /// Both public surfaces are unauthenticated, so they open as plain dialogs
+  /// from the login screen rather than behind a route guard.
+  void _showPublicPage({required String title, required Widget child}) {
+    showDialog(
+      context: context,
+      builder: (ctx) => Dialog(
+        insetPadding: const EdgeInsets.all(24),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 940, maxHeight: 720),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 14, 8, 0),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(title,
+                          style: const TextStyle(
+                              fontSize: 15, fontWeight: FontWeight.bold)),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close),
+                      onPressed: () => Navigator.pop(ctx),
+                    ),
+                  ],
+                ),
+              ),
+              Flexible(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(20),
+                  child: child,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 

@@ -9,6 +9,10 @@ import '../../providers/inventory_provider.dart';
 class InventoryView extends StatefulWidget {
   const InventoryView({super.key});
 
+  /// Barcode captured by a POS scan that matched no product. Inventory opens the
+  /// Add Medicine form with this prefilled, then clears it so it applies once.
+  static String? pendingBarcode;
+
   @override
   State<InventoryView> createState() => _InventoryViewState();
 }
@@ -20,6 +24,20 @@ class _InventoryViewState extends State<InventoryView> with SingleTickerProvider
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
+
+    // Open Add Medicine automatically when arriving from an unmatched scan.
+    final scanned = InventoryView.pendingBarcode;
+    if (scanned != null) {
+      InventoryView.pendingBarcode = null;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        _showAddMedicineDialog(
+          context,
+          Provider.of<InventoryProvider>(context, listen: false),
+          prefilledBarcode: scanned,
+        );
+      });
+    }
   }
 
   @override
@@ -525,11 +543,13 @@ class _InventoryViewState extends State<InventoryView> with SingleTickerProvider
   // Creates a brand-new product entry with its first batch
   // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   void _showAddMedicineDialog(
-      BuildContext context, InventoryProvider inventoryProvider) {
+      BuildContext context, InventoryProvider inventoryProvider,
+      {String? prefilledBarcode}) {
     // â”€â”€ Product fields â”€â”€
     final nameCtrl         = TextEditingController();
     final saltCtrl         = TextEditingController();
-    final barcodeCtrl      = TextEditingController();
+    // Prefilled when the operator scanned a code that matched no product.
+    final barcodeCtrl      = TextEditingController(text: prefilledBarcode ?? '');
     final hsnCtrl          = TextEditingController(text: '30049099');
     final manufacturerCtrl = TextEditingController();
     double taxPercent      = 12.0;

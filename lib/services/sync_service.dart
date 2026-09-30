@@ -3,12 +3,15 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/invoice_model.dart';
+import '../providers/auth_provider.dart';
 import 'offline_queue_service.dart';
 import 'supabase_service.dart';
 
 enum NetworkState { online, offline, syncing }
 
 class SyncService extends ChangeNotifier {
+  final AuthProvider authProvider;
+  
   NetworkState _networkState = NetworkState.online;
   final List<InvoiceModel> _offlineQueue = [];
   Timer? _syncTimer;
@@ -18,7 +21,7 @@ class SyncService extends ChangeNotifier {
   int get pendingSyncCount => _offlineQueue.length;
   bool get isOnline => _networkState == NetworkState.online;
 
-  SyncService() {
+  SyncService({required this.authProvider}) {
     _init();
   }
 
@@ -77,13 +80,28 @@ class SyncService extends ChangeNotifier {
   /// Flush the entire offline queue to Supabase.
   Future<void> triggerManualSync() async {
     if (_offlineQueue.isEmpty) return;
+    
+    final tenantId = authProvider.tenantId;
+    final branchId = authProvider.branchId;
+    final userId = authProvider.userId;
+    
+    if (tenantId == null || branchId == null || userId.isEmpty) {
+      debugPrint('[Sync] Cannot sync: missing tenant/branch/user context');
+      return;
+    }
+    
     _networkState = NetworkState.syncing;
     notifyListeners();
     debugPrint('[Sync] Starting sync of ${_offlineQueue.length} invoices...');
 
     final toSync = List<InvoiceModel>.from(_offlineQueue);
     try {
-      await SupabaseService().upsertInvoiceBatch(toSync);
+      await SupabaseService().upsertInvoiceBatch(
+        toSync,
+        tenantId: tenantId,
+        branchId: branchId,
+        createdBy: userId,
+      );
       _offlineQueue.clear();
       await OfflineQueueService.clearQueue();
       debugPrint('[Sync] Cloud sync complete ✓');
@@ -111,8 +129,25 @@ class SyncService extends ChangeNotifier {
 
   // ── Internal ──────────────────────────────────────────────────────────────
   Future<void> _cloudWrite(InvoiceModel invoice) async {
+    final tenantId = authProvider.tenantId;
+    final branchId = authProvider.branchId;
+    final userId = authProvider.userId;
+    
+    if (tenantId == null || branchId == null || userId.isEmpty) {
+      debugPrint('[Sync] Cannot write: missing tenant/branch/user context');
+      _offlineQueue.add(invoice);
+      await OfflineQueueService.enqueue(invoice);
+      notifyListeners();
+      return;
+    }
+    
     try {
-      await SupabaseService().upsertInvoice(invoice);
+      await SupabaseService().upsertInvoice(
+        invoice,
+        tenantId: tenantId,
+        branchId: branchId,
+        createdBy: userId,
+      );
       debugPrint('[Sync] Written to cloud: ${invoice.invoiceNumber}');
     } on PostgrestException catch (e) {
       // Supabase error (e.g. RLS denied) — queue locally

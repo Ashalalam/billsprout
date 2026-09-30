@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../config/app_theme.dart';
+import '../../config/responsive_layout.dart';
 import '../../providers/inventory_provider.dart';
+import '../../models/batch_model.dart';
+import '../../models/product_model.dart';
 
 class NearExpiryView extends StatefulWidget {
   const NearExpiryView({super.key});
@@ -11,450 +14,379 @@ class NearExpiryView extends StatefulWidget {
 }
 
 class _NearExpiryViewState extends State<NearExpiryView> {
-  int _filterDays = 90; // 30 | 60 | 90 | 180 | 365
+  int _expiryDaysThreshold = 90;
+  String _searchQuery = '';
 
   @override
   Widget build(BuildContext context) {
-    final inventory = Provider.of<InventoryProvider>(context);
-
-    // Gather all batches that expire within the filter window, sorted by expiry
-    final alerts = <_ExpiryAlert>[];
-    for (final product in inventory.products) {
-      for (final batch in product.batches) {
-        final days = batch.expDate.difference(DateTime.now()).inDays;
-        if (days <= _filterDays) {
-          alerts.add(_ExpiryAlert(
-            productName: product.name,
-            genericSalt: product.genericSalt,
-            batchNumber: batch.batchNumber,
-            expDate: batch.expDate,
-            daysLeft: days,
-            stockCount: batch.stockCount,
-            mrp: batch.mrp,
-            rackLocation: batch.rackLocation,
-            isExpired: batch.isExpired,
-            productId: product.id,
-            batchId: batch.id,
-          ));
-        }
-      }
-    }
-    alerts.sort((a, b) => a.daysLeft.compareTo(b.daysLeft));
-
-    final expiredCount  = alerts.where((a) => a.isExpired).length;
-    final criticalCount = alerts.where((a) => !a.isExpired && a.daysLeft <= 30).length;
-    final warningCount  = alerts.where((a) => !a.isExpired && a.daysLeft > 30 && a.daysLeft <= 60).length;
-    final nearCount     = alerts.where((a) => !a.isExpired && a.daysLeft > 60).length;
+    final inventoryProvider = Provider.of<InventoryProvider>(context);
+    final nearExpiryItems = _getNearExpiryItems(inventoryProvider);
 
     return Scaffold(
-      backgroundColor: AppTheme.lightBackground,
-      body: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // ── Header ───────────────────────────────────────────────────────
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      appBar: AppBar(
+        title: const Text('Near Expiry Stock Management'),
+        backgroundColor: AppTheme.warningAmber,
+      ),
+      body: Column(
+        children: [
+          // Summary Card
+          Container(
+            margin: context.pagePadding,
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  AppTheme.warningAmber.withValues(alpha: 0.2),
+                  AppTheme.errorRed.withValues(alpha: 0.1),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppTheme.warningAmber),
+            ),
+            child: Column(
               children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: const [
-                    Text(
-                      'Near Expiry Stock Monitor',
-                      style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: AppTheme.primaryBlue),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    _buildSummaryCard(
+                      'Critical\n(<30 days)',
+                      nearExpiryItems
+                          .where((item) => item['days_until_expiry'] <= 30)
+                          .length
+                          .toString(),
+                      AppTheme.errorRed,
+                      Icons.warning_amber_rounded,
                     ),
-                    Text(
-                      'FEFO Priority Alert — act before stock expires',
-                      style: TextStyle(
-                          color: AppTheme.textMuted, fontSize: 13),
+                    _buildSummaryCard(
+                      'Warning\n(31-60 days)',
+                      nearExpiryItems
+                          .where((item) =>
+                              item['days_until_expiry'] > 30 &&
+                              item['days_until_expiry'] <= 60)
+                          .length
+                          .toString(),
+                      AppTheme.warningAmber,
+                      Icons.error_outline,
+                    ),
+                    _buildSummaryCard(
+                      'Near Expiry\n(61-90 days)',
+                      nearExpiryItems
+                          .where((item) => item['days_until_expiry'] > 60)
+                          .length
+                          .toString(),
+                      Colors.orange,
+                      Icons.info_outline,
                     ),
                   ],
                 ),
-                // Filter chips
-                Wrap(
-                  spacing: 6,
-                  children: [30, 60, 90, 180]
-                      .map((d) => FilterChip(
-                            label: Text('${d}d'),
-                            selected: _filterDays == d,
-                            selectedColor:
-                                AppTheme.primaryBlue.withValues(alpha: 0.15),
-                            onSelected: (_) =>
-                                setState(() => _filterDays = d),
-                          ))
-                      .toList(),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        decoration: InputDecoration(
+                          hintText: 'Search by product name, batch...',
+                          prefixIcon: const Icon(Icons.search),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          filled: true,
+                          fillColor: Colors.white,
+                        ),
+                        onChanged: (value) {
+                          setState(() {
+                            _searchQuery = value.toLowerCase();
+                          });
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    DropdownButton<int>(
+                      value: _expiryDaysThreshold,
+                      items: const [
+                        DropdownMenuItem(value: 30, child: Text('30 Days')),
+                        DropdownMenuItem(value: 60, child: Text('60 Days')),
+                        DropdownMenuItem(value: 90, child: Text('90 Days')),
+                        DropdownMenuItem(value: 180, child: Text('180 Days')),
+                      ],
+                      onChanged: (value) {
+                        if (value != null) {
+                          setState(() {
+                            _expiryDaysThreshold = value;
+                          });
+                        }
+                      },
+                    ),
+                  ],
                 ),
               ],
             ),
-            const SizedBox(height: 16),
+          ),
 
-            // ── Summary KPIs ──────────────────────────────────────────────────
-            Row(
-              children: [
-                _kpi('Expired', '$expiredCount', AppTheme.errorRed,
-                    Icons.dangerous),
-                const SizedBox(width: 10),
-                _kpi('Critical (<30d)', '$criticalCount',
-                    AppTheme.warningAmber, Icons.warning_amber),
-                const SizedBox(width: 10),
-                _kpi('Warning (<60d)', '$warningCount',
-                    const Color(0xFFD97706), Icons.schedule),
-                const SizedBox(width: 10),
-                _kpi('Near (≤${_filterDays}d)', '$nearCount',
-                    AppTheme.primaryBlue, Icons.watch_later_outlined),
-              ],
-            ),
-            const SizedBox(height: 16),
-
-            // ── Batch list ────────────────────────────────────────────────────
-            if (alerts.isEmpty)
-              Expanded(
-                child: Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.verified,
-                          size: 64, color: AppTheme.successGreen),
-                      const SizedBox(height: 16),
-                      const Text(
-                        'No batches expiring within this period!',
-                        style: TextStyle(
+          // List of Near Expiry Items
+          Expanded(
+            child: nearExpiryItems.isEmpty
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.check_circle_outline,
+                            size: 64, color: AppTheme.successGreen),
+                        const SizedBox(height: 16),
+                        Text(
+                          'No items expiring within $_expiryDaysThreshold days!',
+                          style: const TextStyle(
                             fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: AppTheme.successGreen),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'All your stock expires beyond $_filterDays days.',
-                        style: const TextStyle(
-                            color: AppTheme.textMuted),
-                      ),
-                    ],
-                  ),
-                ),
-              )
-            else
-              Expanded(
-                child: Card(
-                  child: Column(
-                    children: [
-                      // Table header
-                      Container(
-                        color: const Color(0xFFECEFF1),
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 10),
-                        child: const Row(
-                          children: [
-                            Expanded(flex: 3, child: Text('Medicine', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12))),
-                            Expanded(flex: 2, child: Text('Batch No', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12))),
-                            Expanded(flex: 2, child: Text('Expiry', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12))),
-                            Expanded(child: Text('Days Left', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12))),
-                            Expanded(child: Text('Stock', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12))),
-                            Expanded(child: Text('MRP (₹)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12))),
-                            Expanded(flex: 2, child: Text('Rack', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12))),
-                            Expanded(flex: 2, child: Text('Action', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12))),
-                          ],
+                            color: AppTheme.textMuted,
+                          ),
                         ),
-                      ),
-                      Expanded(
-                        child: ListView.separated(
-                          itemCount: alerts.length,
-                          separatorBuilder: (_, __) =>
-                              const Divider(height: 1),
-                          itemBuilder: (context, i) {
-                            final a = alerts[i];
-                            return _AlertRow(alert: a);
-                          },
-                        ),
-                      ),
-                    ],
+                      ],
+                    ),
+                  )
+                : ListView.builder(
+                    padding: context.pagePadding,
+                    itemCount: nearExpiryItems.length,
+                    itemBuilder: (context, index) {
+                      final item = nearExpiryItems[index];
+                      return _buildNearExpiryCard(item);
+                    },
                   ),
-                ),
-              ),
+          ),
+        ],
+      ),
+    );
+  }
 
-            // ── Legend ────────────────────────────────────────────────────────
-            if (alerts.isNotEmpty) ...[
-              const SizedBox(height: 12),
-              Wrap(
-                spacing: 16,
-                children: [
-                  _legend('Expired', AppTheme.errorRed),
-                  _legend('Critical (<30d)', AppTheme.warningAmber),
-                  _legend('Warning (30–60d)', const Color(0xFFD97706)),
-                  _legend('Near Expiry (60–90d)', AppTheme.primaryBlue),
-                ],
+  Widget _buildSummaryCard(
+      String label, String value, Color color, IconData icon) {
+    return Card(
+      elevation: 2,
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        width: 120,
+        child: Column(
+          children: [
+            Icon(icon, size: 32, color: color),
+            const SizedBox(height: 8),
+            Text(
+              value,
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: color,
               ),
-            ],
+            ),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 11,
+                color: AppTheme.textMuted,
+              ),
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _kpi(String label, String value, Color color, IconData icon) {
-    return Expanded(
-      child: Card(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-          child: Row(
-            children: [
-              CircleAvatar(
-                radius: 18,
-                backgroundColor: color.withValues(alpha: 0.12),
-                child: Icon(icon, color: color, size: 18),
-              ),
-              const SizedBox(width: 10),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(label,
-                      style: const TextStyle(
-                          fontSize: 11, color: AppTheme.textMuted)),
-                  Text(value,
-                      style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 18,
-                          color: color)),
-                ],
-              ),
-            ],
-          ),
+  Widget _buildNearExpiryCard(Map<String, dynamic> item) {
+    final ProductModel product = item['product'];
+    final BatchModel batch = item['batch'];
+    final int daysUntilExpiry = item['days_until_expiry'];
+
+    // Determine color based on urgency
+    Color statusColor;
+    String statusText;
+    if (daysUntilExpiry <= 30) {
+      statusColor = AppTheme.errorRed;
+      statusText = 'CRITICAL';
+    } else if (daysUntilExpiry <= 60) {
+      statusColor = AppTheme.warningAmber;
+      statusText = 'WARNING';
+    } else {
+      statusColor = Colors.orange;
+      statusText = 'NEAR EXPIRY';
+    }
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: ExpansionTile(
+        leading: CircleAvatar(
+          backgroundColor: statusColor.withValues(alpha: 0.2),
+          child: Icon(Icons.medical_services, color: statusColor),
         ),
-      ),
-    );
-  }
-
-  Widget _legend(String label, Color color) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          width: 12,
-          height: 12,
-          decoration: BoxDecoration(
-              color: color, borderRadius: BorderRadius.circular(3)),
+        title: Text(
+          product.name,
+          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
         ),
-        const SizedBox(width: 4),
-        Text(label, style: const TextStyle(fontSize: 11)),
-      ],
-    );
-  }
-}
-
-class _ExpiryAlert {
-  final String productName;
-  final String genericSalt;
-  final String batchNumber;
-  final DateTime expDate;
-  final int daysLeft;
-  final int stockCount;
-  final double mrp;
-  final String rackLocation;
-  final bool isExpired;
-  final String productId;
-  final String batchId;
-
-  const _ExpiryAlert({
-    required this.productName,
-    required this.genericSalt,
-    required this.batchNumber,
-    required this.expDate,
-    required this.daysLeft,
-    required this.stockCount,
-    required this.mrp,
-    required this.rackLocation,
-    required this.isExpired,
-    required this.productId,
-    required this.batchId,
-  });
-
-  Color get rowColor {
-    if (isExpired)        return AppTheme.errorRed.withValues(alpha: 0.06);
-    if (daysLeft <= 30)   return AppTheme.warningAmber.withValues(alpha: 0.06);
-    if (daysLeft <= 60)   return const Color(0xFFFFF3E0);
-    return const Color(0xFFF3F4F6);
-  }
-
-  Color get textColor {
-    if (isExpired)      return AppTheme.errorRed;
-    if (daysLeft <= 30) return AppTheme.warningAmber;
-    if (daysLeft <= 60) return const Color(0xFFD97706);
-    return AppTheme.primaryBlue;
-  }
-}
-
-class _AlertRow extends StatelessWidget {
-  final _ExpiryAlert alert;
-  const _AlertRow({required this.alert});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      color: alert.rowColor,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      child: Row(
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: 4),
+            Text(
+              'Generic: ${product.genericSalt} | Manufacturer: ${product.manufacturer}',
+              style: const TextStyle(fontSize: 12),
+            ),
+            const SizedBox(height: 4),
+            Row(
+              children: [
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: statusColor.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(
+                    '$statusText - $daysUntilExpiry days left',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      color: statusColor,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+        trailing: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Text(
+              'Stock: ${batch.stockCount}',
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            Text(
+              'MRP: ₹${batch.mrp.toStringAsFixed(2)}',
+              style: const TextStyle(fontSize: 12, color: AppTheme.textMuted),
+            ),
+          ],
+        ),
         children: [
-          Expanded(
-            flex: 3,
+          Container(
+            padding: const EdgeInsets.all(16),
+            color: Colors.grey.shade50,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(alert.productName,
-                    style: const TextStyle(
-                        fontWeight: FontWeight.bold, fontSize: 13),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis),
-                Text(alert.genericSalt,
-                    style: const TextStyle(
-                        fontSize: 11, color: AppTheme.textMuted),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis),
+                _buildDetailRow('Batch Number', batch.batchNumber),
+                _buildDetailRow('Expiry Date', batch.expiryDate),
+                _buildDetailRow('Manufacturing Date',
+                    '${batch.mfgDate.month.toString().padLeft(2, '0')}/${batch.mfgDate.year}'),
+                _buildDetailRow('HSN Code', product.hsnCode),
+                _buildDetailRow('PTR Price', '₹${batch.ptrPrice.toStringAsFixed(2)}'),
+                _buildDetailRow('Purchase Price', '₹${batch.purchasePrice.toStringAsFixed(2)}'),
+                _buildDetailRow('Wholesale Price', '₹${batch.wholesalePrice.toStringAsFixed(2)}'),
+                _buildDetailRow('Rack Location', batch.rackLocation),
+                const SizedBox(height: 12),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    OutlinedButton.icon(
+                      onPressed: () {
+                        // TODO: Implement supplier return
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Return to Supplier feature'),
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.assignment_return, size: 16),
+                      label: const Text('Return to Supplier'),
+                    ),
+                    const SizedBox(width: 8),
+                    ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppTheme.errorRed,
+                      ),
+                      onPressed: () {
+                        // TODO: Implement discount sale
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Mark for Discount Sale'),
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.local_offer, size: 16),
+                      label: const Text('Discount Sale'),
+                    ),
+                  ],
+                ),
               ],
             ),
           ),
-          Expanded(
-            flex: 2,
-            child: Text(alert.batchNumber,
-                style: const TextStyle(fontSize: 12)),
-          ),
-          Expanded(
-            flex: 2,
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDetailRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 140,
             child: Text(
-              '${alert.expDate.day}/${alert.expDate.month}/${alert.expDate.year}',
-              style: TextStyle(
-                  fontSize: 12,
-                  color: alert.textColor,
-                  fontWeight: FontWeight.bold),
-            ),
-          ),
-          Expanded(
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-              decoration: BoxDecoration(
-                color: alert.textColor.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(6),
-              ),
-              child: Text(
-                alert.isExpired ? 'EXPIRED' : '${alert.daysLeft}d',
-                style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.bold,
-                    color: alert.textColor),
-                textAlign: TextAlign.center,
+              '$label:',
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.bold,
               ),
             ),
           ),
           Expanded(
             child: Text(
-              '${alert.stockCount}',
-              style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                  color: alert.stockCount == 0
-                      ? AppTheme.textMuted
-                      : AppTheme.textDark),
+              value,
+              style: const TextStyle(fontSize: 13),
             ),
-          ),
-          Expanded(
-            child: Text('₹${alert.mrp.toStringAsFixed(0)}',
-                style: const TextStyle(fontSize: 12)),
-          ),
-          Expanded(
-            flex: 2,
-            child: Text(alert.rackLocation,
-                style: const TextStyle(fontSize: 12)),
-          ),
-          Expanded(
-            flex: 2,
-            child: alert.isExpired
-                ? OutlinedButton.icon(
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: AppTheme.errorRed,
-                      side: const BorderSide(color: AppTheme.errorRed),
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 6, vertical: 2),
-                    ),
-                    onPressed: () => _showWriteOffDialog(context),
-                    icon: const Icon(Icons.delete_sweep, size: 14),
-                    label: const Text('Write Off', style: TextStyle(fontSize: 11)),
-                  )
-                : OutlinedButton.icon(
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: AppTheme.warningAmber,
-                      side: const BorderSide(color: AppTheme.warningAmber),
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 6, vertical: 2),
-                    ),
-                    onPressed: () => _showReturnDialog(context),
-                    icon: const Icon(Icons.assignment_return, size: 14),
-                    label: const Text('Return/RTV', style: TextStyle(fontSize: 11)),
-                  ),
           ),
         ],
       ),
     );
   }
 
-  void _showWriteOffDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Write Off Expired Stock'),
-        content: Text(
-          'Write off ${alert.stockCount} units of "${alert.productName}" '
-          '(Batch: ${alert.batchNumber})?\n\n'
-          'This action will zero the stock count and log the write-off.',
-        ),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('Cancel')),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.errorRed),
-            onPressed: () {
-              Navigator.pop(ctx);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                      'Write-off logged for ${alert.batchNumber} — ${alert.stockCount} units.'),
-                  backgroundColor: AppTheme.errorRed,
-                ),
-              );
-            },
-            child: const Text('Confirm Write-Off'),
-          ),
-        ],
-      ),
-    );
-  }
+  List<Map<String, dynamic>> _getNearExpiryItems(
+      InventoryProvider inventoryProvider) {
+    final items = <Map<String, dynamic>>[];
+    final now = DateTime.now();
 
-  void _showReturnDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Return to Vendor (RTV)'),
-        content: Text(
-          'Initiate a Return-to-Vendor note for "${alert.productName}" '
-          '(Batch: ${alert.batchNumber}, ${alert.daysLeft} days left)?\n\n'
-          'Go to Inventory → RTV Notes to complete the return.',
-        ),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('Later')),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.warningAmber),
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Go to RTV'),
-          ),
-        ],
-      ),
-    );
+    for (final product in inventoryProvider.products) {
+      for (final batch in product.batches) {
+        final daysUntilExpiry = batch.expDate.difference(now).inDays;
+        
+        if (daysUntilExpiry >= 0 &&
+            daysUntilExpiry <= _expiryDaysThreshold &&
+            batch.stockCount > 0) {
+          
+          // Apply search filter
+          if (_searchQuery.isNotEmpty) {
+            final searchMatch = product.name.toLowerCase().contains(_searchQuery) ||
+                product.genericSalt.toLowerCase().contains(_searchQuery) ||
+                batch.batchNumber.toLowerCase().contains(_searchQuery);
+            if (!searchMatch) continue;
+          }
+
+          items.add({
+            'product': product,
+            'batch': batch,
+            'days_until_expiry': daysUntilExpiry,
+          });
+        }
+      }
+    }
+
+    // Sort by expiry date (most urgent first)
+    items.sort((a, b) =>
+        a['days_until_expiry'].compareTo(b['days_until_expiry']));
+
+    return items;
   }
 }

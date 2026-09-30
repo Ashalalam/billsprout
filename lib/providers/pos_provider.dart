@@ -14,6 +14,8 @@ class PosProvider extends ChangeNotifier {
   PaymentMode _paymentMode = PaymentMode.cash;
   String _pricingTier = 'Retail';
   String _branch = 'Main Store';
+  String _billingType = 'retail';
+  String? _customerGstin;
 
   // ── Branch management ──────────────────────────────────────────────────────
   static const List<String> defaultBranches = [
@@ -35,9 +37,18 @@ class PosProvider extends ChangeNotifier {
   String get branch                 => _branch;
   List<String> get branches         => List.unmodifiable(_branches);
 
+  String get billingType  => _billingType;
+  String? get customerGstin => _customerGstin;
+  bool get isWholesale    => _billingType == 'wholesale';
+
   double get subtotal    => _cartItems.fold(0.0, (s, i) => s + i.lineTotal);
   double get totalTax    => _cartItems.fold(0.0, (s, i) => s + i.taxAmount);
-  double get grandTotal  => subtotal - _discountAmount;
+
+  /// Discount never exceeds the subtotal, so the payable cannot go negative.
+  double get effectiveDiscount =>
+      _discountAmount > subtotal ? subtotal : _discountAmount;
+
+  double get grandTotal  => subtotal - effectiveDiscount;
 
   bool get requiresPharmacistPin =>
       _cartItems.any((item) => item.product.requiresPharmacistPin);
@@ -49,6 +60,7 @@ class PosProvider extends ChangeNotifier {
   // ── Setters ────────────────────────────────────────────────────────────────
   void setPricingTier(String tier) {
     _pricingTier = tier;
+    _repriceCart();
     notifyListeners();
   }
 
@@ -80,8 +92,37 @@ class PosProvider extends ChangeNotifier {
   }
 
   void setDiscount(double amount) {
-    _discountAmount = amount;
+    _discountAmount = amount < 0 ? 0 : amount;
     notifyListeners();
+  }
+
+  /// Switch between retail and wholesale billing.
+  ///
+  /// Wholesale re-prices the existing cart at PTR rather than leaving a mix of
+  /// retail-priced and wholesale-priced lines on one invoice.
+  void setBillingType(String type) {
+    final normalised = type == 'wholesale' ? 'wholesale' : 'retail';
+    if (normalised == _billingType) return;
+
+    _billingType = normalised;
+    _pricingTier = normalised == 'wholesale' ? 'PTR' : 'Retail';
+    if (normalised == 'retail') _customerGstin = null;
+
+    _repriceCart();
+    notifyListeners();
+  }
+
+  void setCustomerGstin(String? gstin) {
+    final trimmed = gstin?.trim();
+    _customerGstin =
+        (trimmed == null || trimmed.isEmpty) ? null : trimmed.toUpperCase();
+    notifyListeners();
+  }
+
+  void _repriceCart() {
+    for (final item in _cartItems) {
+      item.unitPrice = _resolvePriceTier(item.product, item.batch);
+    }
   }
 
   // ── Cart operations ────────────────────────────────────────────────────────
@@ -142,11 +183,16 @@ class PosProvider extends ChangeNotifier {
     _customerPhone   = '';
     _doctorName      = null;
     _doctorMciNo     = null;
+    _customerGstin   = null;
     notifyListeners();
   }
 
   // ── Checkout ───────────────────────────────────────────────────────────────
-  InvoiceModel checkout({required bool isOnline, String? pinApprovedBy}) {
+  InvoiceModel checkout({
+    required bool isOnline,
+    String? pinApprovedBy,
+    String? authorizedPharmacistId,
+  }) {
     final invoiceNum =
         'INV-${DateTime.now().millisecondsSinceEpoch.toString().substring(5)}';
 
@@ -159,14 +205,24 @@ class PosProvider extends ChangeNotifier {
       doctorName: _doctorName,
       doctorMciNo: _doctorMciNo,
       items: List.from(_cartItems),
-      discountAmount: _discountAmount,
+      discountAmount: effectiveDiscount,
       paymentMode: _paymentMode,
       isSynced: isOnline,
       pharmacistPinApprovedBy: pinApprovedBy,
       branch: _branch,
+      billingType: _billingType,
+      customerGstin: _customerGstin,
+      authorizedPharmacistId: authorizedPharmacistId,
     );
 
-    // Deduct billed qty from stock (free qty also deducted — it was physically dispensed)
+    // Local (in-memory / offline) stock is decremented here so the POS grid
+    // reflects the sale immediately. Free units are included because they are
+    // physically dispensed.
+    //
+    // Note: the authoritative deduction happens server-side in the
+    // update_stock_on_sale trigger. When the invoice syncs, the batch row is
+    // refreshed from Supabase, so this local adjustment is a display update and
+    // not a second deduction against the same stock.
     for (final item in _cartItems) {
       final totalDispensed = item.quantity + item.freeQuantity;
       item.batch.stockCount =

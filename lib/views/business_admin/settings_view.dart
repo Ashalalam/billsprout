@@ -3,6 +3,12 @@ import 'package:provider/provider.dart';
 import '../../config/app_config.dart';
 import '../../config/app_theme.dart';
 import '../../providers/pos_provider.dart';
+import '../../utils/pin_hasher.dart';
+import '../../views/subscription/subscription_plans_view.dart';
+import '../../views/public/downloads_view.dart';
+import '../../views/public/demo_request_form.dart';
+import '../../widgets/subscription/subscription_status_widget.dart';
+import 'pharmacist_management_tab.dart';
 
 class SettingsView extends StatefulWidget {
   const SettingsView({super.key});
@@ -18,7 +24,7 @@ class _SettingsViewState extends State<SettingsView>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _tabController = TabController(length: 4, vsync: this);
   }
 
   @override
@@ -41,8 +47,10 @@ class _SettingsViewState extends State<SettingsView>
               unselectedLabelColor: AppTheme.textMuted,
               indicatorColor: AppTheme.primaryBlue,
               tabs: const [
-                Tab(icon: Icon(Icons.security), text: 'Pharmacist PIN'),
+                Tab(icon: Icon(Icons.badge), text: 'Pharmacists'),
+                Tab(icon: Icon(Icons.security), text: 'Device PIN'),
                 Tab(icon: Icon(Icons.store), text: 'Branch Management'),
+                Tab(icon: Icon(Icons.workspace_premium), text: 'Subscription'),
               ],
             ),
           ),
@@ -50,8 +58,10 @@ class _SettingsViewState extends State<SettingsView>
             child: TabBarView(
               controller: _tabController,
               children: [
+                const PharmacistManagementTab(),
                 _PharmacistPinTab(),
                 _BranchManagementTab(),
+                _SubscriptionManagementTab(),
               ],
             ),
           ),
@@ -102,12 +112,9 @@ class _PharmacistPinTabState extends State<_PharmacistPinTab> {
       setState(() => _error = 'New PIN and Confirm PIN do not match.');
       return;
     }
-    if (newPin.length < 4 || newPin.length > 6) {
-      setState(() => _error = 'PIN must be 4–6 digits.');
-      return;
-    }
-    if (!RegExp(r'^\d+$').hasMatch(newPin)) {
-      setState(() => _error = 'PIN must contain digits only.');
+    final formatError = PinHasher.validateFormat(newPin);
+    if (formatError != null) {
+      setState(() => _error = formatError);
       return;
     }
 
@@ -118,11 +125,11 @@ class _PharmacistPinTabState extends State<_PharmacistPinTab> {
       _currentPinCtrl.clear();
       _newPinCtrl.clear();
       _confirmCtrl.clear();
-      setState(() => _success =
-          '✅ Pharmacist PIN updated successfully! New PIN: $newPin');
+      setState(() =>
+          _success = '✅ Pharmacist PIN updated. Use the new PIN from now on.');
     } else {
-      setState(() => _error =
-          'Incorrect current PIN. Current PIN is ${AppConfig.pharmacistPin}');
+      // Deliberately does not echo the stored PIN.
+      setState(() => _error = 'Incorrect current PIN.');
     }
   }
 
@@ -178,13 +185,18 @@ class _PharmacistPinTabState extends State<_PharmacistPinTab> {
                       const Icon(Icons.info_outline,
                           color: AppTheme.accentOrange, size: 16),
                       const SizedBox(width: 8),
-                      Text(
-                        'Current PIN is set (${AppConfig.pharmacistPin.length} digits). '
-                        'Change it below.',
-                        style: const TextStyle(
-                            fontSize: 12,
-                            color: AppTheme.accentOrange,
-                            fontWeight: FontWeight.w600),
+                      Expanded(
+                        child: Text(
+                          AppConfig.isUsingDefaultPin
+                              ? 'This device is still using the shipped default '
+                                  'PIN. Change it before dispensing.'
+                              : 'A custom PIN is set. It is stored as a salted '
+                                  'hash and cannot be displayed.',
+                          style: const TextStyle(
+                              fontSize: 12,
+                              color: AppTheme.accentOrange,
+                              fontWeight: FontWeight.w600),
+                        ),
                       ),
                     ],
                   ),
@@ -474,6 +486,205 @@ class _BranchManagementTabState extends State<_BranchManagementTab> {
       SnackBar(
         content: Text('Branch "$name" added!'),
         backgroundColor: AppTheme.successGreen,
+      ),
+    );
+  }
+}
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Tab 4 — Subscription Management
+// ─────────────────────────────────────────────────────────────────────────────
+class _SubscriptionManagementTab extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Info card
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppTheme.primaryBlue.withValues(alpha: 0.05),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                  color: AppTheme.primaryBlue.withValues(alpha: 0.2)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: const [
+                    Icon(Icons.workspace_premium,
+                        color: AppTheme.primaryBlue, size: 28),
+                    SizedBox(width: 12),
+                    Text(
+                      'Subscription Management',
+                      style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: AppTheme.primaryBlue),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'Manage your LifeSprout subscription, view plan details, and upgrade your account.',
+                  style: TextStyle(color: Colors.grey[700]),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 32),
+
+          // Current subscription status
+          const SubscriptionStatusWidget(),
+
+          const SizedBox(height: 32),
+
+          // Actions
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Subscription Actions',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // View all plans
+                  ListTile(
+                    leading: const CircleAvatar(
+                      backgroundColor: Colors.green,
+                      child: Icon(Icons.card_giftcard, color: Colors.white),
+                    ),
+                    title: const Text('View All Plans'),
+                    subtitle: const Text('Compare features and pricing'),
+                    trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const SubscriptionPlansView(),
+                        ),
+                      );
+                    },
+                  ),
+
+                  const Divider(),
+
+                  // Download software
+                  ListTile(
+                    leading: const CircleAvatar(
+                      backgroundColor: Colors.blue,
+                      child: Icon(Icons.download, color: Colors.white),
+                    ),
+                    title: const Text('Download Software'),
+                    subtitle: const Text('Get the latest desktop version'),
+                    trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) =>
+                              const DownloadsView(),
+                        ),
+                      );
+                    },
+                  ),
+
+                  const Divider(),
+
+                  // Request demo
+                  ListTile(
+                    leading: const CircleAvatar(
+                      backgroundColor: Colors.orange,
+                      child: Icon(Icons.video_call, color: Colors.white),
+                    ),
+                    title: const Text('Book a Demo'),
+                    subtitle: const Text('Schedule a personalized walkthrough'),
+                    trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                    onTap: () {
+                      showDialog(
+                        context: context,
+                        builder: (context) => Dialog(
+                          child: Container(
+                            constraints: const BoxConstraints(maxWidth: 600),
+                            child: const DemoRequestForm(),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 24),
+
+          // Support information
+          Card(
+            color: Colors.grey[50],
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: const [
+                      Icon(Icons.help_outline, color: AppTheme.textMuted),
+                      SizedBox(width: 8),
+                      Text(
+                        'Need Help?',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    'For subscription inquiries, billing questions, or plan upgrades, '
+                    'contact our support team:',
+                    style: TextStyle(fontSize: 13, color: Colors.grey[700]),
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: const [
+                      Icon(Icons.email, size: 16, color: AppTheme.primaryBlue),
+                      SizedBox(width: 8),
+                      Text('support@lifesprout.com',
+                          style: TextStyle(
+                              color: AppTheme.primaryBlue,
+                              fontWeight: FontWeight.w500)),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: const [
+                      Icon(Icons.phone, size: 16, color: AppTheme.primaryBlue),
+                      SizedBox(width: 8),
+                      Text('+91 1800-XXX-XXXX',
+                          style: TextStyle(
+                              color: AppTheme.primaryBlue,
+                              fontWeight: FontWeight.w500)),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

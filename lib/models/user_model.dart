@@ -34,6 +34,9 @@ class AppUser {
     }
   }
 
+  /// Alias for companyId to match new naming convention
+  String? get tenantId => companyId;
+
   Map<String, dynamic> toJson() => {
         'id': id,
         'name': name,

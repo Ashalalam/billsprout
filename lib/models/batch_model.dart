@@ -36,11 +36,15 @@ class BatchModel {
     return 'OK';
   }
 
+  /// Display-friendly expiry date (MM/YYYY format)
+  String get expiryDate => '${expDate.month.toString().padLeft(2, '0')}/${expDate.year}';
+
   Map<String, dynamic> toJson() => {
         'id': id,
         'batchNumber': batchNumber,
         'mfgDate': mfgDate.toIso8601String(),
         'expDate': expDate.toIso8601String(),
+        'expiryDate': expiryDate,
         'mrp': mrp,
         'purchasePrice': purchasePrice,
         'wholesalePrice': wholesalePrice,

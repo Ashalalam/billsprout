@@ -77,13 +77,16 @@ class _BusinessAdminLayoutState extends State<BusinessAdminLayout> {
   // â”€â”€ AppBar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   PreferredSizeWidget _appBar(AuthProvider auth, OtaService ota, bool isMobile) {
     return AppBar(
+      backgroundColor: Colors.white,
+      elevation: 2,
+      iconTheme: const IconThemeData(color: AppTheme.primaryBlue),
       title: Row(
         children: [
           Image.asset(
             'assets/images/lifesprout_logo.png',
-            height: 30,
+            height: 40,
             errorBuilder: (_, __, ___) =>
-                const Icon(Icons.local_pharmacy, color: Colors.white, size: 26),
+                const Icon(Icons.local_pharmacy, color: AppTheme.primaryBlue, size: 36),
           ),
           const SizedBox(width: 10),
           Expanded(
@@ -95,13 +98,14 @@ class _BusinessAdminLayoutState extends State<BusinessAdminLayout> {
                   style: TextStyle(
                     fontSize: isMobile ? 14 : 16,
                     fontWeight: FontWeight.bold,
+                    color: AppTheme.primaryBlue,
                   ),
                   overflow: TextOverflow.ellipsis,
                 ),
                 if (!isMobile)
                   Text(
                     'LIFESPROUT Care | $_industryMode',
-                    style: const TextStyle(fontSize: 11, color: Colors.white70),
+                    style: const TextStyle(fontSize: 11, color: Colors.grey),
                   ),
               ],
             ),
@@ -289,19 +293,7 @@ class _BusinessAdminLayoutState extends State<BusinessAdminLayout> {
                         style: TextStyle(fontSize: 11)),
                   ))
               .toList(),
-          trailing: Expanded(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.tune, color: AppTheme.primaryBlue),
-                  tooltip: 'Switch Industry Engine',
-                  onPressed: _showIndustryPicker,
-                ),
-                const SizedBox(height: 16),
-              ],
-            ),
-          ),
+          trailing: null,
         ),
         const VerticalDivider(thickness: 1, width: 1),
         Expanded(child: _views[_selectedIndex]),

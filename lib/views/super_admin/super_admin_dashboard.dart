@@ -10,6 +10,7 @@ import '../../providers/accounting_provider.dart';
 import '../../providers/super_admin_provider.dart';
 import '../../services/ota_service.dart';
 import '../common/support_contact_modal.dart';
+import 'add_tenant_dialog.dart';
 
 class SuperAdminDashboard extends StatefulWidget {
   const SuperAdminDashboard({super.key});
@@ -73,6 +74,19 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard>
               ),
             ),
           IconButton(
+            icon: superAdmin.isLoading
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(
+                        strokeWidth: 2, color: Colors.white),
+                  )
+                : const Icon(Icons.refresh),
+            tooltip: 'Reload tenants',
+            onPressed:
+                superAdmin.isLoading ? null : () => superAdmin.fetchTenants(),
+          ),
+          IconButton(
             icon: const Icon(Icons.headset_mic),
             tooltip: 'Support Desk',
             onPressed: () => SupportContactModal.show(context),
@@ -120,88 +134,9 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard>
 
   // â”€â”€ Add Tenant Dialog â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   void _showAddTenantDialog(BuildContext context) {
-    final nameCtrl = TextEditingController();
-    final ownerCtrl = TextEditingController();
-    final emailCtrl = TextEditingController();
-    final phoneCtrl = TextEditingController();
-    String selectedIndustry = 'Pharma';
-
     showDialog(
       context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setDlg) => AlertDialog(
-          title: const Text('Create New Business Tenant Account'),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                    controller: nameCtrl,
-                    decoration: const InputDecoration(
-                        labelText: 'Company / Store Name')),
-                const SizedBox(height: 10),
-                TextField(
-                    controller: ownerCtrl,
-                    decoration: const InputDecoration(
-                        labelText: 'Owner / MD Name')),
-                const SizedBox(height: 10),
-                TextField(
-                    controller: emailCtrl,
-                    decoration: const InputDecoration(
-                        labelText: 'Store Email')),
-                const SizedBox(height: 10),
-                TextField(
-                    controller: phoneCtrl,
-                    decoration: const InputDecoration(
-                        labelText: 'WhatsApp Phone')),
-                const SizedBox(height: 12),
-                DropdownButtonFormField<String>(
-                  initialValue: selectedIndustry,
-                  decoration:
-                      const InputDecoration(labelText: 'Industry Type'),
-                  items: ['Pharma', 'Retail', 'Wholesale', 'FMCG']
-                      .map((t) => DropdownMenuItem(
-                          value: t, child: Text(t)))
-                      .toList(),
-                  onChanged: (val) {
-                    if (val != null) {
-                      setDlg(() => selectedIndustry = val);
-                    }
-                  },
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-                onPressed: () => Navigator.pop(ctx),
-                child: const Text('Cancel')),
-            ElevatedButton(
-              onPressed: () {
-                if (nameCtrl.text.isNotEmpty) {
-                  Provider.of<SuperAdminProvider>(context, listen: false)
-                      .addCompanyTenant(
-                    CompanyModel(
-                      id: 'comp_${DateTime.now().millisecondsSinceEpoch}',
-                      businessName: nameCtrl.text,
-                      ownerName: ownerCtrl.text,
-                      email: emailCtrl.text,
-                      phone: phoneCtrl.text,
-                      gstin: '07NEW000000A1Z9',
-                      drugLicenseNo: 'DL-2026-NEW',
-                      address: 'Central Plaza Branch',
-                      industryType: selectedIndustry,
-                      createdAt: DateTime.now(),
-                    ),
-                  );
-                  Navigator.pop(ctx);
-                }
-              },
-              child: const Text('Provision Tenant Account'),
-            ),
-          ],
-        ),
-      ),
+      builder: (_) => const AddTenantDialog(),
     );
   }
 
@@ -450,23 +385,42 @@ class _OverviewTab extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 10),
-          Card(
-            child: ListView.separated(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: superAdmin.tenants.length > 5
-                  ? 5
-                  : superAdmin.tenants.length,
-              separatorBuilder: (_, __) => const Divider(height: 1),
-              itemBuilder: (context, i) {
-                final t = superAdmin.tenants[i];
-                return _TenantListTile(
-                  tenant: t,
-                  onToggle: () =>
-                      superAdmin.toggleTenantStatus(t.id),
-                );
-              },
+          if (superAdmin.error != null)
+            _ErrorBanner(
+              message: superAdmin.error!,
+              onRetry: () => superAdmin.fetchTenants(),
             ),
+          Card(
+            child: superAdmin.isLoading && superAdmin.tenants.isEmpty
+                ? const Padding(
+                    padding: EdgeInsets.all(32),
+                    child: Center(child: CircularProgressIndicator()),
+                  )
+                : superAdmin.tenants.isEmpty
+                    ? const Padding(
+                        padding: EdgeInsets.all(32),
+                        child: Center(
+                          child: Text('No tenants provisioned yet.',
+                              style: TextStyle(color: AppTheme.textMuted)),
+                        ),
+                      )
+                    : ListView.separated(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: superAdmin.tenants.length > 5
+                            ? 5
+                            : superAdmin.tenants.length,
+                        separatorBuilder: (_, __) => const Divider(height: 1),
+                        itemBuilder: (context, i) {
+                          final t = superAdmin.tenants[i];
+                          return _TenantListTile(
+                            tenant: t,
+                            isPending: superAdmin.isTogglePending(t.id),
+                            onToggle: () =>
+                                superAdmin.toggleTenantStatus(t.id),
+                          );
+                        },
+                      ),
           ),
         ],
       ),
@@ -526,26 +480,50 @@ class _TenantsTab extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 12),
+          if (superAdmin.error != null)
+            _ErrorBanner(
+              message: superAdmin.error!,
+              onRetry: () => superAdmin.fetchTenants(),
+            ),
           Expanded(
             child: Card(
-              child: superAdmin.tenants.isEmpty
-                  ? const Center(
-                      child: Text('No tenants provisioned yet.',
-                          style: TextStyle(color: AppTheme.textMuted)))
-                  : ListView.separated(
-                      itemCount: superAdmin.tenants.length,
-                      separatorBuilder: (_, __) =>
-                          const Divider(height: 1),
-                      itemBuilder: (context, i) {
-                        final t = superAdmin.tenants[i];
-                        return _TenantListTile(
-                          tenant: t,
-                          showFullDetails: true,
-                          onToggle: () =>
-                              superAdmin.toggleTenantStatus(t.id),
-                        );
-                      },
-                    ),
+              child: superAdmin.isLoading && superAdmin.tenants.isEmpty
+                  ? const Center(child: CircularProgressIndicator())
+                  : superAdmin.tenants.isEmpty
+                      ? Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(Icons.storefront_outlined,
+                                  size: 48, color: AppTheme.textMuted),
+                              const SizedBox(height: 12),
+                              const Text('No tenants provisioned yet.',
+                                  style:
+                                      TextStyle(color: AppTheme.textMuted)),
+                              const SizedBox(height: 12),
+                              OutlinedButton.icon(
+                                onPressed: onAddTenant,
+                                icon: const Icon(Icons.add_business, size: 16),
+                                label: const Text('Create the first tenant'),
+                              ),
+                            ],
+                          ),
+                        )
+                      : ListView.separated(
+                          itemCount: superAdmin.tenants.length,
+                          separatorBuilder: (_, __) =>
+                              const Divider(height: 1),
+                          itemBuilder: (context, i) {
+                            final t = superAdmin.tenants[i];
+                            return _TenantListTile(
+                              tenant: t,
+                              showFullDetails: true,
+                              isPending: superAdmin.isTogglePending(t.id),
+                              onToggle: () =>
+                                  superAdmin.toggleTenantStatus(t.id),
+                            );
+                          },
+                        ),
             ),
           ),
         ],
@@ -601,7 +579,8 @@ class _AnalyticsTab extends StatelessWidget {
   Map<String, double> _buildIndustryBreakdown() {
     final counts = <String, double>{};
     for (final t in superAdmin.tenants) {
-      counts[t.industryType] = (counts[t.industryType] ?? 0) + 1;
+      final key = t.industryType.label;
+      counts[key] = (counts[key] ?? 0) + 1;
     }
     if (counts.isEmpty) {
       return {'Pharma': 68, 'Retail': 18, 'Wholesale': 10, 'FMCG': 4};
@@ -1154,15 +1133,55 @@ class _MetricCard extends StatelessWidget {
   }
 }
 
+class _ErrorBanner extends StatelessWidget {
+  final String message;
+  final VoidCallback onRetry;
+
+  const _ErrorBanner({required this.message, required this.onRetry});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: AppTheme.errorRed.withValues(alpha: 0.07),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: AppTheme.errorRed.withValues(alpha: 0.35)),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.error_outline, color: AppTheme.errorRed, size: 20),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              message,
+              style: const TextStyle(fontSize: 12, color: AppTheme.errorRed),
+            ),
+          ),
+          TextButton.icon(
+            onPressed: onRetry,
+            icon: const Icon(Icons.refresh, size: 16),
+            label: const Text('Retry'),
+            style: TextButton.styleFrom(foregroundColor: AppTheme.errorRed),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _TenantListTile extends StatelessWidget {
   final CompanyModel tenant;
   final VoidCallback onToggle;
   final bool showFullDetails;
+  final bool isPending;
 
   const _TenantListTile({
     required this.tenant,
     required this.onToggle,
     this.showFullDetails = false,
+    this.isPending = false,
   });
 
   @override
@@ -1173,22 +1192,26 @@ class _TenantListTile extends StatelessWidget {
             ? AppTheme.primaryBlue.withValues(alpha: 0.1)
             : Colors.grey.shade200,
         child: Icon(
-          tenant.industryType == 'Pharma'
-              ? Icons.local_pharmacy
-              : tenant.industryType == 'Wholesale'
-                  ? Icons.warehouse
-                  : Icons.store,
+          switch (tenant.industryType) {
+            IndustryType.pharmacy => Icons.local_pharmacy,
+            IndustryType.wholesale => Icons.warehouse,
+            IndustryType.manufacturing ||
+            IndustryType.fmcg =>
+              Icons.precision_manufacturing,
+            IndustryType.hospitality => Icons.restaurant,
+            IndustryType.retail => Icons.store,
+          },
           color:
               tenant.isActive ? AppTheme.primaryBlue : Colors.grey,
         ),
       ),
       title: Text(tenant.businessName,
-          style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
       subtitle: Text(
         showFullDetails
-            ? 'Owner: ${tenant.ownerName}  â€¢  ${tenant.industryType}  â€¢  GSTIN: ${tenant.gstin}\n'
-                '${tenant.email}  â€¢  ${tenant.phone}'
-            : 'Owner: ${tenant.ownerName}  â€¢  ${tenant.industryType}',
+            ? 'Owner: ${tenant.ownerName}  •  ${tenant.industryType.label}  •  GSTIN: ${tenant.gstin}\n'
+                '${tenant.email}  •  ${tenant.phone}'
+            : 'Owner: ${tenant.ownerName}  •  ${tenant.industryType.label}',
         style: const TextStyle(fontSize: 12, height: 1.4),
       ),
       trailing: Row(
@@ -1207,18 +1230,28 @@ class _TenantListTile extends StatelessWidget {
                 tenant.isActive ? AppTheme.successGreen : Colors.amber,
           ),
           const SizedBox(width: 8),
-          IconButton(
-            icon: Icon(
-              tenant.isActive ? Icons.block : Icons.check_circle,
-              color: tenant.isActive
-                  ? AppTheme.errorRed
-                  : AppTheme.successGreen,
+          if (isPending)
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 14),
+              child: SizedBox(
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+            )
+          else
+            IconButton(
+              icon: Icon(
+                tenant.isActive ? Icons.block : Icons.check_circle,
+                color: tenant.isActive
+                    ? AppTheme.errorRed
+                    : AppTheme.successGreen,
+              ),
+              tooltip: tenant.isActive
+                  ? 'Suspend Store Account'
+                  : 'Activate Store Account',
+              onPressed: onToggle,
             ),
-            tooltip: tenant.isActive
-                ? 'Suspend Store Account'
-                : 'Activate Store Account',
-            onPressed: onToggle,
-          ),
         ],
       ),
     );

@@ -1,5 +1,7 @@
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../utils/pin_hasher.dart';
+
 class AppConfig {
   static const String appName      = 'BillSprout';
   static const String appSubtitle  = 'Smart ERP & Billing System';
@@ -17,38 +19,91 @@ class AppConfig {
   static const String storeAdminEmail = 'admin@lifesproutcare.com';
   static const String customerEmail   = 'patient@lifesproutcare.com';
 
-  /// Fallback PIN used only when no custom PIN has been saved.
+  /// Fallback PIN applied only on a device that has never had one set.
   static const String _fallbackPin = '1234';
-  static const String _pinKey = 'pharmacist_pin_v1';
+
+  /// v2 keys store a salt + hash. The v1 key held the PIN in plaintext and is
+  /// deleted during migration so the old value does not linger on disk.
+  static const String _legacyPinKey = 'pharmacist_pin_v1';
+  static const String _pinHashKey = 'pharmacist_pin_hash_v2';
+  static const String _pinSaltKey = 'pharmacist_pin_salt_v2';
 
   // ── Dynamic PIN management ────────────────────────────────────────────────
-  static String _cachedPin = _fallbackPin;
+  static String _pinHash = '';
+  static String _pinSalt = '';
 
-  /// Call once at startup to load the saved PIN from SharedPreferences.
+  /// True when the device is still on the shipped default PIN.
+  static bool _isDefaultPin = true;
+  static bool get isUsingDefaultPin => _isDefaultPin;
+
+  /// Call once at startup to load the stored PIN hash.
+  ///
+  /// Migrates a v1 plaintext PIN to a salted hash on first run, then erases it.
   static Future<void> loadPin() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      _cachedPin = prefs.getString(_pinKey) ?? _fallbackPin;
+
+      final storedHash = prefs.getString(_pinHashKey);
+      final storedSalt = prefs.getString(_pinSaltKey);
+
+      if (storedHash != null && storedSalt != null) {
+        _pinHash = storedHash;
+        _pinSalt = storedSalt;
+        _isDefaultPin = PinHasher.verify(
+          pin: _fallbackPin,
+          salt: _pinSalt,
+          expectedHash: _pinHash,
+        );
+        return;
+      }
+
+      final legacyPin = prefs.getString(_legacyPinKey);
+      final pinToStore = legacyPin ?? _fallbackPin;
+
+      _pinSalt = PinHasher.generateSalt();
+      _pinHash = PinHasher.hash(pinToStore, _pinSalt);
+      _isDefaultPin = pinToStore == _fallbackPin;
+
+      await prefs.setString(_pinHashKey, _pinHash);
+      await prefs.setString(_pinSaltKey, _pinSalt);
+      await prefs.remove(_legacyPinKey);
     } catch (_) {
-      _cachedPin = _fallbackPin;
+      // Last resort so the app still boots; the default PIN applies in memory.
+      _pinSalt = PinHasher.generateSalt();
+      _pinHash = PinHasher.hash(_fallbackPin, _pinSalt);
+      _isDefaultPin = true;
     }
   }
 
-  /// Current pharmacist PIN (loaded from SharedPreferences).
-  static String get pharmacistPin => _cachedPin;
+  /// Verify an entered PIN against the stored salted hash.
+  static bool verifyPharmacistPin(String pin) {
+    if (_pinHash.isEmpty) return false;
+    return PinHasher.verify(
+      pin: pin.trim(),
+      salt: _pinSalt,
+      expectedHash: _pinHash,
+    );
+  }
 
   /// Save a new PIN (4–6 digits). Returns true on success.
   static Future<bool> setPharmacistPin({
     required String currentPin,
     required String newPin,
   }) async {
-    if (currentPin != _cachedPin) return false;
-    if (newPin.length < 4 || newPin.length > 6) return false;
-    if (!RegExp(r'^\d+$').hasMatch(newPin)) return false;
+    if (!verifyPharmacistPin(currentPin)) return false;
+    if (PinHasher.validateFormat(newPin) != null) return false;
+
     try {
+      final salt = PinHasher.generateSalt();
+      final hash = PinHasher.hash(newPin, salt);
+
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setString(_pinKey, newPin);
-      _cachedPin = newPin;
+      await prefs.setString(_pinHashKey, hash);
+      await prefs.setString(_pinSaltKey, salt);
+
+      _pinHash = hash;
+      _pinSalt = salt;
+      _isDefaultPin = newPin == _fallbackPin;
       return true;
     } catch (_) {
       return false;
