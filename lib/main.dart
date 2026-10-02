@@ -12,6 +12,8 @@ import 'providers/company_profile_provider.dart';
 import 'providers/pharmacist_provider.dart';
 import 'providers/super_admin_provider.dart';
 import 'providers/subscription_provider.dart';
+import 'providers/paypal_config_provider.dart';
+import 'providers/paypal_transaction_provider.dart';
 import 'services/supabase_service.dart';
 import 'services/sync_service.dart';
 import 'services/ota_service.dart';
@@ -75,6 +77,8 @@ class BillSproutApp extends StatelessWidget {
         ),
         ChangeNotifierProvider(create: (_) => SuperAdminProvider()),
         ChangeNotifierProvider(create: (_) => SubscriptionProvider()),
+        ChangeNotifierProvider(create: (_) => PayPalConfigProvider()),
+        ChangeNotifierProvider(create: (_) => PayPalTransactionProvider()),
         ChangeNotifierProxyProvider<AuthProvider, SyncService>(
           create: (context) => SyncService(
             authProvider: Provider.of<AuthProvider>(context, listen: false),

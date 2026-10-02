@@ -85,6 +85,8 @@ class AccountingProvider extends ChangeNotifier {
         return PaymentMode.card;
       case 'upi':
         return PaymentMode.upi;
+      case 'paypal':
+        return PaymentMode.paypal;
       case 'split':
         return PaymentMode.split;
       case 'credit':

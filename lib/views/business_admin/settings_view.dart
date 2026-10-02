@@ -9,6 +9,7 @@ import '../../views/public/downloads_view.dart';
 import '../../views/public/demo_request_form.dart';
 import '../../widgets/subscription/subscription_status_widget.dart';
 import 'pharmacist_management_tab.dart';
+import 'paypal_settings_view.dart';
 
 class SettingsView extends StatefulWidget {
   const SettingsView({super.key});
@@ -24,7 +25,7 @@ class _SettingsViewState extends State<SettingsView>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 4, vsync: this);
+    _tabController = TabController(length: 5, vsync: this);
   }
 
   @override
@@ -50,6 +51,7 @@ class _SettingsViewState extends State<SettingsView>
                 Tab(icon: Icon(Icons.badge), text: 'Pharmacists'),
                 Tab(icon: Icon(Icons.security), text: 'Device PIN'),
                 Tab(icon: Icon(Icons.store), text: 'Branch Management'),
+                Tab(icon: Icon(Icons.payment), text: 'PayPal'),
                 Tab(icon: Icon(Icons.workspace_premium), text: 'Subscription'),
               ],
             ),
@@ -61,6 +63,7 @@ class _SettingsViewState extends State<SettingsView>
                 const PharmacistManagementTab(),
                 _PharmacistPinTab(),
                 _BranchManagementTab(),
+                const PayPalSettingsView(),
                 _SubscriptionManagementTab(),
               ],
             ),

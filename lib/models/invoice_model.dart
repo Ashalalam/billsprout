@@ -1,7 +1,7 @@
 import 'product_model.dart';
 import 'batch_model.dart';
 
-enum PaymentMode { cash, card, upi, split, credit }
+enum PaymentMode { cash, card, upi, paypal, split, credit }
 
 class InvoiceItem {
   final ProductModel product;

@@ -7,12 +7,14 @@ import '../../providers/inventory_provider.dart';
 import '../../providers/pos_provider.dart';
 import '../../providers/accounting_provider.dart';
 import '../../providers/company_profile_provider.dart';
+import '../../providers/paypal_transaction_provider.dart';
 import '../../services/sync_service.dart';
 import 'inventory_view.dart';
 import '../../services/printing_service.dart';
 import '../../services/support_service.dart';
 import '../common/pharmacist_pin_dialog.dart';
 import '../common/barcode_scanner_modal.dart';
+import '../../widgets/paypal_qr_code_widget.dart';
 
 class PosBillingView extends StatefulWidget {
   const PosBillingView({super.key});
@@ -751,6 +753,12 @@ class _PosBillingViewState extends State<PosBillingView> {
       pharmacistId = result.pharmacistId;
     }
 
+    // Handle PayPal payment with QR code
+    if (pos.paymentMode == PaymentMode.paypal) {
+      final paymentCompleted = await _handlePayPalPayment(context, pos);
+      if (!paymentCompleted) return; // User cancelled or payment failed
+    }
+
     final invoice = pos.checkout(
       isOnline: sync.isOnline,
       pinApprovedBy: pinBy,
@@ -820,6 +828,52 @@ class _PosBillingViewState extends State<PosBillingView> {
         ],
       ),
     );
+  }
+
+  /// Handle PayPal payment with QR code
+  Future<bool> _handlePayPalPayment(BuildContext context, PosProvider pos) async {
+    try {
+      // Generate temporary invoice number for QR code
+      final tempInvoiceNum = 'INV-${DateTime.now().millisecondsSinceEpoch.toString().substring(5)}';
+      
+      // Create transaction record (pending)
+      final txnProvider = Provider.of<PayPalTransactionProvider>(context, listen: false);
+      final transaction = await txnProvider.createTransaction(
+        invoiceNumber: tempInvoiceNum,
+        amount: pos.grandTotal,
+        currency: 'USD', // TODO: Make currency configurable
+      );
+      
+      // Show PayPal QR code dialog
+      final result = await showDialog<bool>(
+        context: context,
+        barrierDismissible: false,
+        builder: (ctx) => PayPalPaymentDialog(
+          amount: pos.grandTotal,
+          invoiceNumber: tempInvoiceNum,
+          currency: 'USD',
+        ),
+      );
+
+      // Update transaction status based on result
+      if (result == true) {
+        await txnProvider.completeTransaction(transaction.id);
+        return true;
+      } else {
+        await txnProvider.cancelTransaction(transaction.id);
+        return false;
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('PayPal payment error: $e'),
+            backgroundColor: AppTheme.errorRed,
+          ),
+        );
+      }
+      return false;
+    }
   }
 }
 

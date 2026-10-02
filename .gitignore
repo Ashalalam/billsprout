@@ -57,3 +57,9 @@ app.*.map.json
 # Node tooling used by the database verification scripts in tool/
 node_modules/
 package-lock.json
+
+# PayPal Credentials - NEVER commit these files
+**/paypal_credentials.json
+**/paypal_keys.dart
+**/.env.paypal
+**/paypal_config_local.dart
