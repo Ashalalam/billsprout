@@ -16,6 +16,7 @@ class PosProvider extends ChangeNotifier {
   String _branch = 'Main Store';
   String _billingType = 'retail';
   String? _customerGstin;
+  String _invoiceTemplate = 'tax_invoice'; // 'tax_invoice' or 'gst_bill'
 
   // ── Branch management ──────────────────────────────────────────────────────
   static const List<String> defaultBranches = [
@@ -40,6 +41,7 @@ class PosProvider extends ChangeNotifier {
   String get billingType  => _billingType;
   String? get customerGstin => _customerGstin;
   bool get isWholesale    => _billingType == 'wholesale';
+  String get invoiceTemplate => _invoiceTemplate;
 
   double get subtotal    => _cartItems.fold(0.0, (s, i) => s + i.lineTotal);
   double get totalTax    => _cartItems.fold(0.0, (s, i) => s + i.taxAmount);
@@ -117,6 +119,13 @@ class PosProvider extends ChangeNotifier {
     _customerGstin =
         (trimmed == null || trimmed.isEmpty) ? null : trimmed.toUpperCase();
     notifyListeners();
+  }
+
+  void setInvoiceTemplate(String template) {
+    if (template == 'tax_invoice' || template == 'gst_bill') {
+      _invoiceTemplate = template;
+      notifyListeners();
+    }
   }
 
   void _repriceCart() {

@@ -21,6 +21,14 @@ class CompanyProfile {
   final String bankName;
   final String accountNumber;
   final String ifscCode;
+  
+  // NEW FIELDS for enhanced invoicing
+  final String? logoPath;           // Path to pharmacy logo image
+  final String? whatsappNumber;     // WhatsApp contact (can differ from phone)
+  final String? termsAndConditions; // Configurable invoice T&C
+  final String? bankBranch;         // Bank branch name
+  final String? authorizedSignatory;// Name for invoice signature
+  final String? panNumber;          // PAN number if required
 
   const CompanyProfile({
     this.pharmacyName    = 'My Pharmacy',
@@ -39,6 +47,13 @@ class CompanyProfile {
     this.bankName        = '',
     this.accountNumber   = '',
     this.ifscCode        = '',
+    // New fields with null defaults for backward compatibility
+    this.logoPath,
+    this.whatsappNumber,
+    this.termsAndConditions,
+    this.bankBranch,
+    this.authorizedSignatory,
+    this.panNumber,
   });
 
   bool get isConfigured =>
@@ -69,6 +84,12 @@ class CompanyProfile {
     String? bankName,
     String? accountNumber,
     String? ifscCode,
+    String? logoPath,
+    String? whatsappNumber,
+    String? termsAndConditions,
+    String? bankBranch,
+    String? authorizedSignatory,
+    String? panNumber,
   }) =>
       CompanyProfile(
         pharmacyName:  pharmacyName  ?? this.pharmacyName,
@@ -87,6 +108,12 @@ class CompanyProfile {
         bankName:      bankName      ?? this.bankName,
         accountNumber: accountNumber ?? this.accountNumber,
         ifscCode:      ifscCode      ?? this.ifscCode,
+        logoPath:      logoPath      ?? this.logoPath,
+        whatsappNumber: whatsappNumber ?? this.whatsappNumber,
+        termsAndConditions: termsAndConditions ?? this.termsAndConditions,
+        bankBranch:    bankBranch    ?? this.bankBranch,
+        authorizedSignatory: authorizedSignatory ?? this.authorizedSignatory,
+        panNumber:     panNumber     ?? this.panNumber,
       );
 
   Map<String, dynamic> toJson() => {
@@ -106,6 +133,12 @@ class CompanyProfile {
         'bankName':      bankName,
         'accountNumber': accountNumber,
         'ifscCode':      ifscCode,
+        'logoPath':      logoPath,
+        'whatsappNumber': whatsappNumber,
+        'termsAndConditions': termsAndConditions,
+        'bankBranch':    bankBranch,
+        'authorizedSignatory': authorizedSignatory,
+        'panNumber':     panNumber,
       };
 
   factory CompanyProfile.fromJson(Map<String, dynamic> j) => CompanyProfile(
@@ -125,6 +158,12 @@ class CompanyProfile {
         bankName:      j['bankName']      ?? '',
         accountNumber: j['accountNumber'] ?? '',
         ifscCode:      j['ifscCode']      ?? '',
+        logoPath:      j['logoPath'],
+        whatsappNumber: j['whatsappNumber'],
+        termsAndConditions: j['termsAndConditions'],
+        bankBranch:    j['bankBranch'],
+        authorizedSignatory: j['authorizedSignatory'],
+        panNumber:     j['panNumber'],
       );
 }
 

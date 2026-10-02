@@ -11,6 +11,10 @@ class InvoiceItem {
   double unitPrice;
   double taxPercent;
   double lineDiscount;    // Item-level discount amount (₹)
+  
+  // NEW FIELDS for enhanced invoicing
+  final String unit;      // Unit of measurement: 'Tablets', 'Capsules', 'ml', 'gm', etc.
+  double discountPercent; // Discount as percentage (for display on GST bills)
 
   InvoiceItem({
     required this.product,
@@ -20,6 +24,8 @@ class InvoiceItem {
     required this.unitPrice,
     required this.taxPercent,
     this.lineDiscount = 0.0,
+    this.unit = 'Unit',
+    this.discountPercent = 0.0,
   });
 
   /// Billed quantity only (free qty is not charged)
@@ -46,6 +52,8 @@ class InvoiceItem {
         'unitPrice': unitPrice,
         'taxPercent': taxPercent,
         'lineDiscount': lineDiscount,
+        'unit': unit,
+        'discountPercent': discountPercent,
       };
 
   factory InvoiceItem.fromJson(Map<String, dynamic> json) => InvoiceItem(
@@ -56,6 +64,8 @@ class InvoiceItem {
         unitPrice: (json['unitPrice'] as num).toDouble(),
         taxPercent: (json['taxPercent'] as num).toDouble(),
         lineDiscount: (json['lineDiscount'] as num? ?? 0).toDouble(),
+        unit: json['unit'] ?? 'Unit',
+        discountPercent: (json['discountPercent'] as num? ?? 0).toDouble(),
       );
 }
 
@@ -80,6 +90,16 @@ class InvoiceModel {
   /// Separate from [pharmacistPinApprovedBy], which is the display label.
   final String? authorizedPharmacistId;
 
+  // NEW FIELDS for enhanced invoicing
+  final DateTime? dueDate;           // Payment due date (for credit sales)
+  final String? lrNumber;            // Lorry Receipt Number (for transport)
+  final String? transportDetails;    // Transport company/vehicle details
+  final String? billingAddress;      // Separate billing address
+  final String? shippingAddress;     // Delivery/shipping address
+  final double cessAmount;           // Cess amount if applicable
+  final double otherCharges;         // Additional charges (packaging, etc.)
+  final String invoiceType;          // 'tax_invoice', 'gst_bill', 'estimate', 'purchase'
+
   InvoiceModel({
     required this.id,
     required this.invoiceNumber,
@@ -97,6 +117,15 @@ class InvoiceModel {
     this.billingType = 'retail',
     this.customerGstin,
     this.authorizedPharmacistId,
+    // New optional fields with defaults
+    this.dueDate,
+    this.lrNumber,
+    this.transportDetails,
+    this.billingAddress,
+    this.shippingAddress,
+    this.cessAmount = 0.0,
+    this.otherCharges = 0.0,
+    this.invoiceType = 'tax_invoice',
   });
 
   bool get isWholesale => billingType == 'wholesale';
@@ -111,7 +140,7 @@ class InvoiceModel {
   double get effectiveDiscount =>
       discountAmount > subtotal ? subtotal : discountAmount;
 
-  double get grandTotal => subtotal - effectiveDiscount;
+  double get grandTotal => subtotal - effectiveDiscount + cessAmount + otherCharges;
 
   /// Difference between the payable rupee amount and the computed total.
   /// Indian pharmacy invoices settle to the nearest rupee in cash.
@@ -204,6 +233,14 @@ class InvoiceModel {
         'billingType': billingType,
         'customerGstin': customerGstin,
         'authorizedPharmacistId': authorizedPharmacistId,
+        'dueDate': dueDate?.toIso8601String(),
+        'lrNumber': lrNumber,
+        'transportDetails': transportDetails,
+        'billingAddress': billingAddress,
+        'shippingAddress': shippingAddress,
+        'cessAmount': cessAmount,
+        'otherCharges': otherCharges,
+        'invoiceType': invoiceType,
       };
 
   factory InvoiceModel.fromJson(Map<String, dynamic> json) => InvoiceModel(
@@ -228,5 +265,13 @@ class InvoiceModel {
         billingType: json['billingType'] ?? 'retail',
         customerGstin: json['customerGstin'],
         authorizedPharmacistId: json['authorizedPharmacistId'],
+        dueDate: json['dueDate'] != null ? DateTime.parse(json['dueDate']) : null,
+        lrNumber: json['lrNumber'],
+        transportDetails: json['transportDetails'],
+        billingAddress: json['billingAddress'],
+        shippingAddress: json['shippingAddress'],
+        cessAmount: (json['cessAmount'] as num?)?.toDouble() ?? 0.0,
+        otherCharges: (json['otherCharges'] as num?)?.toDouble() ?? 0.0,
+        invoiceType: json['invoiceType'] ?? 'tax_invoice',
       );
 }

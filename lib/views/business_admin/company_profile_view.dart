@@ -30,6 +30,12 @@ class _CompanyProfileViewState extends State<CompanyProfileView> {
   late TextEditingController _bankCtrl;
   late TextEditingController _acNoCtrl;
   late TextEditingController _ifscCtrl;
+  late TextEditingController _whatsappCtrl;
+  late TextEditingController _panCtrl;
+  late TextEditingController _bankBranchCtrl;
+  late TextEditingController _termsCtrl;
+  late TextEditingController _signatoryCtrl;
+  late TextEditingController _logoPathCtrl;
   String _businessType = 'Retail';
   bool _saving = false;
 
@@ -53,6 +59,12 @@ class _CompanyProfileViewState extends State<CompanyProfileView> {
     _bankCtrl      = TextEditingController(text: p.bankName);
     _acNoCtrl      = TextEditingController(text: p.accountNumber);
     _ifscCtrl      = TextEditingController(text: p.ifscCode);
+    _whatsappCtrl  = TextEditingController(text: p.whatsappNumber);
+    _panCtrl       = TextEditingController(text: p.panNumber);
+    _bankBranchCtrl = TextEditingController(text: p.bankBranch);
+    _termsCtrl     = TextEditingController(text: p.termsAndConditions);
+    _signatoryCtrl = TextEditingController(text: p.authorizedSignatory);
+    _logoPathCtrl  = TextEditingController(text: p.logoPath);
     _businessType  = p.businessType;
   }
 
@@ -61,7 +73,8 @@ class _CompanyProfileViewState extends State<CompanyProfileView> {
     for (final c in [_nameCtrl, _ownerCtrl, _addressCtrl, _cityCtrl,
         _stateCtrl, _pinCtrl, _gstinCtrl, _dlCtrl, _phoneCtrl,
         _altPhoneCtrl, _emailCtrl, _stateCodeCtrl, _bankCtrl,
-        _acNoCtrl, _ifscCtrl]) {
+        _acNoCtrl, _ifscCtrl, _whatsappCtrl, _panCtrl, _bankBranchCtrl,
+        _termsCtrl, _signatoryCtrl, _logoPathCtrl]) {
       c.dispose();
     }
     super.dispose();
@@ -90,6 +103,12 @@ class _CompanyProfileViewState extends State<CompanyProfileView> {
       bankName:      _bankCtrl.text.trim(),
       accountNumber: _acNoCtrl.text.trim(),
       ifscCode:      _ifscCtrl.text.trim().toUpperCase(),
+      whatsappNumber: _whatsappCtrl.text.trim(),
+      panNumber:     _panCtrl.text.trim().toUpperCase(),
+      bankBranch:    _bankBranchCtrl.text.trim(),
+      termsAndConditions: _termsCtrl.text.trim(),
+      authorizedSignatory: _signatoryCtrl.text.trim(),
+      logoPath:      _logoPathCtrl.text.trim(),
     ));
 
     if (!mounted) return;
@@ -212,10 +231,28 @@ class _CompanyProfileViewState extends State<CompanyProfileView> {
               Row(children: [
                 Expanded(child: _field(_phoneCtrl,    'Phone *', Icons.phone, required: true)),
                 const SizedBox(width: 10),
-                Expanded(child: _field(_altPhoneCtrl, 'Alt Phone / WhatsApp', Icons.phone_android)),
+                Expanded(child: _field(_whatsappCtrl, 'WhatsApp Number', Icons.whatsapp)),
               ]),
               _field(_emailCtrl, 'Email Address', Icons.email,
                   keyboardType: TextInputType.emailAddress),
+              const SizedBox(height: 20),
+
+              _section('Invoice & Bill Configuration'),
+              _field(_logoPathCtrl, 'Logo Path (optional)', Icons.image,
+                  hint: 'e.g. C:\\Users\\YourName\\Documents\\logo.png'),
+              const Text(
+                'Tip: Save your logo image file and paste the full path here. '
+                'The logo will appear on printed invoices and bills.',
+                style: TextStyle(fontSize: 11, color: AppTheme.textMuted),
+              ),
+              const SizedBox(height: 12),
+              _field(_panCtrl, 'PAN Number', Icons.credit_card,
+                  hint: 'e.g. AABCP1234C'),
+              _field(_signatoryCtrl, 'Authorized Signatory Name', Icons.person_outline,
+                  hint: 'Name to appear on invoices (default: Authorised Signatory)'),
+              _field(_termsCtrl, 'Terms & Conditions', Icons.description,
+                  hint: 'E.g.: Goods once sold are not returnable. Payment due within 7 days.',
+                  maxLines: 3),
               const SizedBox(height: 20),
 
               _section('Bank Details (for invoices)'),
@@ -225,6 +262,8 @@ class _CompanyProfileViewState extends State<CompanyProfileView> {
                 const SizedBox(width: 10),
                 Expanded(child: _field(_ifscCtrl,  'IFSC Code',      Icons.code)),
               ]),
+              _field(_bankBranchCtrl, 'Branch Name', Icons.location_on,
+                  hint: 'e.g. Main Branch, Mumbai');
               const SizedBox(height: 28),
 
               SizedBox(
@@ -276,16 +315,19 @@ class _CompanyProfileViewState extends State<CompanyProfileView> {
     String? hint,
     TextInputType? keyboardType,
     String? Function(String?)? validator,
+    int maxLines = 1,
   }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: TextFormField(
         controller: ctrl,
         keyboardType: keyboardType,
+        maxLines: maxLines,
         decoration: InputDecoration(
           labelText: label,
           hintText: hint,
           prefixIcon: Icon(icon),
+          alignLabelWithHint: maxLines > 1,
         ),
         validator: validator ??
             (required

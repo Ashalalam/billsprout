@@ -628,6 +628,36 @@ class _PosBillingViewState extends State<PosBillingView> {
           );
         }).toList()),
         const SizedBox(height: 12),
+        // Invoice Template Selector
+        Row(
+          children: [
+            const Icon(Icons.description_outlined, size: 16, color: AppTheme.primaryBlue),
+            const SizedBox(width: 6),
+            const Text('Invoice Type:', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+            const SizedBox(width: 8),
+            Expanded(
+              child: DropdownButton<String>(
+                value: pos.invoiceTemplate,
+                isDense: true,
+                isExpanded: true,
+                items: const [
+                  DropdownMenuItem(
+                    value: 'tax_invoice',
+                    child: Text('TAX INVOICE (Customer)', style: TextStyle(fontSize: 12)),
+                  ),
+                  DropdownMenuItem(
+                    value: 'gst_bill',
+                    child: Text('GST BILL (B2B Detailed)', style: TextStyle(fontSize: 12)),
+                  ),
+                ],
+                onChanged: (template) {
+                  if (template != null) pos.setInvoiceTemplate(template);
+                },
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
         // PIN warning
         if (pos.requiresPharmacistPin)
           Container(
@@ -767,10 +797,14 @@ class _PosBillingViewState extends State<PosBillingView> {
           IconButton(
             icon: const Icon(Icons.print, color: AppTheme.primaryBlue),
             tooltip: 'Print PDF',
-            onPressed: () => PrintingService.printInvoice(
-              invoice,
-              profile: context.read<CompanyProfileProvider>().profile,
-            ),
+            onPressed: () {
+              final provider = context.read<PosProvider>();
+              PrintingService.printInvoice(
+                invoice,
+                profile: context.read<CompanyProfileProvider>().profile,
+                templateType: provider.invoiceTemplate,
+              );
+            },
           ),
           ElevatedButton.icon(
             style: ElevatedButton.styleFrom(
