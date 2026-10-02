@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/ledger_entry_model.dart';
 import '../models/invoice_model.dart';
 
@@ -35,6 +36,76 @@ class AccountingProvider extends ChangeNotifier {
 
   AccountingProvider() {
     _seedSampleLedger();
+    _loadSalesFromDatabase();
+  }
+
+  // ── Load sales from database ──────────────────────────────────────────────
+  Future<void> _loadSalesFromDatabase() async {
+    try {
+      final supabase = Supabase.instance.client;
+      
+      // Load basic invoice data for dashboard
+      final response = await supabase
+          .from('sales_invoices')
+          .select('id, invoice_number, invoice_date, customer_name, customer_phone, subtotal, total_tax, discount_amount, grand_total, payment_mode')
+          .order('invoice_date', ascending: false)
+          .limit(100);
+      
+      // Convert to simple invoices for dashboard display
+      // Note: These are simplified invoices without full product/batch details
+      // Full details would require complex joins and model reconstruction
+      final invoices = (response as List).map<InvoiceModel>((row) {
+        return InvoiceModel(
+          id: row['id'] ?? '',
+          invoiceNumber: row['invoice_number'] ?? '',
+          timestamp: DateTime.parse(row['invoice_date'] ?? DateTime.now().toIso8601String()),
+          items: [], // Empty - dashboard only needs totals
+          customerName: row['customer_name'] ?? 'Walk-in Customer',
+          customerPhone: row['customer_phone'] ?? '',
+          paymentMode: _parsePaymentMode(row['payment_mode']),
+          discountAmount: (row['discount_amount'] ?? 0).toDouble(),
+        );
+      }).toList();
+      
+      _salesInvoices.addAll(invoices);
+      notifyListeners();
+      debugPrint('Loaded ${invoices.length} invoices from database for dashboard');
+    } catch (e) {
+      debugPrint('Error loading sales from database: $e');
+      // Non-fatal - app can continue with empty dashboard
+    }
+  }
+
+  PaymentMode _parsePaymentMode(String? mode) {
+    if (mode == null) return PaymentMode.cash;
+    switch (mode.toLowerCase()) {
+      case 'cash':
+        return PaymentMode.cash;
+      case 'card':
+        return PaymentMode.card;
+      case 'upi':
+        return PaymentMode.upi;
+      case 'split':
+        return PaymentMode.split;
+      case 'credit':
+        return PaymentMode.credit;
+      default:
+        return PaymentMode.cash;
+    }
+  }
+
+  // Method to manually add invoices from sync service
+  void loadInvoicesFromCache(List<InvoiceModel> invoices) {
+    _salesInvoices.clear();
+    _salesInvoices.addAll(invoices);
+    notifyListeners();
+    debugPrint('Loaded ${_salesInvoices.length} invoices into accounting provider');
+  }
+
+  // Method to refresh data manually
+  Future<void> refreshSalesData() async {
+    // Trigger reload via POS provider
+    notifyListeners();
   }
 
   // ── Invoice sale ──────────────────────────────────────────────────────────
