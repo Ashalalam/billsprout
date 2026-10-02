@@ -61,5 +61,6 @@ package-lock.json
 # PayPal Credentials - NEVER commit these files
 **/paypal_credentials.json
 **/paypal_keys.dart
+MY_PAYPAL_CREDENTIALS.md
 **/.env.paypal
 **/paypal_config_local.dart
