@@ -44,16 +44,14 @@ class AccountingProvider extends ChangeNotifier {
     try {
       final supabase = Supabase.instance.client;
       
-      // Load basic invoice data for dashboard
+      // Load from 'sales' table with correct column names
       final response = await supabase
-          .from('sales_invoices')
-          .select('id, invoice_number, invoice_date, customer_name, customer_phone, subtotal, total_tax, discount_amount, grand_total, payment_mode')
+          .from('sales')
+          .select('id, invoice_number, invoice_date, customer_name, customer_phone, subtotal, total_gst, discount_amount, grand_total, payment_mode')
           .order('invoice_date', ascending: false)
           .limit(100);
       
       // Convert to simple invoices for dashboard display
-      // Note: These are simplified invoices without full product/batch details
-      // Full details would require complex joins and model reconstruction
       final invoices = (response as List).map<InvoiceModel>((row) {
         return InvoiceModel(
           id: row['id'] ?? '',
@@ -69,9 +67,9 @@ class AccountingProvider extends ChangeNotifier {
       
       _salesInvoices.addAll(invoices);
       notifyListeners();
-      debugPrint('Loaded ${invoices.length} invoices from database for dashboard');
+      debugPrint('✅ Loaded ${invoices.length} invoices from database for dashboard');
     } catch (e) {
-      debugPrint('Error loading sales from database: $e');
+      debugPrint('⚠️ Error loading sales from database: $e');
       // Non-fatal - app can continue with empty dashboard
     }
   }
@@ -106,8 +104,45 @@ class AccountingProvider extends ChangeNotifier {
 
   // Method to refresh data manually
   Future<void> refreshSalesData() async {
-    // Trigger reload via POS provider
-    notifyListeners();
+    // Don't clear existing invoices - just reload from database and merge
+    try {
+      final supabase = Supabase.instance.client;
+      
+      // Load from 'sales' table with correct column names
+      final response = await supabase
+          .from('sales')
+          .select('id, invoice_number, invoice_date, customer_name, customer_phone, subtotal, total_gst, discount_amount, grand_total, payment_mode')
+          .order('invoice_date', ascending: false)
+          .limit(100);
+      
+      // Convert to invoices
+      final dbInvoices = (response as List).map<InvoiceModel>((row) {
+        return InvoiceModel(
+          id: row['id'] ?? '',
+          invoiceNumber: row['invoice_number'] ?? '',
+          timestamp: DateTime.parse(row['invoice_date'] ?? DateTime.now().toIso8601String()),
+          items: [],
+          customerName: row['customer_name'] ?? 'Walk-in Customer',
+          customerPhone: row['customer_phone'] ?? '',
+          paymentMode: _parsePaymentMode(row['payment_mode']),
+          discountAmount: (row['discount_amount'] ?? 0).toDouble(),
+        );
+      }).toList();
+      
+      // Merge: Keep existing in-memory invoices, add database ones that aren't already there
+      final existingIds = _salesInvoices.map((inv) => inv.id).toSet();
+      for (final dbInv in dbInvoices) {
+        if (!existingIds.contains(dbInv.id)) {
+          _salesInvoices.add(dbInv);
+        }
+      }
+      
+      notifyListeners();
+      debugPrint('✅ Refreshed dashboard: ${_salesInvoices.length} total invoices (${dbInvoices.length} from database)');
+    } catch (e) {
+      debugPrint('⚠️ Error refreshing sales data: $e');
+      // Keep existing in-memory data even if database load fails
+    }
   }
 
   // ── Invoice sale ──────────────────────────────────────────────────────────

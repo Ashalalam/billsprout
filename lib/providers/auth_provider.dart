@@ -28,8 +28,9 @@ class AuthProvider extends ChangeNotifier {
 
   // ── Demo login (no backend) ───────────────────────────────────────────────
   void login({required String email, required UserRole role}) {
-    _tenantId = role == UserRole.superAdmin ? null : 'comp_lifesprout_01';
-    _branchId = role == UserRole.superAdmin ? null : 'branch_main_01';
+    // Even in demo mode, set tenant/branch IDs so invoices can be saved
+    _tenantId = role == UserRole.superAdmin ? 'tenant_demo' : 'comp_lifesprout_01';
+    _branchId = role == UserRole.superAdmin ? 'branch_demo' : 'branch_main_01';
     _currentUser = AppUser(
       id: 'usr_${DateTime.now().millisecondsSinceEpoch}',
       name: role == UserRole.superAdmin
