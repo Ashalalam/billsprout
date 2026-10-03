@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:razorpay_flutter/razorpay_flutter.dart';
+import 'package:uuid/uuid.dart';
 import '../../models/subscription_plan_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/subscription_provider.dart';
@@ -356,15 +357,14 @@ class _PaymentCheckoutViewState extends State<PaymentCheckoutView> {
         throw Exception('User not authenticated. Please login first.');
       }
 
-      // Use actual tenantId or generate a valid UUID for demo/testing
+      // Use actual tenantId or generate a valid UUID v4 for demo/testing
       String effectiveTenantId;
       if (currentUser.tenantId != null && currentUser.tenantId!.isNotEmpty) {
         effectiveTenantId = currentUser.tenantId!;
       } else {
-        // Generate a valid UUID v4 for demo mode
-        // Format: xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx
-        final random = DateTime.now().millisecondsSinceEpoch.toString();
-        effectiveTenantId = 'demo0000-0000-4000-8000-${random.padLeft(12, '0').substring(0, 12)}';
+        // Generate a proper UUID v4 for demo mode
+        const uuid = Uuid();
+        effectiveTenantId = uuid.v4();
         debugPrint('[Payment] Using demo tenant ID: $effectiveTenantId');
       }
 
@@ -433,13 +433,13 @@ class _PaymentCheckoutViewState extends State<PaymentCheckoutView> {
         throw Exception('Missing transaction or user information');
       }
 
-      // Use actual tenantId or generate a valid UUID for demo mode
+      // Use actual tenantId or generate a proper UUID v4 for demo mode
       String effectiveTenantId;
       if (currentUser.tenantId != null && currentUser.tenantId!.isNotEmpty) {
         effectiveTenantId = currentUser.tenantId!;
       } else {
-        final random = DateTime.now().millisecondsSinceEpoch.toString();
-        effectiveTenantId = 'demo0000-0000-4000-8000-${random.padLeft(12, '0').substring(0, 12)}';
+        const uuid = Uuid();
+        effectiveTenantId = uuid.v4();
       }
 
       // Complete payment
