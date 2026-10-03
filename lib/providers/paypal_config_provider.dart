@@ -1,10 +1,12 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import '../config/paypal_config.dart';
+import 'dart:html' as html show window;
 
 /// PayPal Configuration Provider
 /// 
-/// Loads PayPal credentials from .env file only (production mode).
+/// Loads PayPal credentials from .env file (desktop/mobile) or 
+/// JavaScript ENV_CONFIG (web).
 /// Credentials are read-only and cannot be changed via UI.
 class PayPalConfigProvider extends ChangeNotifier {
   String _clientId = '';
@@ -34,26 +36,50 @@ class PayPalConfigProvider extends ChangeNotifier {
     _loadConfiguration();
   }
 
-  /// Load PayPal configuration from .env file only
+  /// Load PayPal configuration from .env file (desktop/mobile) or ENV_CONFIG (web)
   Future<void> _loadConfiguration() async {
     try {
       _isLoading = true;
       notifyListeners();
 
-      // Load from .env file
-      if (dotenv.env.isNotEmpty) {
-        _clientId = dotenv.env['PAYPAL_CLIENT_ID'] ?? '';
-        _clientSecret = dotenv.env['PAYPAL_CLIENT_SECRET'] ?? '';
-        _paypalMeUsername = dotenv.env['PAYPAL_ME_USERNAME'] ?? '';
-        _merchantId = dotenv.env['PAYPAL_MERCHANT_ID'] ?? '';
-        _isSandboxMode = dotenv.env['PAYPAL_SANDBOX_MODE']?.toLowerCase() == 'true';
-
-        if (_clientId.isNotEmpty && _clientSecret.isNotEmpty) {
-          debugPrint('[PayPal] Loaded credentials from .env file');
-          debugPrint('[PayPal] Mode: ${_isSandboxMode ? "Sandbox (Testing)" : "Production (Live)"}');
-        } else {
-          debugPrint('[PayPal] WARNING: Credentials not found in .env file');
+      // Load from platform-specific source
+      if (kIsWeb) {
+        // Web: Load from JavaScript ENV_CONFIG
+        try {
+          final jsConfig = html.window as dynamic;
+          final envConfig = jsConfig['ENV_CONFIG'];
+          
+          if (envConfig != null) {
+            _clientId = envConfig['PAYPAL_CLIENT_ID'] ?? '';
+            _clientSecret = envConfig['PAYPAL_CLIENT_SECRET'] ?? '';
+            _paypalMeUsername = envConfig['PAYPAL_ME_USERNAME'] ?? '';
+            _merchantId = envConfig['PAYPAL_MERCHANT_ID'] ?? '';
+            _isSandboxMode = envConfig['PAYPAL_SANDBOX_MODE']?.toString().toLowerCase() == 'true';
+            
+            debugPrint('[PayPal Web] Loaded credentials from ENV_CONFIG');
+          } else {
+            debugPrint('[PayPal Web] WARNING: ENV_CONFIG not found in window');
+          }
+        } catch (e) {
+          debugPrint('[PayPal Web] Error loading from ENV_CONFIG: $e');
         }
+      } else {
+        // Desktop/Mobile: Load from .env file
+        if (dotenv.env.isNotEmpty) {
+          _clientId = dotenv.env['PAYPAL_CLIENT_ID'] ?? '';
+          _clientSecret = dotenv.env['PAYPAL_CLIENT_SECRET'] ?? '';
+          _paypalMeUsername = dotenv.env['PAYPAL_ME_USERNAME'] ?? '';
+          _merchantId = dotenv.env['PAYPAL_MERCHANT_ID'] ?? '';
+          _isSandboxMode = dotenv.env['PAYPAL_SANDBOX_MODE']?.toLowerCase() == 'true';
+
+          debugPrint('[PayPal] Loaded credentials from .env file');
+        }
+      }
+
+      if (_clientId.isNotEmpty && _clientSecret.isNotEmpty) {
+        debugPrint('[PayPal] Mode: ${_isSandboxMode ? "Sandbox (Testing)" : "Production (Live)"}');
+      } else {
+        debugPrint('[PayPal] WARNING: Credentials not configured');
       }
 
       // Update static config
