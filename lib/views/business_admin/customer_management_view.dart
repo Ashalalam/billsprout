@@ -502,9 +502,12 @@ class _CustomerManagementViewState extends State<CustomerManagementView> {
                 final auth = context.read<AuthProvider>();
                 final customerProvider = context.read<CustomerProvider>();
 
+                // Generate a valid tenant ID if missing (for demo mode)
+                final tenantId = auth.currentUser?.tenantId ?? const Uuid().v4();
+
                 final newCustomer = CustomerModel(
                   id: customer?.id ?? const Uuid().v4(),
-                  tenantId: auth.currentUser?.tenantId ?? 'demo_tenant',
+                  tenantId: tenantId,
                   name: nameCtrl.text,
                   phone: phoneCtrl.text,
                   email: emailCtrl.text,

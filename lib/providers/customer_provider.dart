@@ -204,11 +204,17 @@ class CustomerProvider extends ChangeNotifier {
   /// Save (create or update) a customer
   Future<void> saveCustomer(CustomerModel customer) async {
     try {
-      final client = Supabase.instance.client;
-      await client
-          .from('customers')
-          .upsert(customer.toJson())
-          .eq('id', customer.id);
+      // Only sync to Supabase if we have proper tenant context
+      if (_auth.tenantId != null && _auth.tenantId!.isNotEmpty) {
+        final client = Supabase.instance.client;
+        await client
+            .from('customers')
+            .upsert(customer.toJson())
+            .eq('id', customer.id);
+        debugPrint('[Customer] ✅ Saved to Supabase: ${customer.name}');
+      } else {
+        debugPrint('[Customer] ℹ️  Saved locally only (no tenant context): ${customer.name}');
+      }
 
       // Update local list
       final index = _allCustomers.indexWhere((c) => c.id == customer.id);

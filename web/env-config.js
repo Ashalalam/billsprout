@@ -8,11 +8,10 @@ window.ENV_CONFIG = {
   SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp1dmJoanFhaW9ldnB1c25tb256Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTAzMjE2MDYsImV4cCI6MjEwNTg5NzYwNn0.D1bXZHEAnkdsSpWOeMpFlKOdhL-V8zpeficOneLPY0U',
   
   // PayPal Configuration
-  // Replace these with your actual PayPal credentials
-  PAYPAL_CLIENT_ID: 'your-paypal-client-id-here',
-  PAYPAL_CLIENT_SECRET: 'your-paypal-client-secret-here',
-  PAYPAL_MERCHANT_ID: '',
-  PAYPAL_ME_USERNAME: '',
+  PAYPAL_CLIENT_ID: 'AQOnHpG-Yd_zyEfRiHVNnA6pb27Nkd1R_phWNJWmHG6gA-EfrZopX1G2IejjMTOMjag63EcClDCb6hz5',
+  PAYPAL_CLIENT_SECRET: 'EKLkmbn9VqnxRzovsNFKUCv1yfQO0EdSEQOdXGI5nkw1alg4GaJ8bZBrtja_GJb15mJRQ1edskFM4TFw',
+  PAYPAL_MERCHANT_ID: 'your-merchant-id-here',
+  PAYPAL_ME_USERNAME: 'your-paypal-me-username',
   PAYPAL_SANDBOX_MODE: 'false',
   
   // App Configuration

@@ -1,117 +1,75 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import '../config/paypal_config.dart';
-import 'dart:html' as html show window;
 
-/// PayPal Configuration Provider
-/// 
-/// Loads PayPal credentials from .env file (desktop/mobile) or 
-/// JavaScript ENV_CONFIG (web).
-/// Credentials are read-only and cannot be changed via UI.
-class PayPalConfigProvider extends ChangeNotifier {
-  String _clientId = '';
-  String _clientSecret = '';
+/// Provider for PayPal configuration
+/// Loads PayPal credentials from environment variables
+class PayPalConfigProvider with ChangeNotifier {
   String _paypalMeUsername = '';
-  String _merchantId = '';
-  bool _isSandboxMode = true;
-  bool _isLoading = true;
-
-  // Getters
-  String get clientId => _clientId;
-  String get clientSecret => _clientSecret;
-  String get paypalMeUsername => _paypalMeUsername;
-  String get merchantId => _merchantId;
-  bool get isSandboxMode => _isSandboxMode;
-  bool get isLoading => _isLoading;
-
-  bool get isConfigured => 
-      _clientId.isNotEmpty && 
-      _clientSecret.isNotEmpty;
-
-  bool get isPayPalMeConfigured => _paypalMeUsername.isNotEmpty;
-
-  String get environmentName => _isSandboxMode ? 'Sandbox (Testing)' : 'Production (Live)';
+  String _paypalClientId = '';
+  String _paypalSecretKey = '';
+  bool _isSandbox = true;
 
   PayPalConfigProvider() {
-    _loadConfiguration();
+    _loadConfig();
   }
 
-  /// Load PayPal configuration from .env file (desktop/mobile) or ENV_CONFIG (web)
-  Future<void> _loadConfiguration() async {
+  String get paypalMeUsername => _paypalMeUsername;
+  String get paypalClientId => _paypalClientId;
+  String get paypalSecretKey => _paypalSecretKey;
+  bool get isSandbox => _isSandbox;
+
+  /// Load PayPal configuration from .env file
+  void _loadConfig() {
     try {
-      _isLoading = true;
-      notifyListeners();
-
-      // Load from platform-specific source
-      if (kIsWeb) {
-        // Web: Load from JavaScript ENV_CONFIG
-        try {
-          final jsConfig = html.window as dynamic;
-          final envConfig = jsConfig['ENV_CONFIG'];
-          
-          if (envConfig != null) {
-            _clientId = envConfig['PAYPAL_CLIENT_ID'] ?? '';
-            _clientSecret = envConfig['PAYPAL_CLIENT_SECRET'] ?? '';
-            _paypalMeUsername = envConfig['PAYPAL_ME_USERNAME'] ?? '';
-            _merchantId = envConfig['PAYPAL_MERCHANT_ID'] ?? '';
-            _isSandboxMode = envConfig['PAYPAL_SANDBOX_MODE']?.toString().toLowerCase() == 'true';
-            
-            debugPrint('[PayPal Web] Loaded credentials from ENV_CONFIG');
-          } else {
-            debugPrint('[PayPal Web] WARNING: ENV_CONFIG not found in window');
-          }
-        } catch (e) {
-          debugPrint('[PayPal Web] Error loading from ENV_CONFIG: $e');
-        }
-      } else {
-        // Desktop/Mobile: Load from .env file
-        if (dotenv.env.isNotEmpty) {
-          _clientId = dotenv.env['PAYPAL_CLIENT_ID'] ?? '';
-          _clientSecret = dotenv.env['PAYPAL_CLIENT_SECRET'] ?? '';
-          _paypalMeUsername = dotenv.env['PAYPAL_ME_USERNAME'] ?? '';
-          _merchantId = dotenv.env['PAYPAL_MERCHANT_ID'] ?? '';
-          _isSandboxMode = dotenv.env['PAYPAL_SANDBOX_MODE']?.toLowerCase() == 'true';
-
-          debugPrint('[PayPal] Loaded credentials from .env file');
-        }
+      _paypalMeUsername = dotenv.env['PAYPAL_ME_USERNAME'] ?? '';
+      _paypalClientId = dotenv.env['PAYPAL_CLIENT_ID'] ?? '';
+      _paypalSecretKey = dotenv.env['PAYPAL_SECRET_KEY'] ?? '';
+      _isSandbox = dotenv.env['PAYPAL_SANDBOX']?.toLowerCase() == 'true';
+      
+      if (kDebugMode) {
+        print('[PayPal Config] Loaded: Username=${_paypalMeUsername.isNotEmpty ? "✓" : "✗"}, '
+            'ClientID=${_paypalClientId.isNotEmpty ? "✓" : "✗"}, '
+            'Sandbox=$_isSandbox');
       }
-
-      if (_clientId.isNotEmpty && _clientSecret.isNotEmpty) {
-        debugPrint('[PayPal] Mode: ${_isSandboxMode ? "Sandbox (Testing)" : "Production (Live)"}');
-      } else {
-        debugPrint('[PayPal] WARNING: Credentials not configured');
-      }
-
-      // Update static config
-      if (isConfigured) {
-        PayPalConfig.setCredentials(
-          clientId: _clientId,
-          clientSecret: _clientSecret,
-          paypalMeUsername: _paypalMeUsername,
-          merchantId: _merchantId,
-          sandboxMode: _isSandboxMode,
-        );
-      }
-
-      _isLoading = false;
-      notifyListeners();
     } catch (e) {
-      debugPrint('[PayPal] Error loading configuration: $e');
-      _isLoading = false;
-      notifyListeners();
+      if (kDebugMode) {
+        print('[PayPal Config] Error loading config: $e');
+      }
     }
   }
 
-  /// Get masked client ID for display (security)
-  String get maskedClientId {
-    if (_clientId.isEmpty) return 'Not configured';
-    if (_clientId.length <= 8) return '••••••••';
-    return '${_clientId.substring(0, 4)}••••${_clientId.substring(_clientId.length - 4)}';
+  /// Generate PayPal.Me link for given amount
+  String generatePayPalMeLink(double amount) {
+    if (_paypalMeUsername.isEmpty) {
+      return 'https://www.paypal.com/paypalme';
+    }
+    return 'https://paypal.me/$_paypalMeUsername/${amount.toStringAsFixed(2)}';
   }
 
-  /// Get masked client secret for display (security)
-  String get maskedClientSecret {
-    if (_clientSecret.isEmpty) return 'Not configured';
-    return '••••••••••••••••';
+  /// Generate PayPal payment URL
+  String generatePaymentUrl(double amount, String currency) {
+    if (_paypalMeUsername.isNotEmpty) {
+      return generatePayPalMeLink(amount);
+    }
+    // Fallback to PayPal Send Money
+    return 'https://www.paypal.com/paypalme';
+  }
+
+  /// Update PayPal.Me username
+  void updatePayPalMeUsername(String username) {
+    _paypalMeUsername = username;
+    notifyListeners();
+  }
+
+  /// Update PayPal API credentials
+  void updateApiCredentials({
+    required String clientId,
+    required String secretKey,
+    required bool sandbox,
+  }) {
+    _paypalClientId = clientId;
+    _paypalSecretKey = secretKey;
+    _isSandbox = sandbox;
+    notifyListeners();
   }
 }

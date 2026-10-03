@@ -63,7 +63,8 @@ class BillSproutApp extends StatelessWidget {
           create: (context) => InventoryProvider(
             authProvider: Provider.of<AuthProvider>(context, listen: false),
           ),
-          update: (_, auth, previous) => previous ?? InventoryProvider(authProvider: auth),
+          update: (_, auth, previous) =>
+              (previous ?? InventoryProvider(authProvider: auth))..updateAuth(auth),
         ),
         ChangeNotifierProvider(create: (_) => PosProvider()),
         ChangeNotifierProvider(create: (_) => AccountingProvider()),

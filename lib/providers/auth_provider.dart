@@ -62,7 +62,9 @@ class AuthProvider extends ChangeNotifier {
           .signInWithPassword(email: email, password: password);
       final user = response.user;
       if (user == null) throw Exception('Sign-in failed — no user returned.');
-      _currentUser = _userFromSupabase(user, role);
+      
+      // Load user from Supabase with tenant context
+      _currentUser = await _userFromSupabaseAsync(user, role);
       notifyListeners();
     } on AuthException catch (e) {
       throw Exception(e.message);
@@ -116,7 +118,7 @@ class AuthProvider extends ChangeNotifier {
         throw Exception(
             'Account created! Check your email to confirm, then sign in.');
       }
-      _currentUser = _userFromSupabase(user, UserRole.customer);
+      _currentUser = await _userFromSupabaseAsync(user, UserRole.customer);
       notifyListeners();
     } on AuthException catch (e) {
       throw Exception(e.message);
@@ -149,7 +151,7 @@ class AuthProvider extends ChangeNotifier {
   }
 
   // ── Internal ──────────────────────────────────────────────────────────────
-  void _restoreSession() {
+  Future<void> _restoreSession() async {
     final session = SupabaseService().currentSession;
     if (session != null) {
       final meta     = session.user.userMetadata;
@@ -158,7 +160,7 @@ class AuthProvider extends ChangeNotifier {
         (r) => r.name == roleName,
         orElse: () => UserRole.businessAdmin,
       );
-      _currentUser = _userFromSupabase(session.user, role);
+      _currentUser = await _userFromSupabaseAsync(session.user, role);
       notifyListeners();
     }
   }
@@ -177,6 +179,92 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
+  /// Loads user from Supabase auth and fetches tenant context from public.users table
+  Future<AppUser> _userFromSupabaseAsync(User user, UserRole role) async {
+    final meta = user.userMetadata ?? {};
+    
+    // Try to get tenant_id and branch_id from metadata first
+    String? tenantId = meta['tenant_id'] as String? ?? meta['companyId'] as String?;
+    String? branchId = meta['branch_id'] as String?;
+    
+    // If metadata is missing tenant_id, fetch from public.users table
+    if (tenantId == null || tenantId.isEmpty) {
+      try {
+        final client = Supabase.instance.client;
+        final response = await client
+            .from('users')
+            .select('tenant_id, name, phone, role, license_no')
+            .eq('id', user.id)
+            .maybeSingle();
+        
+        if (response != null) {
+          tenantId = response['tenant_id'] as String?;
+          
+          // If we found tenant_id in the table, also get the default branch
+          if (tenantId != null && tenantId.isNotEmpty) {
+            final branchResponse = await client
+                .from('branches')
+                .select('id')
+                .eq('tenant_id', tenantId)
+                .eq('is_active', true)
+                .order('created_at')
+                .limit(1)
+                .maybeSingle();
+            
+            if (branchResponse != null) {
+              branchId = branchResponse['id'] as String?;
+            }
+          }
+          
+          // Update our local state
+          _tenantId = tenantId;
+          _branchId = branchId;
+          
+          if (kDebugMode) {
+            print('[Auth] Loaded tenant context from database: tenant=$tenantId, branch=$branchId');
+          }
+          
+          // Return user with data from public.users table
+          return AppUser(
+            id: user.id,
+            name: (response['name'] as String?) ?? user.email ?? 'User',
+            email: user.email ?? '',
+            phone: (response['phone'] as String?) ?? '',
+            role: role,
+            companyId: tenantId,
+            licenseNo: response['license_no'] as String?,
+          );
+        }
+      } catch (e) {
+        if (kDebugMode) {
+          print('[Auth] Error fetching tenant context from database: $e');
+        }
+      }
+    }
+    
+    // Fall back to metadata-only approach
+    _tenantId = tenantId;
+    _branchId = branchId;
+    
+    if (kDebugMode) {
+      print('[Auth] Using metadata tenant context: tenant=$tenantId, branch=$branchId');
+    }
+    
+    return AppUser(
+      id: user.id,
+      name: (meta['name'] as String?) ??
+          (meta['full_name'] as String?) ??
+          user.email ??
+          'User',
+      email: user.email ?? '',
+      phone: (meta['phone'] as String?) ?? '',
+      role: role,
+      companyId: tenantId,
+      licenseNo: meta['licenseNo'] as String?,
+    );
+  }
+
+  @Deprecated('Use _userFromSupabaseAsync instead')
   AppUser _userFromSupabase(User user, UserRole role) {
     final meta = user.userMetadata ?? {};
     _tenantId = meta['tenant_id'] as String? ?? meta['companyId'] as String?;

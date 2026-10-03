@@ -10,7 +10,7 @@ import '../services/supabase_service.dart';
 import '../providers/auth_provider.dart';
 
 class InventoryProvider extends ChangeNotifier {
-  final AuthProvider? authProvider; // Optional - for Supabase sync
+  AuthProvider authProvider; // Required - for Supabase sync
   
   final List<ProductModel> _products = [];
   final List<RtvNoteModel> _rtvNotes = [];
@@ -29,10 +29,20 @@ class InventoryProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  InventoryProvider({this.authProvider}) {
+  InventoryProvider({required this.authProvider}) {
     _loadFromDisk();
     // Auto-sync from Supabase if configured
-    if (authProvider != null && authProvider!.tenantId != null) {
+    if (authProvider.tenantId != null) {
+      _syncFromSupabase();
+    }
+  }
+
+  /// Update auth provider and re-sync if tenant context changed
+  void updateAuth(AuthProvider auth) {
+    final tenantChanged = authProvider.tenantId != auth.tenantId;
+    authProvider = auth;
+    if (tenantChanged && auth.tenantId != null) {
+      debugPrint('[Inventory] Tenant context updated, re-syncing from Supabase');
       _syncFromSupabase();
     }
   }
@@ -353,13 +363,13 @@ class InventoryProvider extends ChangeNotifier {
 
   /// Sync products from Supabase to local state
   Future<void> _syncFromSupabase() async {
-    if (authProvider == null || authProvider!.tenantId == null) return;
+    if (authProvider.tenantId == null) return;
     
     _isSyncing = true;
     notifyListeners();
     
     try {
-      final tenantId = authProvider!.tenantId!;
+      final tenantId = authProvider.tenantId!;
       final productsData = await SupabaseService().fetchProducts(tenantId);
       
       if (productsData.isNotEmpty) {
@@ -386,13 +396,13 @@ class InventoryProvider extends ChangeNotifier {
 
   /// Sync a single product to Supabase
   Future<void> _syncProductToSupabase(ProductModel product) async {
-    if (authProvider == null || authProvider!.tenantId == null) {
+    if (authProvider.tenantId == null) {
       debugPrint('[Inventory] Cannot sync product: missing tenant context');
       return;
     }
     
     try {
-      final tenantId = authProvider!.tenantId!;
+      final tenantId = authProvider.tenantId!;
       final productRow = _productToDbRow(product, tenantId);
       
       await SupabaseService().upsertProduct(productRow);
@@ -411,14 +421,14 @@ class InventoryProvider extends ChangeNotifier {
 
   /// Sync a single batch to Supabase
   Future<void> _syncBatchToSupabase(String productId, BatchModel batch) async {
-    if (authProvider == null || authProvider!.tenantId == null || authProvider!.branchId == null) {
+    if (authProvider.tenantId == null || authProvider.branchId == null) {
       debugPrint('[Inventory] Cannot sync batch: missing tenant/branch context');
       return;
     }
     
     try {
-      final tenantId = authProvider!.tenantId!;
-      final branchId = authProvider!.branchId!;
+      final tenantId = authProvider.tenantId!;
+      final branchId = authProvider.branchId!;
       final batchRow = _batchToDbRow(batch, productId, tenantId, branchId);
       
       await SupabaseService().upsertBatch(batchRow);

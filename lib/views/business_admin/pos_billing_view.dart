@@ -1,5 +1,7 @@
 ﻿import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 import '../../config/app_theme.dart';
 import '../../config/responsive_layout.dart';
 import '../../models/invoice_model.dart';
@@ -7,6 +9,7 @@ import '../../providers/inventory_provider.dart';
 import '../../providers/pos_provider.dart';
 import '../../providers/accounting_provider.dart';
 import '../../providers/company_profile_provider.dart';
+import '../../providers/paypal_config_provider.dart';
 import '../../services/sync_service.dart';
 import 'inventory_view.dart';
 import '../../services/printing_service.dart';
@@ -840,56 +843,154 @@ class _PosBillingViewState extends State<PosBillingView> {
     );
   }
 
-  /// Handle PayPal payment (simplified - no QR code required)
+  /// Handle PayPal payment with QR code
   Future<bool> _handlePayPalPayment(BuildContext context, PosProvider pos) async {
     try {
-      // For PayPal payments without PayPal.Me configured,
-      // just record it as a PayPal payment and proceed
-      // The actual payment verification will be done manually or via webhooks
-      
       if (!mounted) return false;
       
-      // Show confirmation dialog
+      final paypalConfig = Provider.of<PayPalConfigProvider>(context, listen: false);
+      final amount = pos.grandTotal.toStringAsFixed(2);
+      
+      // Generate PayPal.Me link or payment URL
+      String paymentUrl = '';
+      String paymentMethod = '';
+      
+      if (paypalConfig.paypalMeUsername.isNotEmpty) {
+        // Use PayPal.Me link (easiest for customers)
+        paymentUrl = 'https://paypal.me/${paypalConfig.paypalMeUsername}/$amount';
+        paymentMethod = 'PayPal.Me';
+      } else {
+        // Fallback to PayPal Send Money link
+        paymentUrl = 'https://www.paypal.com/paypalme';
+        paymentMethod = 'PayPal';
+      }
+      
+      // Show dialog with QR code and payment link
       final confirmed = await showDialog<bool>(
         context: context,
+        barrierDismissible: false,
         builder: (ctx) => AlertDialog(
-          title: const Row(
+          title: Row(
             children: [
-              Icon(Icons.payment, color: AppTheme.primaryBlue),
-              SizedBox(width: 8),
-              Text('PayPal Payment'),
-            ],
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Amount: \$${pos.grandTotal.toStringAsFixed(2)}',
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
+              Icon(Icons.qr_code_2, color: AppTheme.primaryBlue, size: 28),
+              SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('PayPal Payment', style: TextStyle(fontSize: 18)),
+                    Text(
+                      '\$${amount}',
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: AppTheme.primaryBlue,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(height: 16),
-              const Text(
-                'Customer will pay via PayPal.\n\n'
-                'Confirm to proceed with this transaction.',
-                style: TextStyle(color: AppTheme.textMuted),
-              ),
             ],
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // QR Code
+                Container(
+                  padding: EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    border: Border.all(color: Colors.grey[300]!),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: QrImageView(
+                    data: paymentUrl,
+                    version: QrVersions.auto,
+                    size: 200,
+                    backgroundColor: Colors.white,
+                  ),
+                ),
+                SizedBox(height: 16),
+                
+                // Instructions
+                Container(
+                  padding: EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.blue[50],
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Column(
+                    children: [
+                      Icon(Icons.phone_android, color: AppTheme.primaryBlue, size: 32),
+                      SizedBox(height: 8),
+                      Text(
+                        'Scan QR code with PayPal app',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      SizedBox(height: 4),
+                      Text(
+                        'Or tap the link below',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: AppTheme.textMuted,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
+                ),
+                
+                SizedBox(height: 12),
+                
+                // Payment link button
+                if (paypalConfig.paypalMeUsername.isNotEmpty)
+                  OutlinedButton.icon(
+                    onPressed: () {
+                      // Copy to clipboard or open in browser
+                      Clipboard.setData(ClipboardData(text: paymentUrl));
+                      ScaffoldMessenger.of(ctx).showSnackBar(
+                        SnackBar(
+                          content: Text('Payment link copied!'),
+                          duration: Duration(seconds: 2),
+                        ),
+                      );
+                    },
+                    icon: Icon(Icons.copy, size: 16),
+                    label: Text('Copy Payment Link'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppTheme.primaryBlue,
+                    ),
+                  ),
+                
+                SizedBox(height: 8),
+                Text(
+                  'Waiting for payment confirmation...',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: AppTheme.textMuted,
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+              ],
+            ),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Cancel'),
+              child: Text('Cancel'),
             ),
-            ElevatedButton(
+            ElevatedButton.icon(
               onPressed: () => Navigator.pop(ctx, true),
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.primaryBlue,
+                backgroundColor: Colors.green,
               ),
-              child: const Text('Confirm Payment'),
+              icon: Icon(Icons.check_circle, size: 20),
+              label: Text('Payment Received'),
             ),
           ],
         ),

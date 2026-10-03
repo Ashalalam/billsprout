@@ -1,5 +1,6 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:uuid/uuid.dart';
 import '../../config/app_theme.dart';
 import '../../config/responsive_layout.dart';
 import '../../models/product_model.dart';
@@ -908,7 +909,7 @@ class _InventoryViewState extends State<InventoryView> with SingleTickerProvider
 
                 // â”€â”€ Build product â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
                 final product = ProductModel(
-                  id: 'prod_${DateTime.now().millisecondsSinceEpoch}',
+                  id: const Uuid().v4(),
                   name: nameCtrl.text.trim(),
                   genericSalt: saltCtrl.text.trim(),
                   barcode: barcodeCtrl.text.trim().isEmpty
