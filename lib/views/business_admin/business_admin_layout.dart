@@ -9,6 +9,7 @@ import '../common/support_contact_modal.dart';
 import '../common/sync_status_badge.dart';
 import 'pos_billing_view.dart';
 import 'inventory_view.dart';
+import 'customer_management_view.dart';
 import 'schedule_h_register_view.dart';
 import 'gst_accounting_view.dart';
 import 'stock_transfer_view.dart';
@@ -33,6 +34,7 @@ class _BusinessAdminLayoutState extends State<BusinessAdminLayout> {
     _NavDest(Icons.dashboard_outlined,             'Dashboard'),
     _NavDest(Icons.point_of_sale,                  'POS Billing'),
     _NavDest(Icons.inventory_2_outlined,            'Inventory'),
+    _NavDest(Icons.people_outline,                  'Customers'),
     _NavDest(Icons.verified_outlined,               'Schedule H'),
     _NavDest(Icons.account_balance_outlined,        'GST'),
     _NavDest(Icons.warning_amber_outlined,          'Near Expiry'),
@@ -46,6 +48,7 @@ class _BusinessAdminLayoutState extends State<BusinessAdminLayout> {
     const SalesDashboardView(),
     const PosBillingView(),
     const InventoryView(),
+    const CustomerManagementView(),
     const ScheduleHRegisterView(),
     const GstAccountingView(),
     const NearExpiryView(),

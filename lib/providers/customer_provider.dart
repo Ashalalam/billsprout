@@ -19,12 +19,14 @@ class CustomerProvider extends ChangeNotifier {
   CustomerModel? _currentCustomer;
   final List<InvoiceModel> _customerInvoices = [];
   final List<Map<String, dynamic>> _purchaseHistory = [];
+  final List<CustomerModel> _allCustomers = [];
 
   bool _isLoading = false;
   String? _error;
 
   CustomerModel? get currentCustomer => _currentCustomer;
   List<InvoiceModel> get customerInvoices => List.unmodifiable(_customerInvoices);
+  List<CustomerModel> get allCustomers => List.unmodifiable(_allCustomers);
 
   /// Raw sale rows for this customer, newest first.
   List<Map<String, dynamic>> get purchaseHistory =>
@@ -169,6 +171,56 @@ class CustomerProvider extends ChangeNotifier {
       debugPrint('[Customer] refill request failed: $e');
       notifyListeners();
       return false;
+    }
+  }
+
+  /// Fetch all customers for the tenant (for admin management)
+  Future<void> fetchAllCustomers(String tenantId) async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      final service = SupabaseService();
+      final List<Map<String, dynamic>> results = await service.supabase
+          .from('customers')
+          .select()
+          .eq('tenant_id', tenantId)
+          .order('created_at', ascending: false);
+
+      _allCustomers
+        ..clear()
+        ..addAll(results.map((json) => CustomerModel.fromJson(json)));
+    } catch (e) {
+      _error = SupabaseService.describeError(e);
+      debugPrint('[Customer] fetchAllCustomers failed: $e');
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  /// Save (create or update) a customer
+  Future<void> saveCustomer(CustomerModel customer) async {
+    try {
+      final service = SupabaseService();
+      await service.supabase
+          .from('customers')
+          .upsert(customer.toJson())
+          .eq('id', customer.id);
+
+      // Update local list
+      final index = _allCustomers.indexWhere((c) => c.id == customer.id);
+      if (index >= 0) {
+        _allCustomers[index] = customer;
+      } else {
+        _allCustomers.add(customer);
+      }
+      notifyListeners();
+    } catch (e) {
+      _error = SupabaseService.describeError(e);
+      debugPrint('[Customer] saveCustomer failed: $e');
+      rethrow;
     }
   }
 }
