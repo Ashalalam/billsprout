@@ -77,6 +77,25 @@ class InventoryProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Reduce stock quantity for a sale (called after POS checkout).
+  void reduceStockForSale({
+    required String productId,
+    required String batchId,
+    required int quantity,
+  }) {
+    final pIdx = _products.indexWhere((p) => p.id == productId);
+    if (pIdx < 0) return;
+    final bIdx = _products[pIdx].batches.indexWhere((b) => b.id == batchId);
+    if (bIdx < 0) return;
+    
+    final batch = _products[pIdx].batches[bIdx];
+    batch.stockCount = (batch.stockCount - quantity).clamp(0, batch.stockCount);
+    
+    _saveToDisk();
+    notifyListeners();
+    debugPrint('[Inventory] Reduced stock for ${_products[pIdx].name} batch ${batch.batchNumber}: -$quantity (now: ${batch.stockCount})');
+  }
+
   List<ProductModel> searchProducts(String query) {
     if (query.trim().isEmpty) return _products;
     final q = query.toLowerCase().trim();

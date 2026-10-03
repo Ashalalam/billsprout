@@ -764,6 +764,18 @@ class _PosBillingViewState extends State<PosBillingView> {
       pinApprovedBy: pinBy,
       authorizedPharmacistId: pharmacistId,
     );
+    
+    // Update inventory stock counts to reflect the sale
+    final inventory = Provider.of<InventoryProvider>(context, listen: false);
+    for (final item in invoice.items) {
+      final totalDispensed = item.quantity + item.freeQuantity;
+      inventory.reduceStockForSale(
+        productId: item.product.id,
+        batchId: item.batch.id,
+        quantity: totalDispensed,
+      );
+    }
+    
     sync.queueInvoiceForSync(invoice);
     accounting.recordInvoiceSale(invoice);
     _discountCtrl.clear();
