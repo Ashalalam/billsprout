@@ -7,14 +7,12 @@ import '../../providers/inventory_provider.dart';
 import '../../providers/pos_provider.dart';
 import '../../providers/accounting_provider.dart';
 import '../../providers/company_profile_provider.dart';
-import '../../providers/paypal_transaction_provider.dart';
 import '../../services/sync_service.dart';
 import 'inventory_view.dart';
 import '../../services/printing_service.dart';
 import '../../services/support_service.dart';
 import '../common/pharmacist_pin_dialog.dart';
 import '../common/barcode_scanner_modal.dart';
-import '../../widgets/paypal_qr_code_widget.dart';
 
 class PosBillingView extends StatefulWidget {
   const PosBillingView({super.key});
@@ -842,39 +840,62 @@ class _PosBillingViewState extends State<PosBillingView> {
     );
   }
 
-  /// Handle PayPal payment with QR code
+  /// Handle PayPal payment (simplified - no QR code required)
   Future<bool> _handlePayPalPayment(BuildContext context, PosProvider pos) async {
     try {
-      // Generate temporary invoice number for QR code
-      final tempInvoiceNum = 'INV-${DateTime.now().millisecondsSinceEpoch.toString().substring(5)}';
+      // For PayPal payments without PayPal.Me configured,
+      // just record it as a PayPal payment and proceed
+      // The actual payment verification will be done manually or via webhooks
       
-      // Create transaction record (pending)
-      final txnProvider = Provider.of<PayPalTransactionProvider>(context, listen: false);
-      final transaction = await txnProvider.createTransaction(
-        invoiceNumber: tempInvoiceNum,
-        amount: pos.grandTotal,
-        currency: 'USD', // TODO: Make currency configurable
-      );
+      if (!mounted) return false;
       
-      // Show PayPal QR code dialog
-      final result = await showDialog<bool>(
+      // Show confirmation dialog
+      final confirmed = await showDialog<bool>(
         context: context,
-        barrierDismissible: false,
-        builder: (ctx) => PayPalPaymentDialog(
-          amount: pos.grandTotal,
-          invoiceNumber: tempInvoiceNum,
-          currency: 'USD',
+        builder: (ctx) => AlertDialog(
+          title: const Row(
+            children: [
+              Icon(Icons.payment, color: AppTheme.primaryBlue),
+              SizedBox(width: 8),
+              Text('PayPal Payment'),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Amount: \$${pos.grandTotal.toStringAsFixed(2)}',
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Customer will pay via PayPal.\n\n'
+                'Confirm to proceed with this transaction.',
+                style: TextStyle(color: AppTheme.textMuted),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.primaryBlue,
+              ),
+              child: const Text('Confirm Payment'),
+            ),
+          ],
         ),
       );
 
-      // Update transaction status based on result
-      if (result == true) {
-        await txnProvider.completeTransaction(transaction.id);
-        return true;
-      } else {
-        await txnProvider.cancelTransaction(transaction.id);
-        return false;
-      }
+      return confirmed ?? false;
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

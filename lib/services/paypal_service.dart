@@ -252,17 +252,22 @@ class PayPalService {
     }
   }
 
-  /// Generate PayPal.Me QR code data
+  /// Generate PayPal.Me QR code data or general PayPal payment link
   static String generatePayPalMeUrl({
     required double amount,
     required String invoiceNumber,
   }) {
-    if (!PayPalConfig.isPayPalMeConfigured) {
-      throw Exception('PayPal.Me username not configured');
+    // If PayPal.Me username is configured, use it for QR code
+    if (PayPalConfig.isPayPalMeConfigured) {
+      final note = 'Invoice: $invoiceNumber';
+      return PayPalConfig.getPayPalMeUrl(amount, note: note);
     }
-
-    final note = 'Invoice: $invoiceNumber';
-    return PayPalConfig.getPayPalMeUrl(amount, note: note);
+    
+    // If only Client ID/Secret available, return generic PayPal payment link
+    // User will need to log in to PayPal to complete payment
+    final amountStr = amount.toStringAsFixed(2);
+    final encodedNote = Uri.encodeComponent('Invoice: $invoiceNumber');
+    return 'https://www.paypal.com/cgi-bin/webscr?cmd=_xclick&business=&amount=$amountStr&item_name=$encodedNote';
   }
 
   /// Clear access token (for logout/credential change)
