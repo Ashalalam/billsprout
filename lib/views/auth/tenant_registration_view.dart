@@ -572,8 +572,8 @@ class _TenantRegistrationViewState extends State<TenantRegistrationView> {
       final tenantId = uuid.v4();
       final branchId = uuid.v4();
 
-      // Step 2: Create tenant (company) record
-      await supabase.client.from('tenants').insert({
+      // Step 2: Create tenant (company) record using upsertCompany
+      await supabase.upsertCompany({
         'id': tenantId,
         'company_name': _pharmacyNameCtrl.text.trim(),
         'drug_license_no': _pharmacyLicenseCtrl.text.trim(),
@@ -592,7 +592,7 @@ class _TenantRegistrationViewState extends State<TenantRegistrationView> {
       });
 
       // Step 3: Create main branch
-      await supabase.client.from('branches').insert({
+      await supabase.upsertBranch({
         'id': branchId,
         'tenant_id': tenantId,
         'branch_name': 'Main Branch',
@@ -607,7 +607,7 @@ class _TenantRegistrationViewState extends State<TenantRegistrationView> {
       });
 
       // Step 4: Create user profile with tenant/branch association
-      await supabase.client.from('users').insert({
+      await supabase.insertUser({
         'id': userId,
         'tenant_id': tenantId,
         'branch_id': branchId,
@@ -619,17 +619,13 @@ class _TenantRegistrationViewState extends State<TenantRegistrationView> {
       });
 
       // Step 5: Update user metadata with tenant/branch IDs
-      await supabase.client.auth.updateUser(
-        UserAttributes(
-          data: {
-            'tenant_id': tenantId,
-            'branch_id': branchId,
-            'name': _adminNameCtrl.text.trim(),
-            'phone': _adminPhoneCtrl.text.trim(),
-            'role': 'businessAdmin',
-          },
-        ),
-      );
+      await supabase.updateUserMetadata({
+        'tenant_id': tenantId,
+        'branch_id': branchId,
+        'name': _adminNameCtrl.text.trim(),
+        'phone': _adminPhoneCtrl.text.trim(),
+        'role': 'businessAdmin',
+      });
 
       // Success! Navigate to login or show success message
       if (mounted) {

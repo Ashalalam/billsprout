@@ -127,8 +127,19 @@ class AuthProvider extends ChangeNotifier {
         (r) => r.name == roleName,
         orElse: () => UserRole.businessAdmin,
       );
-      _currentUser = _userFromSupabase(session.user, role);
-      notifyListeners();
+      
+      try {
+        _currentUser = _userFromSupabase(session.user, role);
+        notifyListeners();
+      } catch (e) {
+        // Session restore failed (likely missing tenant context from old demo mode)
+        // Sign out and force re-authentication
+        debugPrint('[Auth] Session restore failed: $e - signing out');
+        SupabaseService().signOut().catchError((_) {});
+        _currentUser = null;
+        _isPinVerified = false;
+        notifyListeners();
+      }
     }
   }
 
