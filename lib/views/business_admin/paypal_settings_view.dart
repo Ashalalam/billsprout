@@ -349,16 +349,17 @@ class _PayPalSettingsViewState extends State<PayPalSettingsView> {
               Icon(Icons.info_outline, color: AppTheme.primaryBlue),
               const SizedBox(width: 8),
               const Text(
-                'Secure Credential Storage',
+                'Configuration Options',
                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
               ),
             ],
           ),
           const SizedBox(height: 8),
           const Text(
-            '🔒 Your credentials are encrypted and stored locally on this device only.\n'
-            '🚫 Never shared or uploaded anywhere.\n'
-            '✅ Safe to use sandbox (testing) and production credentials.',
+            '📝 Option 1: Configure here (stored encrypted on device)\n'
+            '🔧 Option 2: Use .env file (recommended for production)\n'
+            '🔒 Your credentials are never shared or uploaded\n'
+            '📖 See PAYPAL_SETUP.md for detailed setup guide',
             style: TextStyle(fontSize: 12, height: 1.5),
           ),
         ],

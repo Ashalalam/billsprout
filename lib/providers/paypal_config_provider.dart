@@ -1,10 +1,12 @@
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import '../config/paypal_config.dart';
 
 /// PayPal Configuration Provider
 /// 
 /// Manages PayPal credentials securely using SharedPreferences.
+/// On first run, loads credentials from .env file (production mode).
 /// Credentials are encrypted on device and never exposed in code.
 class PayPalConfigProvider extends ChangeNotifier {
   String _clientId = '';
@@ -35,6 +37,7 @@ class PayPalConfigProvider extends ChangeNotifier {
   }
 
   /// Load PayPal configuration from SharedPreferences
+  /// If not found, load from .env file (first run or reset)
   Future<void> _loadConfiguration() async {
     try {
       _isLoading = true;
@@ -42,11 +45,36 @@ class PayPalConfigProvider extends ChangeNotifier {
 
       final prefs = await SharedPreferences.getInstance();
 
+      // Try to load from SharedPreferences first
       _clientId = prefs.getString(PayPalConfig.keyClientId) ?? '';
       _clientSecret = prefs.getString(PayPalConfig.keyClientSecret) ?? '';
       _paypalMeUsername = prefs.getString(PayPalConfig.keyPayPalMeUsername) ?? '';
       _merchantId = prefs.getString(PayPalConfig.keyMerchantId) ?? '';
       _isSandboxMode = prefs.getBool(PayPalConfig.keySandboxMode) ?? true;
+
+      // If not configured in SharedPreferences, load from .env (first run)
+      if (!isConfigured && dotenv.env.isNotEmpty) {
+        final envClientId = dotenv.env['PAYPAL_CLIENT_ID'] ?? '';
+        final envClientSecret = dotenv.env['PAYPAL_CLIENT_SECRET'] ?? '';
+        final envPayPalMe = dotenv.env['PAYPAL_ME_USERNAME'] ?? '';
+        final envMerchantId = dotenv.env['PAYPAL_MERCHANT_ID'] ?? '';
+        final envSandboxMode = dotenv.env['PAYPAL_SANDBOX_MODE']?.toLowerCase() == 'true';
+
+        if (envClientId.isNotEmpty && envClientSecret.isNotEmpty) {
+          debugPrint('Loading PayPal credentials from .env file');
+          
+          // Save to SharedPreferences for future use
+          await saveConfiguration(
+            clientId: envClientId,
+            clientSecret: envClientSecret,
+            paypalMeUsername: envPayPalMe.isNotEmpty ? envPayPalMe : null,
+            merchantId: envMerchantId.isNotEmpty ? envMerchantId : null,
+            sandboxMode: envSandboxMode,
+          );
+          
+          return; // saveConfiguration already calls notifyListeners
+        }
+      }
 
       // Update static config
       if (isConfigured) {

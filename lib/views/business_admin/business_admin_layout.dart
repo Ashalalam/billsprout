@@ -275,28 +275,32 @@ class _BusinessAdminLayoutState extends State<BusinessAdminLayout> {
   Widget _desktopBody() {
     return Row(
       children: [
-        NavigationRail(
-          selectedIndex: _selectedIndex,
-          onDestinationSelected: (idx) => setState(() => _selectedIndex = idx),
-          labelType: NavigationRailLabelType.all,
-          selectedIconTheme:
-              const IconThemeData(color: AppTheme.primaryBlue, size: 24),
-          unselectedIconTheme:
-              const IconThemeData(color: Colors.grey, size: 20),
-          destinations: _destinations
-              .asMap()
-              .entries
-              .map((e) => NavigationRailDestination(
-                    icon: Icon(e.value.icon),
-                    selectedIcon: Icon(e.value.icon,
-                        color: e.key == 2
-                            ? AppTheme.errorRed
-                            : AppTheme.primaryBlue),
-                    label: Text(e.value.label,
-                        style: TextStyle(fontSize: 11)),
-                  ))
-              .toList(),
-          trailing: null,
+        SingleChildScrollView(
+          child: IntrinsicHeight(
+            child: NavigationRail(
+              selectedIndex: _selectedIndex,
+              onDestinationSelected: (idx) => setState(() => _selectedIndex = idx),
+              labelType: NavigationRailLabelType.all,
+              selectedIconTheme:
+                  const IconThemeData(color: AppTheme.primaryBlue, size: 24),
+              unselectedIconTheme:
+                  const IconThemeData(color: Colors.grey, size: 20),
+              destinations: _destinations
+                  .asMap()
+                  .entries
+                  .map((e) => NavigationRailDestination(
+                        icon: Icon(e.value.icon),
+                        selectedIcon: Icon(e.value.icon,
+                            color: e.key == 2
+                                ? AppTheme.errorRed
+                                : AppTheme.primaryBlue),
+                        label: Text(e.value.label,
+                            style: TextStyle(fontSize: 11)),
+                      ))
+                  .toList(),
+              trailing: null,
+            ),
+          ),
         ),
         const VerticalDivider(thickness: 1, width: 1),
         Expanded(child: _views[_selectedIndex]),

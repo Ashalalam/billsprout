@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'config/app_config.dart';
 import 'config/app_theme.dart';
 import 'models/user_model.dart';
@@ -24,6 +25,14 @@ import 'views/customer/customer_portal_view.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Load environment variables from .env file
+  try {
+    await dotenv.load(fileName: '.env');
+    debugPrint('[BillSprout] Environment variables loaded from .env');
+  } catch (e) {
+    debugPrint('[BillSprout] Warning: Could not load .env file: $e');
+  }
 
   // Load pharmacist PIN from SharedPreferences
   await AppConfig.loadPin();

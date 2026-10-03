@@ -52,6 +52,9 @@ dependencies:
   # PayPal integration (for both POS and subscriptions)
   http: ^1.2.0  # For PayPal REST API calls
   webview_flutter: ^4.4.2  # For PayPal web checkout
+  
+  # Environment variables
+  flutter_dotenv: ^5.2.1
 
   # Local persistence (offline queue — SharedPreferences, web-compatible)
   # sqflite removed: OfflineQueueService uses SharedPreferences which works on all platforms
@@ -73,6 +76,7 @@ flutter:
   assets:
     - assets/images/lifesprout_logo.jpg
     - assets/images/lifesprout_logo.png
+    - .env
 
 
   # To add assets to your application, add an assets section, like this:
