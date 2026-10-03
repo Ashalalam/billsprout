@@ -16,7 +16,7 @@ class PrintingService {
   }) async {
     final pdf = pw.Document();
 
-    // Load logo if available
+    // Load logo - try custom logo first, then fallback to default LifeSprout logo
     pw.ImageProvider? logoImage;
     if (profile.logoPath != null && profile.logoPath!.isNotEmpty) {
       try {
@@ -26,7 +26,17 @@ class PrintingService {
           logoImage = pw.MemoryImage(bytes);
         }
       } catch (e) {
-        // Logo loading failed, continue without logo
+        // Custom logo loading failed, try default logo
+      }
+    }
+    
+    // Fallback to bundled LifeSprout logo
+    if (logoImage == null) {
+      try {
+        final bytes = await rootBundle.load('assets/images/lifesprout_logo.png');
+        logoImage = pw.MemoryImage(bytes.buffer.asUint8List());
+      } catch (e) {
+        // Default logo also failed, continue without logo
       }
     }
 
@@ -571,7 +581,7 @@ class PrintingService {
   }) async {
     final pdf = pw.Document();
 
-    // Load logo if available
+    // Load logo - try custom logo first, then fallback to default LifeSprout logo
     pw.ImageProvider? logoImage;
     if (profile.logoPath != null && profile.logoPath!.isNotEmpty) {
       try {
@@ -581,7 +591,17 @@ class PrintingService {
           logoImage = pw.MemoryImage(bytes);
         }
       } catch (e) {
-        // Logo loading failed, continue without logo
+        // Custom logo loading failed, try default logo
+      }
+    }
+    
+    // Fallback to bundled LifeSprout logo
+    if (logoImage == null) {
+      try {
+        final bytes = await rootBundle.load('assets/images/lifesprout_logo.png');
+        logoImage = pw.MemoryImage(bytes.buffer.asUint8List());
+      } catch (e) {
+        // Default logo also failed, continue without logo
       }
     }
 

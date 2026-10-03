@@ -44,7 +44,7 @@ class _CompanyProfileViewState extends State<CompanyProfileView> {
     super.initState();
     final p =
         Provider.of<CompanyProfileProvider>(context, listen: false).profile;
-    _nameCtrl      = TextEditingController(text: p.pharmacyName == 'My Pharmacy' ? '' : p.pharmacyName);
+    _nameCtrl      = TextEditingController(text: p.pharmacyName == 'LifeSprout Care' ? '' : p.pharmacyName);
     _ownerCtrl     = TextEditingController(text: p.ownerName);
     _addressCtrl   = TextEditingController(text: p.address);
     _cityCtrl      = TextEditingController(text: p.city);

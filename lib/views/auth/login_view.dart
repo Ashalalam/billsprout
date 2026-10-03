@@ -8,7 +8,6 @@ import '../../providers/auth_provider.dart';
 import '../common/support_contact_modal.dart';
 import '../public/demo_request_form.dart';
 import '../public/pricing_section.dart';
-import 'tenant_registration_view.dart';
 
 class LoginView extends StatefulWidget {
   const LoginView({super.key});
@@ -70,7 +69,7 @@ class _LoginViewState extends State<LoginView>
     });
   }
 
-  // ── Sign In ────────────────────────────────────────────────────────────────
+  // â”€â”€ Sign In â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   Future<void> _handleLogin() async {
     final email    = _emailCtrl.text.trim();
     final password = _passwordCtrl.text;
@@ -89,7 +88,8 @@ class _LoginViewState extends State<LoginView>
     final auth = Provider.of<AuthProvider>(context, listen: false);
 
     if (!AppConfig.supabaseConfigured) {
-      setState(() => _errorMessage = 'Supabase not configured. Please contact administrator.');
+      await Future.delayed(const Duration(milliseconds: 500));
+      auth.login(email: email, role: _selectedRole);
       if (mounted) setState(() => _isLoading = false);
       return;
     }
@@ -110,7 +110,7 @@ class _LoginViewState extends State<LoginView>
     }
   }
 
-  // ── Customer Register ──────────────────────────────────────────────────────
+  // â”€â”€ Customer Register â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   Future<void> _handleRegister() async {
     final name     = _regNameCtrl.text.trim();
     final phone    = _regPhoneCtrl.text.trim();
@@ -155,7 +155,7 @@ class _LoginViewState extends State<LoginView>
             msg.toLowerCase().contains('confirm')) {
           setState(() {
             _successMessage =
-                '✅ Account created! Check your email to confirm, then sign in.';
+                'âœ… Account created! Check your email to confirm, then sign in.';
             _showRegister = false;
             _emailCtrl.text = email;
           });
@@ -175,7 +175,7 @@ class _LoginViewState extends State<LoginView>
     );
   }
 
-  // ── Desktop ────────────────────────────────────────────────────────────────
+  // â”€â”€ Desktop â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   Widget _wideLayout() {
     return Row(
       children: [
@@ -201,7 +201,7 @@ class _LoginViewState extends State<LoginView>
     );
   }
 
-  // ── Mobile ─────────────────────────────────────────────────────────────────
+  // â”€â”€ Mobile â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   Widget _narrowLayout() {
     return SingleChildScrollView(
       child: Column(
@@ -260,7 +260,7 @@ class _LoginViewState extends State<LoginView>
     );
   }
 
-  // ── Main form — switches between Sign In and Register ─────────────────────
+  // â”€â”€ Main form â€” switches between Sign In and Register â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   Widget _mainForm() {
     // When Customer is selected and register mode is on, show register form
     final isCustomer = _selectedRole == UserRole.customer;
@@ -283,11 +283,11 @@ class _LoginViewState extends State<LoginView>
         ),
         const SizedBox(height: 20),
 
-        // ── Role cards ─────────────────────────────────────────────────────
+        // â”€â”€ Role cards â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         _RoleCard(
           role: UserRole.businessAdmin,
           title: 'Business Admin & Staff',
-          subtitle: 'POS · FEFO Stock · GST · Regulatory',
+          subtitle: 'POS Â· FEFO Stock Â· GST Â· Regulatory',
           icon: Icons.store,
           selectedRole: _selectedRole,
           onTap: _onRoleSelected,
@@ -296,7 +296,7 @@ class _LoginViewState extends State<LoginView>
         _RoleCard(
           role: UserRole.superAdmin,
           title: 'Super Admin Portal',
-          subtitle: 'Global Tenants · Metrics · OTA Releases',
+          subtitle: 'Global Tenants Â· Metrics Â· OTA Releases',
           icon: Icons.admin_panel_settings,
           selectedRole: _selectedRole,
           onTap: _onRoleSelected,
@@ -305,14 +305,14 @@ class _LoginViewState extends State<LoginView>
         _RoleCard(
           role: UserRole.customer,
           title: 'Customer / Patient Portal',
-          subtitle: 'Invoice History · Refill Reminders · Rx Upload',
+          subtitle: 'Invoice History Â· Refill Reminders Â· Rx Upload',
           icon: Icons.person_pin,
           selectedRole: _selectedRole,
           onTap: _onRoleSelected,
         ),
         const SizedBox(height: 24),
 
-        // ── Sign In / Register tab strip (Customer portal only) ────────────
+        // â”€â”€ Sign In / Register tab strip (Customer portal only) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         if (isCustomer) ...[
           Container(
             decoration: BoxDecoration(
@@ -352,13 +352,13 @@ class _LoginViewState extends State<LoginView>
           const SizedBox(height: 20),
         ],
 
-        // ── Form area ──────────────────────────────────────────────────────
+        // â”€â”€ Form area â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         if (isCustomer && _showRegister)
           _registerForm()
         else
           _signInForm(),
 
-        // ── Feedback messages ──────────────────────────────────────────────
+        // â”€â”€ Feedback messages â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         if (_errorMessage != null) ...[
           const SizedBox(height: 12),
           _feedbackBanner(
@@ -370,7 +370,7 @@ class _LoginViewState extends State<LoginView>
               _successMessage!, AppTheme.successGreen, Icons.check_circle_outline),
         ],
 
-        // ── Demo hint ──────────────────────────────────────────────────────
+        // â”€â”€ Demo hint â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         if (!AppConfig.supabaseConfigured) ...[
           const SizedBox(height: 12),
           Container(
@@ -386,7 +386,7 @@ class _LoginViewState extends State<LoginView>
                 SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'Demo mode — enter any credentials to proceed.',
+                    'Demo mode â€” enter any credentials to proceed.',
                     style: TextStyle(
                         color: AppTheme.accentOrange,
                         fontSize: 11,
@@ -399,30 +399,6 @@ class _LoginViewState extends State<LoginView>
         ],
 
         const SizedBox(height: 20),
-        
-        // Register New Pharmacy button (for Business Admin portal only)
-        if (_selectedRole == UserRole.businessAdmin) ...[
-          Center(
-            child: OutlinedButton.icon(
-              onPressed: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (context) => const TenantRegistrationView(),
-                  ),
-                );
-              },
-              icon: const Icon(Icons.store_outlined),
-              label: const Text('Register Your Pharmacy'),
-              style: OutlinedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                foregroundColor: AppTheme.primaryBlue,
-                side: const BorderSide(color: AppTheme.primaryBlue, width: 2),
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-        ],
-        
         Center(
           child: TextButton.icon(
             onPressed: () => SupportContactModal.show(context),
@@ -503,7 +479,7 @@ class _LoginViewState extends State<LoginView>
     );
   }
 
-  // ── Sign In form ───────────────────────────────────────────────────────────
+  // â”€â”€ Sign In form â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   Widget _signInForm() {
     return Column(
       children: [
@@ -548,7 +524,7 @@ class _LoginViewState extends State<LoginView>
                     height: 22,
                     child: CircularProgressIndicator(
                         strokeWidth: 2, color: Colors.white))
-                : Text('Sign In — ${_portalLabel(_selectedRole)}',
+                : Text('Sign In â€” ${_portalLabel(_selectedRole)}',
                     style: const TextStyle(fontSize: 15)),
           ),
         ),
@@ -556,7 +532,7 @@ class _LoginViewState extends State<LoginView>
     );
   }
 
-  // ── Register form (Customer portal) ───────────────────────────────────────
+  // â”€â”€ Register form (Customer portal) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   Widget _registerForm() {
     return Column(
       children: [
@@ -679,7 +655,7 @@ class _LoginViewState extends State<LoginView>
                   : null;
             }),
             child: const Text(
-              'Already have an account? Sign In →',
+              'Already have an account? Sign In â†’',
               style: TextStyle(fontSize: 12, color: AppTheme.primaryBlue),
             ),
           ),
@@ -688,7 +664,7 @@ class _LoginViewState extends State<LoginView>
     );
   }
 
-  // ── Helpers ────────────────────────────────────────────────────────────────
+  // â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   Widget _tabBtn({
     required String label,
     required IconData icon,
@@ -770,9 +746,9 @@ class _LoginViewState extends State<LoginView>
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // Hero panel (desktop left side)
-// ─────────────────────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 class _HeroPanel extends StatelessWidget {
   final VoidCallback onSupportTap;
   const _HeroPanel({required this.onSupportTap});
@@ -834,7 +810,7 @@ class _HeroPanel extends StatelessWidget {
                     SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        'DEMO MODE — configure Supabase credentials in AppConfig.',
+                        'DEMO MODE â€” configure Supabase credentials in AppConfig.',
                         style: TextStyle(
                             color: AppTheme.accentOrange,
                             fontSize: 11,
@@ -893,9 +869,9 @@ class _HeroPanel extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // Role selector card
-// ─────────────────────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 class _RoleCard extends StatelessWidget {
   final UserRole role;
   final String title;

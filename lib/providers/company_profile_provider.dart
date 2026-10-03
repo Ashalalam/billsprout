@@ -31,7 +31,7 @@ class CompanyProfile {
   final String? panNumber;          // PAN number if required
 
   const CompanyProfile({
-    this.pharmacyName    = 'My Pharmacy',
+    this.pharmacyName    = 'LifeSprout Care',
     this.ownerName       = '',
     this.address         = '',
     this.city            = '',
@@ -57,7 +57,7 @@ class CompanyProfile {
   });
 
   bool get isConfigured =>
-      pharmacyName != 'My Pharmacy' && gstin.isNotEmpty;
+      pharmacyName != 'LifeSprout Care' && gstin.isNotEmpty;
 
   /// Full address string for invoice printing
   String get fullAddress {
@@ -142,7 +142,7 @@ class CompanyProfile {
       };
 
   factory CompanyProfile.fromJson(Map<String, dynamic> j) => CompanyProfile(
-        pharmacyName:  j['pharmacyName']  ?? 'My Pharmacy',
+        pharmacyName:  j['pharmacyName']  ?? 'LifeSprout Care',
         ownerName:     j['ownerName']     ?? '',
         address:       j['address']       ?? '',
         city:          j['city']          ?? '',

@@ -26,8 +26,28 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  // Production mode - no demo login
-  // Users must have valid Supabase authentication
+  // ── Demo login (no backend) ───────────────────────────────────────────────
+  void login({required String email, required UserRole role}) {
+    // In demo mode, leave tenant/branch IDs null - they'll be set properly in production
+    _tenantId = null;
+    _branchId = null;
+    _currentUser = AppUser(
+      id: 'usr_${DateTime.now().millisecondsSinceEpoch}',
+      name: role == UserRole.superAdmin
+          ? 'Lifesprout Super Admin'
+          : role == UserRole.customer
+              ? 'Patient User'
+              : 'Dr. Sarah Connor (Pharmacist)',
+      email: email,
+      phone: '+44 7747 571513',
+      role: role,
+      companyId: _tenantId,
+      licenseNo: role == UserRole.pharmacist || role == UserRole.businessAdmin
+          ? 'PH-UK-984721'
+          : null,
+    );
+    notifyListeners();
+  }
 
   // ── Sign in ───────────────────────────────────────────────────────────────
   Future<void> signInWithSupabase({
@@ -62,13 +82,24 @@ class AuthProvider extends ChangeNotifier {
     _isLoading = true;
     notifyListeners();
 
-    // Production mode - always use Supabase registration
+    // Demo mode — create local account instantly
     if (!AppConfig.supabaseConfigured) {
+      await Future.delayed(const Duration(milliseconds: 500));
+      _currentUser = AppUser(
+        id: 'cust_${DateTime.now().millisecondsSinceEpoch}',
+        name: name,
+        email: email,
+        phone: phone,
+        role: UserRole.customer,
+        companyId: null,
+        licenseNo: null,
+      );
       _isLoading = false;
       notifyListeners();
-      throw Exception('Authentication system not configured. Please contact administrator.');
+      return;
     }
 
+    // Live Supabase registration
     try {
       final response = await SupabaseService().signUp(
         email: email,
@@ -127,19 +158,8 @@ class AuthProvider extends ChangeNotifier {
         (r) => r.name == roleName,
         orElse: () => UserRole.businessAdmin,
       );
-      
-      try {
-        _currentUser = _userFromSupabase(session.user, role);
-        notifyListeners();
-      } catch (e) {
-        // Session restore failed (likely missing tenant context from old demo mode)
-        // Sign out and force re-authentication
-        debugPrint('[Auth] Session restore failed: $e - signing out');
-        SupabaseService().signOut().catchError((_) {});
-        _currentUser = null;
-        _isPinVerified = false;
-        notifyListeners();
-      }
+      _currentUser = _userFromSupabase(session.user, role);
+      notifyListeners();
     }
   }
 
@@ -159,15 +179,8 @@ class AuthProvider extends ChangeNotifier {
 
   AppUser _userFromSupabase(User user, UserRole role) {
     final meta = user.userMetadata ?? {};
-    _tenantId = meta['tenant_id'] as String?;
+    _tenantId = meta['tenant_id'] as String? ?? meta['companyId'] as String?;
     _branchId = meta['branch_id'] as String?;
-    
-    // Production mode: tenant_id is required for business users
-    if ((role == UserRole.businessAdmin || role == UserRole.pharmacist) && 
-        (_tenantId == null || _tenantId!.isEmpty)) {
-      throw Exception('No tenant association found. Please contact your administrator.');
-    }
-    
     return AppUser(
       id: user.id,
       name: (meta['name'] as String?) ??

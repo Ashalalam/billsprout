@@ -91,11 +91,6 @@ class SupabaseService {
 
   /// Sign out current session.
   Future<void> signOut() => _client.auth.signOut();
-  
-  /// Update user metadata (for tenant/branch assignment)
-  Future<void> updateUserMetadata(Map<String, dynamic> data) async {
-    await _client.auth.updateUser(UserAttributes(data: data));
-  }
 
   // ── Invoices ──────────────────────────────────────────────────────────────
   /// Upsert a single invoice to Supabase (insert or update if exists).
@@ -360,10 +355,6 @@ class SupabaseService {
 
   Future<void> upsertBranch(Map<String, dynamic> branch) async {
     await _client.from('branches').upsert(branch);
-  }
-  
-  Future<void> insertUser(Map<String, dynamic> user) async {
-    await _client.from('users').insert(user);
   }
 
   Future<void> updateBranchStatus({
