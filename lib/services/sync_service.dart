@@ -129,30 +129,24 @@ class SyncService extends ChangeNotifier {
 
   // ── Internal ──────────────────────────────────────────────────────────────
   Future<void> _cloudWrite(InvoiceModel invoice) async {
-    var tenantId = authProvider.tenantId;
-    var branchId = authProvider.branchId;
-    var userId = authProvider.userId;
+    final tenantId = authProvider.tenantId;
+    final branchId = authProvider.branchId;
+    final userId = authProvider.userId;
     
-    // Fallback IDs if auth context is missing (demo mode compatibility)
-    if (tenantId == null || tenantId.isEmpty) {
-      tenantId = 'comp_lifesprout_01';
-      debugPrint('[Sync] Using fallback tenant ID: $tenantId');
+    // Check if we have valid auth context - if not, skip cloud write
+    if (tenantId == null || tenantId.isEmpty || branchId == null || branchId.isEmpty) {
+      debugPrint('[Sync] Skipping cloud write: missing tenant/branch context');
+      return;
     }
-    if (branchId == null || branchId.isEmpty) {
-      branchId = 'branch_main_01';
-      debugPrint('[Sync] Using fallback branch ID: $branchId');
-    }
-    if (userId.isEmpty) {
-      userId = 'user_demo_${DateTime.now().millisecondsSinceEpoch}';
-      debugPrint('[Sync] Using fallback user ID: $userId');
-    }
+    
+    final effectiveUserId = userId.isNotEmpty ? userId : 'user_demo_${DateTime.now().millisecondsSinceEpoch}';
     
     try {
       await SupabaseService().upsertInvoice(
         invoice,
         tenantId: tenantId,
         branchId: branchId,
-        createdBy: userId,
+        createdBy: effectiveUserId,
       );
       debugPrint('[Sync] ✅ Written to cloud: ${invoice.invoiceNumber}');
     } on PostgrestException catch (e) {

@@ -126,20 +126,20 @@ class CompanyModel {
       };
 
   factory CompanyModel.fromJson(Map<String, dynamic> json) => CompanyModel(
-        id: json['id'],
-        businessName: json['business_name'],
-        ownerName: json['owner_name'],
-        email: json['email'],
-        phone: json['phone'],
-        gstin: json['gstin'],
-        drugLicenseNo: json['drug_license_no'],
+        id: json['id'] ?? '',
+        businessName: json['business_name'] ?? 'Unknown Business',
+        ownerName: json['owner_name'] ?? 'Unknown Owner',
+        email: json['email'] ?? '',
+        phone: json['phone'] ?? '',
+        gstin: json['gstin'] ?? '',
+        drugLicenseNo: json['drug_license_no'] ?? '',
         drugLicenseExpiry: json['drug_license_expiry'] != null
             ? DateTime.parse(json['drug_license_expiry'])
             : null,
-        address: json['address'],
-        city: json['city'],
-        state: json['state'],
-        pincode: json['pincode'],
+        address: json['address'] ?? '',
+        city: json['city'] ?? '',
+        state: json['state'] ?? '',
+        pincode: json['pincode'] ?? '',
         logoUrl: json['logo_url'],
         industryType: IndustryType.values.firstWhere(
           (e) => e.name == (json['industry_type'] ?? 'pharmacy'),
@@ -153,8 +153,12 @@ class CompanyModel {
         subscriptionStatus: json['subscription_status'] ?? 'active',
         maxBranches: json['max_branches'] ?? 1,
         isActive: json['is_active'] ?? true,
-        createdAt: DateTime.parse(json['created_at']),
-        updatedAt: DateTime.parse(json['updated_at']),
+        createdAt: json['created_at'] != null 
+            ? DateTime.parse(json['created_at']) 
+            : DateTime.now(),
+        updatedAt: json['updated_at'] != null 
+            ? DateTime.parse(json['updated_at']) 
+            : DateTime.now(),
       );
 
   CompanyModel copyWith({
