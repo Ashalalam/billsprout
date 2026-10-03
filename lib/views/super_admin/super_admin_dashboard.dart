@@ -11,6 +11,7 @@ import '../../providers/super_admin_provider.dart';
 import '../../services/ota_service.dart';
 import '../common/support_contact_modal.dart';
 import 'add_tenant_dialog.dart';
+import 'user_management_view.dart';
 
 class SuperAdminDashboard extends StatefulWidget {
   const SuperAdminDashboard({super.key});
@@ -26,7 +27,7 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(length: 4, vsync: this);
   }
 
   @override
@@ -106,6 +107,7 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard>
           tabs: const [
             Tab(icon: Icon(Icons.dashboard), text: 'Overview'),
             Tab(icon: Icon(Icons.storefront), text: 'Tenant Accounts'),
+            Tab(icon: Icon(Icons.people), text: 'Users & Access'),
             Tab(icon: Icon(Icons.bar_chart), text: 'Analytics'),
           ],
         ),
@@ -123,6 +125,7 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard>
             superAdmin: superAdmin,
             onAddTenant: () => _showAddTenantDialog(context),
           ),
+          const UserManagementView(),
           _AnalyticsTab(
             superAdmin: superAdmin,
             accounting: accounting,
