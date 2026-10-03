@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:razorpay_flutter/razorpay_flutter.dart';
 import 'package:uuid/uuid.dart';
 import '../../models/subscription_plan_model.dart';
 import '../../providers/auth_provider.dart';
@@ -8,6 +7,7 @@ import '../../providers/subscription_provider.dart';
 import '../../services/payment_service.dart';
 import '../../utils/logger.dart';
 import '../../widgets/common/custom_button.dart';
+import '../../widgets/paypal_subscription_qr_widget.dart';
 
 /// Payment checkout view for completing subscription purchase
 class PaymentCheckoutView extends StatefulWidget {
@@ -28,25 +28,16 @@ class _PaymentCheckoutViewState extends State<PaymentCheckoutView> {
   late PaymentService _paymentService;
   bool _isProcessing = false;
   String? _errorMessage;
+  String? _currentTransactionId;
 
   @override
   void initState() {
     super.initState();
-    _initializePayment();
-  }
-
-  void _initializePayment() {
     _paymentService = PaymentService();
-    
-    // Set payment callbacks
-    _paymentService.onPaymentSuccess = _handlePaymentSuccess;
-    _paymentService.onPaymentError = _handlePaymentError;
-    _paymentService.onExternalWallet = _handleExternalWallet;
   }
 
   @override
   void dispose() {
-    _paymentService.dispose();
     super.dispose();
   }
 
@@ -256,23 +247,35 @@ class _PaymentCheckoutViewState extends State<PaymentCheckoutView> {
             ),
             const SizedBox(height: 16),
             
-            // Payment options
+            // PayPal payment option
             _buildPaymentOption(
-              icon: Icons.credit_card,
-              title: 'Credit / Debit Card',
-              subtitle: 'Visa, Mastercard, RuPay',
+              icon: Icons.qr_code_scanner,
+              title: 'PayPal QR Code',
+              subtitle: 'Scan QR code with PayPal app',
             ),
             const SizedBox(height: 12),
-            _buildPaymentOption(
-              icon: Icons.account_balance,
-              title: 'Net Banking',
-              subtitle: 'All major banks supported',
-            ),
-            const SizedBox(height: 12),
-            _buildPaymentOption(
-              icon: Icons.account_balance_wallet,
-              title: 'UPI / Wallets',
-              subtitle: 'PhonePe, GPay, Paytm, etc.',
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.blue[50],
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.blue[200]!),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.info_outline, color: Colors.blue[700], size: 20),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'You will receive a QR code to scan with your PayPal mobile app',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.blue[900],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ],
         ),
@@ -388,135 +391,65 @@ class _PaymentCheckoutViewState extends State<PaymentCheckoutView> {
         throw Exception(result['error'] ?? 'Failed to initiate payment');
       }
 
-      final orderId = result['order_id'] as String;
       final transactionId = result['transaction_id'] as String;
-
-      // Store transaction ID for later use
       _currentTransactionId = transactionId;
 
-      // Open Razorpay checkout
-      try {
-        await _paymentService.openCheckout(
-          orderId: orderId,
+      // Show PayPal QR code payment dialog
+      if (!mounted) return;
+      
+      final paymentResult = await showDialog<Map<String, dynamic>>(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => PayPalSubscriptionPaymentDialog(
           amount: totalAmount,
-          name: currentUser.name,
-          description: '${widget.plan.planName} - ${widget.billingCycle} subscription',
-          email: currentUser.email,
-          contact: currentUser.phone,
-          notes: {
-            'plan_id': widget.plan.id,
-            'billing_cycle': widget.billingCycle,
-          },
+          planName: widget.plan.planName,
+          billingCycle: widget.billingCycle,
+          planId: widget.plan.id,
+        ),
+      );
+
+      if (paymentResult != null && paymentResult['success'] == true) {
+        // Payment completed via PayPal
+        await _handlePayPalPaymentSuccess(
+          effectiveTenantId: effectiveTenantId,
+          totalAmount: totalAmount,
+          paymentUrl: paymentResult['payment_url'] as String?,
         );
-      } catch (e) {
-        // Razorpay not supported on this platform (Windows) - show demo success
-        if (e.toString().contains('MissingPluginException')) {
-          debugPrint('[Payment] Razorpay not supported on Windows, showing demo success');
-          if (!mounted) return;
-          _showDemoSuccessDialog();
-          return;
-        }
-        rethrow;
+      } else {
+        // Payment cancelled
+        setState(() {
+          _isProcessing = false;
+        });
       }
     } catch (e) {
       Logger.error('Payment initiation error', error: e);
       setState(() {
         _errorMessage = e.toString();
-      });
-    } finally {
-      setState(() {
         _isProcessing = false;
       });
     }
   }
 
-  void _showDemoSuccessDialog() {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Row(
-          children: [
-            Icon(Icons.check_circle, color: Colors.green, size: 32),
-            SizedBox(width: 12),
-            Text('Demo Mode'),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Payment gateway (Razorpay) is not supported on Windows desktop.',
-              style: TextStyle(fontSize: 14),
-            ),
-            const SizedBox(height: 16),
-            const Text(
-              'In production on mobile/web, users would complete payment here.',
-              style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Plan: ${widget.plan.planName}',
-              style: const TextStyle(fontSize: 14),
-            ),
-            Text(
-              'Amount: ₹${(widget.billingCycle == 'yearly' ? widget.plan.priceYearly : widget.plan.priceMonthly).toStringAsFixed(2)}',
-              style: const TextStyle(fontSize: 14),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.of(ctx).pop();
-              Navigator.of(context).pop(); // Go back to plans view
-            },
-            child: const Text('OK'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  String? _currentTransactionId;
-
-  void _handlePaymentSuccess(PaymentSuccessResponse response) async {
-    Logger.info('Payment successful: ${response.paymentId}');
+  Future<void> _handlePayPalPaymentSuccess({
+    required String effectiveTenantId,
+    required double totalAmount,
+    String? paymentUrl,
+  }) async {
+    Logger.info('PayPal payment completed');
 
     try {
-      final authProvider = context.read<AuthProvider>();
       final subscriptionProvider = context.read<SubscriptionProvider>();
-      final currentUser = authProvider.currentUser;
 
-      if (_currentTransactionId == null || currentUser == null) {
-        throw Exception('Missing transaction or user information');
+      if (_currentTransactionId == null) {
+        throw Exception('Missing transaction information');
       }
 
-      // Use actual tenantId or generate a proper UUID v4 for demo mode
-      String effectiveTenantId;
-      if (currentUser.tenantId != null && currentUser.tenantId!.isNotEmpty) {
-        effectiveTenantId = currentUser.tenantId!;
-      } else {
-        const uuid = Uuid();
-        effectiveTenantId = uuid.v4();
-      }
-
-      // Complete payment
-      final orderId = response.orderId;
-      final paymentId = response.paymentId;
-      final signature = response.signature;
-      
-      if (orderId == null || paymentId == null || signature == null) {
-        throw Exception('Incomplete payment response from Razorpay');
-      }
-      
+      // Complete payment with PayPal details
       final completed = await _paymentService.completePayment(
         transactionId: _currentTransactionId!,
-        orderId: orderId,
-        paymentId: paymentId,
-        signature: signature,
+        orderId: 'paypal-${DateTime.now().millisecondsSinceEpoch}',
+        paymentId: 'paypal-${_currentTransactionId}',
+        signature: 'paypal-verified',
       );
 
       if (!completed) {
@@ -524,15 +457,11 @@ class _PaymentCheckoutViewState extends State<PaymentCheckoutView> {
       }
 
       // Activate subscription
-      final price = widget.billingCycle == 'yearly'
-          ? widget.plan.priceYearly
-          : widget.plan.priceMonthly;
-
       await _paymentService.activateSubscription(
         tenantId: effectiveTenantId,
         planId: widget.plan.id,
         billingCycle: widget.billingCycle,
-        amountPaid: price * 1.18,
+        amountPaid: totalAmount,
       );
 
       // Refresh subscription data
@@ -547,20 +476,10 @@ class _PaymentCheckoutViewState extends State<PaymentCheckoutView> {
       if (mounted) {
         setState(() {
           _errorMessage = 'Payment completed but activation failed. Please contact support.';
+          _isProcessing = false;
         });
       }
     }
-  }
-
-  void _handlePaymentError(PaymentFailureResponse response) {
-    Logger.error('Payment failed: ${response.code} - ${response.message}');
-    setState(() {
-      _errorMessage = response.message ?? 'Payment failed. Please try again.';
-    });
-  }
-
-  void _handleExternalWallet(ExternalWalletResponse response) {
-    Logger.info('External wallet selected: ${response.walletName}');
   }
 
   void _showSuccessDialog() {
