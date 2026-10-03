@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:uuid/uuid.dart';
 import '../../config/app_theme.dart';
 import '../../config/responsive_layout.dart';
 import '../../models/customer_model.dart';
@@ -502,7 +503,7 @@ class _CustomerManagementViewState extends State<CustomerManagementView> {
                 final customerProvider = context.read<CustomerProvider>();
 
                 final newCustomer = CustomerModel(
-                  id: customer?.id ?? 'cust_${DateTime.now().millisecondsSinceEpoch}',
+                  id: customer?.id ?? const Uuid().v4(),
                   tenantId: auth.currentUser?.tenantId ?? 'demo_tenant',
                   name: nameCtrl.text,
                   phone: phoneCtrl.text,
