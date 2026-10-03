@@ -1,4 +1,5 @@
 ﻿import 'package:flutter/foundation.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/customer_model.dart';
 import '../models/invoice_model.dart';
@@ -181,8 +182,8 @@ class CustomerProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final service = SupabaseService();
-      final List<Map<String, dynamic>> results = await service.supabase
+      final client = Supabase.instance.client;
+      final List<Map<String, dynamic>> results = await client
           .from('customers')
           .select()
           .eq('tenant_id', tenantId)
@@ -203,8 +204,8 @@ class CustomerProvider extends ChangeNotifier {
   /// Save (create or update) a customer
   Future<void> saveCustomer(CustomerModel customer) async {
     try {
-      final service = SupabaseService();
-      await service.supabase
+      final client = Supabase.instance.client;
+      await client
           .from('customers')
           .upsert(customer.toJson())
           .eq('id', customer.id);

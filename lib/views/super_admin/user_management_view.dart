@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../config/app_theme.dart';
 import '../../models/user_model.dart';
@@ -32,8 +33,8 @@ class _UserManagementViewState extends State<UserManagementView> {
     setState(() => _isLoading = true);
     
     try {
-      final service = SupabaseService();
-      final result = await service.supabase
+      final client = Supabase.instance.client;
+      final result = await client
           .from('users')
           .select('''
             *,
@@ -459,7 +460,8 @@ class _UserManagementViewState extends State<UserManagementView> {
     if (confirm != true) return;
 
     try {
-      await SupabaseService().supabase
+      final client = Supabase.instance.client;
+      await client
           .from('users')
           .update({'is_active': newStatus})
           .eq('id', user['id']);
