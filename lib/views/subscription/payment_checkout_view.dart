@@ -356,8 +356,17 @@ class _PaymentCheckoutViewState extends State<PaymentCheckoutView> {
         throw Exception('User not authenticated. Please login first.');
       }
 
-      // Use actual tenantId or demo ID for testing
-      final effectiveTenantId = currentUser.tenantId ?? 'demo_tenant_${DateTime.now().millisecondsSinceEpoch}';
+      // Use actual tenantId or generate a valid UUID for demo/testing
+      String effectiveTenantId;
+      if (currentUser.tenantId != null && currentUser.tenantId!.isNotEmpty) {
+        effectiveTenantId = currentUser.tenantId!;
+      } else {
+        // Generate a valid UUID v4 for demo mode
+        // Format: xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx
+        final random = DateTime.now().millisecondsSinceEpoch.toString();
+        effectiveTenantId = 'demo0000-0000-4000-8000-${random.padLeft(12, '0').substring(0, 12)}';
+        debugPrint('[Payment] Using demo tenant ID: $effectiveTenantId');
+      }
 
       final price = widget.billingCycle == 'yearly'
           ? widget.plan.priceYearly
@@ -424,8 +433,14 @@ class _PaymentCheckoutViewState extends State<PaymentCheckoutView> {
         throw Exception('Missing transaction or user information');
       }
 
-      // Use actual tenantId or demo ID
-      final effectiveTenantId = currentUser.tenantId ?? 'demo_tenant_${DateTime.now().millisecondsSinceEpoch}';
+      // Use actual tenantId or generate a valid UUID for demo mode
+      String effectiveTenantId;
+      if (currentUser.tenantId != null && currentUser.tenantId!.isNotEmpty) {
+        effectiveTenantId = currentUser.tenantId!;
+      } else {
+        final random = DateTime.now().millisecondsSinceEpoch.toString();
+        effectiveTenantId = 'demo0000-0000-4000-8000-${random.padLeft(12, '0').substring(0, 12)}';
+      }
 
       // Complete payment
       final orderId = response.orderId;
