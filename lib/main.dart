@@ -79,11 +79,13 @@ class BillSproutApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => SubscriptionProvider()),
         ChangeNotifierProvider(create: (_) => PayPalConfigProvider()),
         ChangeNotifierProvider(create: (_) => PayPalTransactionProvider()),
-        ChangeNotifierProxyProvider<AuthProvider, SyncService>(
+        ChangeNotifierProxyProvider2<AuthProvider, AccountingProvider, SyncService>(
           create: (context) => SyncService(
             authProvider: Provider.of<AuthProvider>(context, listen: false),
+            accountingProvider: Provider.of<AccountingProvider>(context, listen: false),
           ),
-          update: (_, auth, previous) => previous ?? SyncService(authProvider: auth),
+          update: (_, auth, accounting, previous) => 
+            previous ?? SyncService(authProvider: auth, accountingProvider: accounting),
         ),
         ChangeNotifierProvider(create: (_) => OtaService()),
       ],

@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/invoice_model.dart';
 import '../providers/auth_provider.dart';
+import '../providers/accounting_provider.dart';
 import 'offline_queue_service.dart';
 import 'supabase_service.dart';
 
@@ -11,6 +12,7 @@ enum NetworkState { online, offline, syncing }
 
 class SyncService extends ChangeNotifier {
   final AuthProvider authProvider;
+  final AccountingProvider? accountingProvider;
   
   NetworkState _networkState = NetworkState.online;
   final List<InvoiceModel> _offlineQueue = [];
@@ -20,8 +22,9 @@ class SyncService extends ChangeNotifier {
   NetworkState get networkState => _networkState;
   int get pendingSyncCount => _offlineQueue.length;
   bool get isOnline => _networkState == NetworkState.online;
+  List<InvoiceModel> get queuedInvoices => List.unmodifiable(_offlineQueue);
 
-  SyncService({required this.authProvider}) {
+  SyncService({required this.authProvider, this.accountingProvider}) {
     _init();
   }
 
@@ -30,6 +33,13 @@ class SyncService extends ChangeNotifier {
     final persisted = await OfflineQueueService.loadQueue();
     if (persisted.isNotEmpty) {
       _offlineQueue.addAll(persisted);
+      
+      // Load invoices into accounting provider for dashboard display
+      if (accountingProvider != null) {
+        accountingProvider!.loadInvoicesFromCache(persisted);
+        debugPrint('[Sync] Loaded ${persisted.length} invoices into accounting provider');
+      }
+      
       notifyListeners();
       debugPrint('[Sync] Restored ${persisted.length} queued invoices from disk');
     }
