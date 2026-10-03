@@ -95,9 +95,10 @@ class SyncService extends ChangeNotifier {
     final branchId = authProvider.branchId;
     final userId = authProvider.userId;
     
-    if (tenantId == null || branchId == null || userId.isEmpty) {
-      debugPrint('[Sync] Cannot sync: missing tenant/branch/user context');
-      return;
+    // Production mode: require valid tenant/branch/user context
+    if (tenantId == null || tenantId.isEmpty || branchId == null || branchId.isEmpty || userId.isEmpty) {
+      debugPrint('[Sync] ERROR: Cannot sync without valid tenant/branch/user context. User must be authenticated.');
+      throw Exception('Authentication required. Please sign in with a valid tenant account.');
     }
     
     _networkState = NetworkState.syncing;
@@ -143,20 +144,18 @@ class SyncService extends ChangeNotifier {
     final branchId = authProvider.branchId;
     final userId = authProvider.userId;
     
-    // Check if we have valid auth context - if not, skip cloud write
-    if (tenantId == null || tenantId.isEmpty || branchId == null || branchId.isEmpty) {
-      debugPrint('[Sync] Skipping cloud write: missing tenant/branch context');
-      return;
+    // Production mode: require valid auth context
+    if (tenantId == null || tenantId.isEmpty || branchId == null || branchId.isEmpty || userId.isEmpty) {
+      debugPrint('[Sync] ERROR: Cannot write to cloud without valid authentication');
+      throw Exception('Authentication required. Please sign in with a valid tenant account.');
     }
-    
-    final effectiveUserId = userId.isNotEmpty ? userId : 'user_demo_${DateTime.now().millisecondsSinceEpoch}';
     
     try {
       await SupabaseService().upsertInvoice(
         invoice,
         tenantId: tenantId,
         branchId: branchId,
-        createdBy: effectiveUserId,
+        createdBy: userId,
       );
       debugPrint('[Sync] ✅ Written to cloud: ${invoice.invoiceNumber}');
     } on PostgrestException catch (e) {
