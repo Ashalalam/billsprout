@@ -334,6 +334,168 @@ class PaymentService {
     }
   }
 
+  /// Process POS billing payment
+  /// This creates a Razorpay order for store billing (UPI/Card payments)
+  Future<Map<String, dynamic>> processPOSPayment({
+    required String invoiceNumber,
+    required double amount,
+    required String customerName,
+    required String customerPhone,
+    String? customerEmail,
+    required String paymentMethod, // 'upi', 'card', 'wallet'
+  }) async {
+    try {
+      // Create Razorpay order
+      final orderData = await createRazorpayOrder(
+        amount: amount,
+        currency: 'INR',
+        receipt: invoiceNumber,
+        notes: {
+          'invoice_number': invoiceNumber,
+          'customer_name': customerName,
+          'customer_phone': customerPhone,
+          'payment_type': 'pos_billing',
+        },
+      );
+
+      if (orderData == null) {
+        throw Exception('Failed to create payment order');
+      }
+
+      final orderId = orderData['order_id'] as String;
+
+      Logger.info('POS payment order created: $orderId for invoice: $invoiceNumber');
+
+      return {
+        'success': true,
+        'order_id': orderId,
+        'amount': amount,
+      };
+    } catch (e) {
+      Logger.error('Error processing POS payment', error: e);
+      return {
+        'success': false,
+        'error': e.toString(),
+      };
+    }
+  }
+
+  /// Open Razorpay for POS billing
+  Future<void> openPOSCheckout({
+    required String orderId,
+    required double amount,
+    required String invoiceNumber,
+    required String customerName,
+    required String customerPhone,
+    String? customerEmail,
+    required String paymentMethod, // 'upi', 'card', 'wallet'
+  }) async {
+    try {
+      final options = {
+        'key': _razorpayKeyId,
+        'amount': (amount * 100).toInt(), // Convert to paise
+        'currency': 'INR',
+        'name': 'LifeSprout Pharmacy',
+        'description': 'Medicine Purchase - Invoice #$invoiceNumber',
+        'order_id': orderId,
+        'prefill': {
+          'contact': customerPhone,
+          'email': customerEmail ?? '$customerPhone@customer.lifesprout.com',
+          'name': customerName,
+        },
+        'method': _getPaymentMethods(paymentMethod),
+        'theme': {
+          'color': '#4CAF50',
+        },
+        'notes': {
+          'invoice_number': invoiceNumber,
+          'payment_type': 'pos_billing',
+        },
+      };
+
+      _razorpay.open(options);
+      Logger.info('POS payment checkout opened for invoice: $invoiceNumber');
+    } catch (e) {
+      Logger.error('Error opening POS payment checkout', error: e);
+      rethrow;
+    }
+  }
+
+  /// Get allowed payment methods based on selection
+  Map<String, dynamic> _getPaymentMethods(String paymentMethod) {
+    switch (paymentMethod.toLowerCase()) {
+      case 'upi':
+        return {
+          'upi': true,
+          'card': false,
+          'netbanking': false,
+          'wallet': false,
+        };
+      case 'card':
+        return {
+          'upi': false,
+          'card': true,
+          'netbanking': false,
+          'wallet': false,
+        };
+      case 'wallet':
+        return {
+          'upi': false,
+          'card': false,
+          'netbanking': false,
+          'wallet': true,
+        };
+      default:
+        // Allow all methods
+        return {
+          'upi': true,
+          'card': true,
+          'netbanking': true,
+          'wallet': true,
+        };
+    }
+  }
+
+  /// Record POS payment in database
+  Future<bool> recordPOSPayment({
+    required String invoiceId,
+    required String invoiceNumber,
+    required double amount,
+    required String paymentMethod,
+    required String status,
+    String? razorpayOrderId,
+    String? razorpayPaymentId,
+    String? razorpaySignature,
+  }) async {
+    try {
+      final paymentData = {
+        'invoice_id': invoiceId,
+        'invoice_number': invoiceNumber,
+        'amount': amount,
+        'currency': 'INR',
+        'payment_method': paymentMethod,
+        'status': status,
+        'payment_gateway': paymentMethod == 'cash' ? null : 'razorpay',
+        'razorpay_order_id': razorpayOrderId,
+        'razorpay_payment_id': razorpayPaymentId,
+        'razorpay_signature': razorpaySignature,
+        'transaction_type': 'pos_sale',
+        'payment_initiated_at': DateTime.now().toIso8601String(),
+        'payment_completed_at': status == 'success' ? DateTime.now().toIso8601String() : null,
+      };
+
+      await _supabase
+          .from('payment_transactions')
+          .insert(paymentData);
+
+      Logger.info('POS payment recorded for invoice: $invoiceNumber');
+      return true;
+    } catch (e) {
+      Logger.error('Error recording POS payment', error: e);
+      return false;
+    }
+  }
+
   void dispose() {
     _razorpay.clear();
   }

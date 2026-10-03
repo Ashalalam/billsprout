@@ -563,28 +563,6 @@ class PrintingService {
     );
   }
 
-  static pw.Widget _buildInfoRow(String label, double amount,
-      {bool isBold = false, double fontSize = 9}) {
-    return pw.Padding(
-      padding: const pw.EdgeInsets.only(bottom: 2),
-      child: pw.Row(
-        mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-        children: [
-          pw.Text(label,
-              style: pw.TextStyle(
-                fontWeight: isBold ? pw.FontWeight.bold : pw.FontWeight.normal,
-                fontSize: fontSize,
-              )),
-          pw.Text('₹${amount.toStringAsFixed(2)}',
-              style: pw.TextStyle(
-                fontWeight: isBold ? pw.FontWeight.bold : pw.FontWeight.normal,
-                fontSize: fontSize,
-              )),
-        ],
-      ),
-    );
-  }
-
   /// Renders a detailed B2B GST BILL (Reference Image 2 style)
   /// Professional pharmaceutical invoice with pack/unit, discount%, GST summary by rate
   static Future<Uint8List> generateGstBillPdf(
@@ -913,30 +891,30 @@ class PrintingService {
                       ),
                       child: pw.Column(
                         children: [
-                          _buildInfoRow('Subtotal:', invoice.subtotal),
+                          _buildAmountRow('Subtotal:', invoice.subtotal),
                           if (invoice.totalLineDiscounts > 0)
-                            _buildInfoRow(
+                            _buildAmountRow(
                                 'Item Discounts:', -invoice.totalLineDiscounts),
                           if (invoice.effectiveDiscount > 0)
-                            _buildInfoRow('Invoice Discount:',
+                            _buildAmountRow('Invoice Discount:',
                                 -invoice.effectiveDiscount),
-                          _buildInfoRow('Taxable Amount:',
+                          _buildAmountRow('Taxable Amount:',
                               invoice.grandTotal - invoice.totalTax),
                           pw.Divider(thickness: 0.5),
-                          _buildInfoRow('CGST:', invoice.totalTax / 2),
-                          _buildInfoRow('SGST:', invoice.totalTax / 2),
-                          _buildInfoRow('Total GST:', invoice.totalTax,
+                          _buildAmountRow('CGST:', invoice.totalTax / 2),
+                          _buildAmountRow('SGST:', invoice.totalTax / 2),
+                          _buildAmountRow('Total GST:', invoice.totalTax,
                               isBold: true),
                           if (invoice.cessAmount != null &&
                               invoice.cessAmount! > 0)
-                            _buildInfoRow('Cess:', invoice.cessAmount!),
+                            _buildAmountRow('Cess:', invoice.cessAmount!),
                           if (invoice.otherCharges != null &&
                               invoice.otherCharges! > 0)
-                            _buildInfoRow('Other Charges:',
+                            _buildAmountRow('Other Charges:',
                                 invoice.otherCharges!),
-                          _buildInfoRow('Round Off:', invoice.roundOff),
+                          _buildAmountRow('Round Off:', invoice.roundOff),
                           pw.Divider(thickness: 1),
-                          _buildInfoRow('Grand Total:', invoice.payableTotal,
+                          _buildAmountRow('Grand Total:', invoice.payableTotal,
                               isBold: true, fontSize: 11),
                         ],
                       ),

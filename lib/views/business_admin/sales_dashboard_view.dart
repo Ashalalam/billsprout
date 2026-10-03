@@ -19,6 +19,16 @@ class _SalesDashboardViewState extends State<SalesDashboardView> {
   String _period = 'Today'; // Today | This Week | This Month | All Time
 
   @override
+  void initState() {
+    super.initState();
+    // Refresh sales data when dashboard opens
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final accounting = Provider.of<AccountingProvider>(context, listen: false);
+      accounting.refreshSalesData();
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     final accounting = Provider.of<AccountingProvider>(context);
     final inventory  = Provider.of<InventoryProvider>(context);

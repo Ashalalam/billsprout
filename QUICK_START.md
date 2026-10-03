@@ -1,160 +1,97 @@
-# 🚀 Quick Start: Payment System
+# 🚀 BillSprout - PayPal Quick Start Guide
 
-## For Developers
+## ⚡ Fast Track to Testing PayPal
 
-### 1. Install Dependencies
+### 1️⃣ Run the App (Pick One)
+
+**Windows Desktop (Recommended):**
 ```bash
 cd lifesprout
-flutter pub get
-```
-
-### 2. Apply Database Migrations
-```sql
--- In Supabase SQL Editor, run:
--- File: supabase/apply_all.sql
--- This includes migrations 012 & 013
-```
-
-### 3. Deploy Edge Functions
-```bash
-# Deploy all functions
-supabase functions deploy create-razorpay-order
-supabase functions deploy verify-razorpay-payment
-supabase functions deploy razorpay-webhook
-supabase functions deploy send-email
-
-# Set secrets
-supabase secrets set \
-  RAZORPAY_KEY_ID="rzp_test_YOUR_KEY" \
-  RAZORPAY_KEY_SECRET="YOUR_SECRET" \
-  RAZORPAY_WEBHOOK_SECRET="YOUR_WEBHOOK_SECRET" \
-  RESEND_API_KEY="re_YOUR_KEY" \
-  FROM_EMAIL="noreply@yourdomain.com"
-```
-
-### 4. Configure Razorpay
-1. Go to https://dashboard.razorpay.com/
-2. Use Test Mode
-3. Settings → Webhooks → Add New Webhook
-4. URL: `https://your-project.supabase.co/functions/v1/razorpay-webhook`
-5. Events: `payment.captured`, `payment.failed`, `order.paid`
-
-### 5. Update Flutter App
-Edit `lib/services/payment_service.dart`:
-```dart
-static const String _razorpayKeyId = String.fromEnvironment(
-  'RAZORPAY_KEY_ID',
-  defaultValue: 'rzp_test_YOUR_KEY_ID', // Your test key
-);
-```
-
-### 6. Run the App
-```bash
 flutter run -d windows
 ```
 
----
-
-## Testing with Test Cards
-
-### Success Payment:
-```
-Card: 4111 1111 1111 1111
-CVV: Any 3 digits
-Expiry: Any future date
-```
-
-### Failed Payment:
-```
-Card: 4000 0000 0000 0002
-CVV: Any 3 digits
-Expiry: Any future date
-```
-
----
-
-## Key Files to Know
-
-### Frontend:
-- `lib/views/subscription/subscription_plans_view.dart` - Pricing page
-- `lib/views/subscription/payment_checkout_view.dart` - Checkout
-- `lib/services/payment_service.dart` - Payment logic
-- `lib/providers/subscription_provider.dart` - State management
-
-### Backend:
-- `supabase/functions/create-razorpay-order/` - Order creation
-- `supabase/functions/razorpay-webhook/` - Payment webhooks
-- `supabase/functions/send-email/` - Email notifications
-- `supabase/migrations/012_subscription_plans_payments.sql` - DB schema
-
----
-
-## Common Issues
-
-### Issue: Webhook not received
-**Solution**: Check webhook URL is correct and function is deployed
-
-### Issue: Payment succeeds but subscription not created
-**Solution**: Check webhook logs in `webhook_logs` table
-
-### Issue: Email not sent
-**Solution**: Verify Resend API key and domain verification
-
-### Issue: RLS error when fetching plans
-**Solution**: Plans table should allow public read - check RLS policies
-
----
-
-## Useful Commands
-
+**Chrome Web:**
 ```bash
-# Check Edge Function logs
-supabase functions logs razorpay-webhook
-
-# Check database
-supabase db remote
-
-# Test webhook locally
-curl -X POST http://localhost:54321/functions/v1/razorpay-webhook \
-  -H "Content-Type: application/json" \
-  -d '{"event":"payment.captured",...}'
-
-# Verify migrations applied
-psql -c "SELECT * FROM subscription_plans;"
+cd lifesprout
+flutter run -d chrome
 ```
+
+### 2️⃣ Configure PayPal (5 minutes)
+
+1. **Login** → Use your Business Admin credentials
+
+2. **Navigate** → Settings → PayPal tab
+
+3. **Enter Credentials:**
+   - Client ID: `AQOnHpG-Yd_zyEfRiHVNnA6pb27Nkd1R_phWNJWmHG6gA-EfrZopX1G2IejjMTOMjag63EcClDCb6hz5`
+   - Client Secret: `EKLkmbn9VqnxRzovsNFKUCv1yfQO0EdSEQOdXGI5nkw1alg4GaJ8bZBrtja_GJb15mJRQ1edskFM4TFw`
+   - PayPal.Me Username: `sb-hgj9w52902035`
+   - Sandbox Mode: ✅ ON
+
+4. **Save** → Click "Save Configuration"
+
+5. **Test** → Click "Test Connection"
+
+✅ Success = You're ready to test payments!
+
+### 3️⃣ Test Payment (2 minutes)
+
+1. **POS Billing** → Add products to cart
+
+2. **Checkout** → Select PayPal payment
+
+3. **QR Dialog** → Click "Payment Completed"
+
+4. **Verify** → Invoice generated, transaction tracked
+
+✅ Success = PayPal integration working!
 
 ---
 
-## Architecture Overview
+## 📚 Full Documentation
 
-```
-┌──────────────┐
-│  Flutter App │
-└──────┬───────┘
-       │ 1. Select Plan
-       │
-       ▼
-┌──────────────┐
-│  Razorpay    │ ◄─── 2. Create Order (via Edge Function)
-│  Checkout    │
-└──────┬───────┘
-       │ 3. Payment Success
-       │
-       ▼
-┌──────────────┐
-│  Webhook     │ ◄─── 4. Razorpay sends webhook
-│  Handler     │
-└──────┬───────┘
-       │ 5. Activate Subscription
-       │ 6. Send Emails
-       ▼
-┌──────────────┐
-│  Database    │
-└──────────────┘
-```
+- **Setup Guide**: `PAYPAL_SETUP.md`
+- **Testing Checklist**: `PAYPAL_TESTING_CHECKLIST.md`
+- **Integration Summary**: `PAYPAL_INTEGRATION_SUMMARY.md`
+- **Your Credentials**: `MY_PAYPAL_CREDENTIALS.md`
 
 ---
 
-## Need Help?
+## 🎯 Expected Results
 
-See `PAYMENT_SYSTEM_DEPLOYMENT_GUIDE.md` for detailed instructions.
+### After Configuration:
+- Status: "Configured" (green)
+- Test Connection: Success ✅
+
+### After Payment:
+- QR code displayed
+- Invoice generated
+- Transaction tracked
+- Statistics updated
+
+---
+
+## 🐛 Quick Troubleshooting
+
+**"Failed to connect"**
+→ Check credentials, ensure Sandbox Mode ON
+
+**"Configuration not found"**
+→ Make sure you clicked "Save Configuration"
+
+**No QR code**
+→ Verify PayPal configured, restart app
+
+**PayPal not in payment modes**
+→ Configure PayPal in Settings first
+
+---
+
+## ✅ You're All Set!
+
+Your PayPal sandbox credentials are configured and ready.
+Just run the app and follow the 3 steps above.
+
+**Need help?** Check the detailed guides in the documentation files.
+
+**Status**: ✅ Ready to Test!

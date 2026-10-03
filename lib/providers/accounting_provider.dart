@@ -44,10 +44,10 @@ class AccountingProvider extends ChangeNotifier {
     try {
       final supabase = Supabase.instance.client;
       
-      // Load from 'sales' table with correct column names
+      // Load from 'sales' table - only select columns that definitely exist
       final response = await supabase
           .from('sales')
-          .select('id, invoice_number, invoice_date, customer_name, customer_phone, subtotal, total_gst, discount_amount, grand_total, payment_mode')
+          .select('id, invoice_number, invoice_date, customer_name, customer_phone, payment_mode, grand_total')
           .order('invoice_date', ascending: false)
           .limit(100);
       
@@ -61,7 +61,7 @@ class AccountingProvider extends ChangeNotifier {
           customerName: row['customer_name'] ?? 'Walk-in Customer',
           customerPhone: row['customer_phone'] ?? '',
           paymentMode: _parsePaymentMode(row['payment_mode']),
-          discountAmount: (row['discount_amount'] ?? 0).toDouble(),
+          discountAmount: 0.0, // Not in database, use default
         );
       }).toList();
       
@@ -108,10 +108,10 @@ class AccountingProvider extends ChangeNotifier {
     try {
       final supabase = Supabase.instance.client;
       
-      // Load from 'sales' table with correct column names
+      // Load from 'sales' table - only columns that exist
       final response = await supabase
           .from('sales')
-          .select('id, invoice_number, invoice_date, customer_name, customer_phone, subtotal, total_gst, discount_amount, grand_total, payment_mode')
+          .select('id, invoice_number, invoice_date, customer_name, customer_phone, payment_mode, grand_total')
           .order('invoice_date', ascending: false)
           .limit(100);
       
@@ -125,7 +125,7 @@ class AccountingProvider extends ChangeNotifier {
           customerName: row['customer_name'] ?? 'Walk-in Customer',
           customerPhone: row['customer_phone'] ?? '',
           paymentMode: _parsePaymentMode(row['payment_mode']),
-          discountAmount: (row['discount_amount'] ?? 0).toDouble(),
+          discountAmount: 0.0,
         );
       }).toList();
       
