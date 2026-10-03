@@ -395,18 +395,29 @@ class _PaymentCheckoutViewState extends State<PaymentCheckoutView> {
       _currentTransactionId = transactionId;
 
       // Open Razorpay checkout
-      await _paymentService.openCheckout(
-        orderId: orderId,
-        amount: totalAmount,
-        name: currentUser.name,
-        description: '${widget.plan.planName} - ${widget.billingCycle} subscription',
-        email: currentUser.email,
-        contact: currentUser.phone,
-        notes: {
-          'plan_id': widget.plan.id,
-          'billing_cycle': widget.billingCycle,
-        },
-      );
+      try {
+        await _paymentService.openCheckout(
+          orderId: orderId,
+          amount: totalAmount,
+          name: currentUser.name,
+          description: '${widget.plan.planName} - ${widget.billingCycle} subscription',
+          email: currentUser.email,
+          contact: currentUser.phone,
+          notes: {
+            'plan_id': widget.plan.id,
+            'billing_cycle': widget.billingCycle,
+          },
+        );
+      } catch (e) {
+        // Razorpay not supported on this platform (Windows) - show demo success
+        if (e.toString().contains('MissingPluginException')) {
+          debugPrint('[Payment] Razorpay not supported on Windows, showing demo success');
+          if (!mounted) return;
+          _showDemoSuccessDialog();
+          return;
+        }
+        rethrow;
+      }
     } catch (e) {
       Logger.error('Payment initiation error', error: e);
       setState(() {
@@ -417,6 +428,56 @@ class _PaymentCheckoutViewState extends State<PaymentCheckoutView> {
         _isProcessing = false;
       });
     }
+  }
+
+  void _showDemoSuccessDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Row(
+          children: [
+            Icon(Icons.check_circle, color: Colors.green, size: 32),
+            SizedBox(width: 12),
+            Text('Demo Mode'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Payment gateway (Razorpay) is not supported on Windows desktop.',
+              style: TextStyle(fontSize: 14),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'In production on mobile/web, users would complete payment here.',
+              style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Plan: ${widget.plan.planName}',
+              style: const TextStyle(fontSize: 14),
+            ),
+            Text(
+              'Amount: ₹${(widget.billingCycle == 'yearly' ? widget.plan.priceYearly : widget.plan.priceMonthly).toStringAsFixed(2)}',
+              style: const TextStyle(fontSize: 14),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(ctx).pop();
+              Navigator.of(context).pop(); // Go back to plans view
+            },
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
   }
 
   String? _currentTransactionId;
