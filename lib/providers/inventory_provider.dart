@@ -50,6 +50,11 @@ class InventoryProvider extends ChangeNotifier {
   /// Adds a brand-new product to the catalogue and persists to disk.
   /// Also syncs to Supabase if configured.
   Future<void> addProduct(ProductModel product) async {
+    // Validate tenant access before modifying data
+    if (authProvider.tenantId != null) {
+      await authProvider.validateTenantAccess(authProvider.tenantId!);
+    }
+    
     _products.add(product);
     await _saveToDisk();
     notifyListeners();
@@ -61,6 +66,11 @@ class InventoryProvider extends ChangeNotifier {
   /// Adds a new [batch] to an existing product and persists to disk.
   /// Also syncs to Supabase if configured.
   Future<void> addBatchToProduct(String productId, BatchModel batch) async {
+    // Validate tenant access before modifying data
+    if (authProvider.tenantId != null) {
+      await authProvider.validateTenantAccess(authProvider.tenantId!);
+    }
+    
     final index = _products.indexWhere((p) => p.id == productId);
     if (index < 0) return;
     _products[index].batches.add(batch);
@@ -72,11 +82,16 @@ class InventoryProvider extends ChangeNotifier {
   }
 
   /// Update stock quantity for an existing batch (e.g. stock-in).
-  void addStockToBatch({
+  Future<void> addStockToBatch({
     required String productId,
     required String batchId,
     required int additionalQty,
-  }) {
+  }) async {
+    // Validate tenant access before modifying stock
+    if (authProvider.tenantId != null) {
+      await authProvider.validateTenantAccess(authProvider.tenantId!);
+    }
+    
     final pIdx = _products.indexWhere((p) => p.id == productId);
     if (pIdx < 0) return;
     final bIdx =
@@ -88,11 +103,16 @@ class InventoryProvider extends ChangeNotifier {
   }
 
   /// Reduce stock quantity for a sale (called after POS checkout).
-  void reduceStockForSale({
+  Future<void> reduceStockForSale({
     required String productId,
     required String batchId,
     required int quantity,
-  }) {
+  }) async {
+    // Validate tenant access before modifying stock
+    if (authProvider.tenantId != null) {
+      await authProvider.validateTenantAccess(authProvider.tenantId!);
+    }
+    
     final pIdx = _products.indexWhere((p) => p.id == productId);
     if (pIdx < 0) return;
     final bIdx = _products[pIdx].batches.indexWhere((b) => b.id == batchId);
@@ -135,7 +155,12 @@ class InventoryProvider extends ChangeNotifier {
     required BatchModel batch,
     required int quantity,
     required String reason,
-  }) {
+  }) async {
+    // Validate tenant access before creating RTV note
+    if (authProvider.tenantId != null) {
+      await authProvider.validateTenantAccess(authProvider.tenantId!);
+    }
+    
     if (quantity <= 0 || quantity > batch.stockCount) return;
     batch.stockCount -= quantity;
 
@@ -161,7 +186,12 @@ class InventoryProvider extends ChangeNotifier {
     required ProductModel product,
     required BatchModel batch,
     required int quantity,
-  }) {
+  }) async {
+    // Validate tenant access before creating stock transfer
+    if (authProvider.tenantId != null) {
+      await authProvider.validateTenantAccess(authProvider.tenantId!);
+    }
+    
     if (quantity <= 0 || quantity > batch.stockCount) return;
     batch.stockCount -= quantity;
 

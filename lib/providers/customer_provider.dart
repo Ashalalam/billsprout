@@ -177,6 +177,9 @@ class CustomerProvider extends ChangeNotifier {
 
   /// Fetch all customers for the tenant (for admin management)
   Future<void> fetchAllCustomers(String tenantId) async {
+    // Validate tenant access before fetching customers
+    await _auth.validateTenantAccess(tenantId);
+    
     _isLoading = true;
     _error = null;
     notifyListeners();
@@ -203,6 +206,11 @@ class CustomerProvider extends ChangeNotifier {
 
   /// Save (create or update) a customer
   Future<void> saveCustomer(CustomerModel customer) async {
+    // Validate tenant access before saving customer
+    if (_auth.tenantId != null) {
+      await _auth.validateTenantAccess(_auth.tenantId!);
+    }
+    
     try {
       // Only sync to Supabase if we have proper tenant context
       if (_auth.tenantId != null && _auth.tenantId!.isNotEmpty) {

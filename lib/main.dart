@@ -18,6 +18,7 @@ import 'providers/paypal_transaction_provider.dart';
 import 'services/supabase_service.dart';
 import 'services/sync_service.dart';
 import 'services/ota_service.dart';
+import 'middleware/auth_guard.dart';
 import 'views/auth/login_view.dart';
 import 'views/super_admin/super_admin_dashboard.dart';
 import 'views/business_admin/business_admin_layout.dart';
@@ -67,7 +68,19 @@ class BillSproutApp extends StatelessWidget {
               (previous ?? InventoryProvider(authProvider: auth))..updateAuth(auth),
         ),
         ChangeNotifierProvider(create: (_) => PosProvider()),
-        ChangeNotifierProvider(create: (_) => AccountingProvider()),
+        ChangeNotifierProxyProvider<AuthProvider, AccountingProvider>(
+          create: (context) {
+            final auth = Provider.of<AuthProvider>(context, listen: false);
+            final provider = AccountingProvider();
+            provider.setTenantContext(auth.tenantId);
+            return provider;
+          },
+          update: (_, auth, previous) {
+            final provider = previous ?? AccountingProvider();
+            provider.setTenantContext(auth.tenantId);
+            return provider;
+          },
+        ),
         ChangeNotifierProxyProvider<AuthProvider, CustomerProvider>(
           create: (context) => CustomerProvider(
             Provider.of<AuthProvider>(context, listen: false),
@@ -120,15 +133,31 @@ class PortalRouter extends StatelessWidget {
       return const LoginView();
     }
 
+    // ✅ SECURITY FIX: Wrap each dashboard with AuthGuard to enforce role-based access
     switch (auth.currentUser!.role) {
       case UserRole.superAdmin:
-        return const SuperAdminDashboard();
+        return AuthGuard(
+          allowedRoles: const [UserRole.superAdmin],
+          child: const SuperAdminDashboard(),
+        );
+        
       case UserRole.businessAdmin:
       case UserRole.pharmacist:
       case UserRole.cashier:
-        return const BusinessAdminLayout();
+        return AuthGuard(
+          allowedRoles: const [
+            UserRole.businessAdmin,
+            UserRole.pharmacist,
+            UserRole.cashier,
+          ],
+          child: const BusinessAdminLayout(),
+        );
+        
       case UserRole.customer:
-        return const CustomerPortalView();
+        return AuthGuard(
+          allowedRoles: const [UserRole.customer],
+          child: const CustomerPortalView(),
+        );
     }
   }
 }

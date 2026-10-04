@@ -19,7 +19,6 @@ class LoginView extends StatefulWidget {
 class _LoginViewState extends State<LoginView>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  UserRole _selectedRole = UserRole.businessAdmin;
   bool _isLoading = false;
   String? _errorMessage;
   String? _successMessage;
@@ -58,17 +57,6 @@ class _LoginViewState extends State<LoginView>
     super.dispose();
   }
 
-  void _onRoleSelected(UserRole role) {
-    setState(() {
-      _selectedRole = role;
-      _errorMessage = null;
-      _successMessage = null;
-      _showRegister = false;
-      _emailCtrl.clear();
-      _passwordCtrl.clear();
-    });
-  }
-
   // â”€â”€ Sign In â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   Future<void> _handleLogin() async {
     final email    = _emailCtrl.text.trim();
@@ -89,7 +77,7 @@ class _LoginViewState extends State<LoginView>
 
     if (!AppConfig.supabaseConfigured) {
       await Future.delayed(const Duration(milliseconds: 500));
-      auth.login(email: email, role: _selectedRole);
+      auth.login(email: email);
       if (mounted) setState(() => _isLoading = false);
       return;
     }
@@ -98,7 +86,6 @@ class _LoginViewState extends State<LoginView>
       await auth.signInWithSupabase(
         email: email,
         password: password,
-        role: _selectedRole,
       );
     } catch (e) {
       if (mounted) {
@@ -262,8 +249,8 @@ class _LoginViewState extends State<LoginView>
 
   // â”€â”€ Main form – switches between Sign In and Register â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   Widget _mainForm() {
-    // When Customer is selected and register mode is on, show register form
-    final isCustomer = _selectedRole == UserRole.customer;
+    // ✅ SECURITY FIX: Role selection removed - role fetched from database
+    final isCustomer = false; // Always show sign-in form
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -284,6 +271,7 @@ class _LoginViewState extends State<LoginView>
         const SizedBox(height: 20),
 
         // â”€â”€ Role cards â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        /* SECURITY FIX: Removed role selection UI
         _RoleCard(
           role: UserRole.businessAdmin,
           title: 'Business Admin & Staff',
@@ -291,8 +279,9 @@ class _LoginViewState extends State<LoginView>
           icon: Icons.store,
           selectedRole: _selectedRole,
           onTap: _onRoleSelected,
-        ),
+        ), */
         const SizedBox(height: 10),
+        /* SECURITY FIX: Removed role selection UI
         _RoleCard(
           role: UserRole.superAdmin,
           title: 'Super Admin Portal',
@@ -300,8 +289,9 @@ class _LoginViewState extends State<LoginView>
           icon: Icons.admin_panel_settings,
           selectedRole: _selectedRole,
           onTap: _onRoleSelected,
-        ),
+        ), */
         const SizedBox(height: 10),
+        /* SECURITY FIX: Removed role selection UI
         _RoleCard(
           role: UserRole.customer,
           title: 'Customer / Patient Portal',
@@ -309,7 +299,7 @@ class _LoginViewState extends State<LoginView>
           icon: Icons.person_pin,
           selectedRole: _selectedRole,
           onTap: _onRoleSelected,
-        ),
+        ), */
         const SizedBox(height: 24),
 
         // â”€â”€ Sign In / Register tab strip (Customer portal only) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -524,8 +514,8 @@ class _LoginViewState extends State<LoginView>
                     height: 22,
                     child: CircularProgressIndicator(
                         strokeWidth: 2, color: Colors.white))
-                : Text('Sign In – ${_portalLabel(_selectedRole)}',
-                    style: const TextStyle(fontSize: 15)),
+                : const Text('Sign In',
+                    style: TextStyle(fontSize: 15)),
           ),
         ),
       ],

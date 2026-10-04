@@ -29,6 +29,8 @@ class AccountingProvider extends ChangeNotifier {
   final List<LedgerEntryModel> _ledgerEntries = [];
   final List<InvoiceModel> _salesInvoices = [];
   final List<CreditDebitNote> _cdNotes = [];
+  
+  String? _tenantId; // Track tenant context for validation
 
   List<LedgerEntryModel> get ledgerEntries => List.unmodifiable(_ledgerEntries);
   List<InvoiceModel> get salesInvoices => List.unmodifiable(_salesInvoices);
@@ -38,16 +40,33 @@ class AccountingProvider extends ChangeNotifier {
     _seedSampleLedger();
     _loadSalesFromDatabase();
   }
+  
+  /// Set tenant context for validation
+  void setTenantContext(String? tenantId) {
+    if (_tenantId != tenantId) {
+      _tenantId = tenantId;
+      // Clear data when tenant context changes
+      _salesInvoices.clear();
+      _loadSalesFromDatabase();
+    }
+  }
 
   // ── Load sales from database ──────────────────────────────────────────────
   Future<void> _loadSalesFromDatabase() async {
+    // Don't load if no tenant context
+    if (_tenantId == null) {
+      debugPrint('⚠️ Cannot load sales: no tenant context');
+      return;
+    }
+    
     try {
       final supabase = Supabase.instance.client;
       
-      // Load from 'sales' table - only select columns that definitely exist
+      // Load from 'sales' table with tenant filter
       final response = await supabase
           .from('sales')
           .select('id, invoice_number, invoice_date, customer_name, customer_phone, payment_mode, grand_total')
+          .eq('tenant_id', _tenantId!)
           .order('invoice_date', ascending: false)
           .limit(100);
       
@@ -67,7 +86,7 @@ class AccountingProvider extends ChangeNotifier {
       
       _salesInvoices.addAll(invoices);
       notifyListeners();
-      debugPrint('✅ Loaded ${invoices.length} invoices from database for dashboard');
+      debugPrint('✅ Loaded ${invoices.length} invoices from database for tenant $_tenantId');
     } catch (e) {
       debugPrint('⚠️ Error loading sales from database: $e');
       // Non-fatal - app can continue with empty dashboard
@@ -104,14 +123,21 @@ class AccountingProvider extends ChangeNotifier {
 
   // Method to refresh data manually
   Future<void> refreshSalesData() async {
+    // Don't refresh if no tenant context
+    if (_tenantId == null) {
+      debugPrint('⚠️ Cannot refresh sales: no tenant context');
+      return;
+    }
+    
     // Don't clear existing invoices - just reload from database and merge
     try {
       final supabase = Supabase.instance.client;
       
-      // Load from 'sales' table - only columns that exist
+      // Load from 'sales' table with tenant filter
       final response = await supabase
           .from('sales')
           .select('id, invoice_number, invoice_date, customer_name, customer_phone, payment_mode, grand_total')
+          .eq('tenant_id', _tenantId!)
           .order('invoice_date', ascending: false)
           .limit(100);
       
