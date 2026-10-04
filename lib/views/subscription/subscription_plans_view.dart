@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../config/app_theme.dart';
+import 'payment_page.dart';
 
 /// Displays available subscription plans for pharmacy owners to choose from
 /// after business registration. Shows Basic, Professional, and Enterprise tiers
@@ -53,30 +54,22 @@ class _SubscriptionPlansViewState extends State<SubscriptionPlansView> {
       _selectedPlanId = planId;
     });
 
-    // TODO: Navigate to PayPal payment page
-    // For now, show a placeholder dialog
+    // Find the selected plan
+    final selectedPlan = _plans.firstWhere((plan) => plan['id'] == planId);
+
+    // Navigate to payment page
     if (mounted) {
-      showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('Payment Integration Pending'),
-          content: const Text(
-            'PayPal payment integration will be implemented in the next step. '
-            'You have selected a plan successfully.',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-                setState(() {
-                  _selectedPlanId = null;
-                });
-              },
-              child: const Text('OK'),
-            ),
-          ],
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => PaymentPage(plan: selectedPlan),
         ),
-      );
+      ).then((_) {
+        // Reset selection when coming back
+        setState(() {
+          _selectedPlanId = null;
+        });
+      });
     }
   }
 
