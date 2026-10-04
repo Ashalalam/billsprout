@@ -1,8 +1,8 @@
 {
   "version": 2,
   "name": "billsprout",
-  "buildCommand": "cd lifesprout && flutter build web --release",
-  "outputDirectory": "lifesprout/build/web",
+  "buildCommand": "echo 'Using pre-built files'",
+  "outputDirectory": "build/web",
   "routes": [
     {
       "src": "/assets/(.*)",
