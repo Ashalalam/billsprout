@@ -20,6 +20,8 @@ import 'services/sync_service.dart';
 import 'services/ota_service.dart';
 import 'middleware/auth_guard.dart';
 import 'views/auth/login_view.dart';
+import 'views/auth/business_register_view.dart';
+import 'views/subscription/subscription_plans_view.dart';
 import 'views/super_admin/super_admin_dashboard.dart';
 import 'views/business_admin/business_admin_layout.dart';
 import 'views/customer/customer_portal_view.dart';
@@ -117,6 +119,10 @@ class BillSproutApp extends StatelessWidget {
         debugShowCheckedModeBanner: false,
         theme: AppTheme.lightTheme,
         home: const PortalRouter(),
+        routes: {
+          '/business-register': (context) => const BusinessRegisterView(),
+          '/subscription-plans': (context) => const SubscriptionPlansView(),
+        },
       ),
     );
   }

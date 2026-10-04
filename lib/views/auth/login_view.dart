@@ -389,6 +389,61 @@ class _LoginViewState extends State<LoginView>
         ],
 
         const SizedBox(height: 20),
+        
+        // Business Sign Up CTA
+        Center(
+          child: Container(
+            padding: const EdgeInsets.all(20),
+            margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [AppTheme.primaryBlue.withOpacity(0.1), AppTheme.accentOrange.withOpacity(0.1)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppTheme.primaryBlue.withOpacity(0.3)),
+            ),
+            child: Column(
+              children: [
+                const Text(
+                  '🚀 Start Your Pharmacy Software Journey',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'Join hundreds of pharmacies using BillSprout',
+                  style: TextStyle(fontSize: 12, color: AppTheme.textMuted),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 12),
+                ElevatedButton.icon(
+                  onPressed: () {
+                    Navigator.pushNamed(context, '/business-register');
+                  },
+                  icon: const Icon(Icons.business, size: 20),
+                  label: const Text('Start Free Trial'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.primaryBlue,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                const Text(
+                  'No credit card required • 7-day free trial',
+                  style: TextStyle(fontSize: 10, color: AppTheme.textMuted),
+                ),
+              ],
+            ),
+          ),
+        ),
+        
+        const SizedBox(height: 10),
         Center(
           child: TextButton.icon(
             onPressed: () => SupportContactModal.show(context),
