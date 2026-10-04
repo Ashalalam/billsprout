@@ -72,12 +72,12 @@ class BillSproutApp extends StatelessWidget {
           create: (context) {
             final auth = Provider.of<AuthProvider>(context, listen: false);
             final provider = AccountingProvider();
-            provider.setTenantContext(auth.tenantId);
+            provider.setTenantContext(auth.tenantId, auth.branchId);
             return provider;
           },
           update: (_, auth, previous) {
             final provider = previous ?? AccountingProvider();
-            provider.setTenantContext(auth.tenantId);
+            provider.setTenantContext(auth.tenantId, auth.branchId);
             return provider;
           },
         ),

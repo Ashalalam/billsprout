@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/ledger_entry_model.dart';
 import '../models/invoice_model.dart';
+import '../services/supabase_service.dart';
 
 // ── Credit / Debit Note model ──────────────────────────────────────────────
 class CreditDebitNote {
@@ -31,6 +32,7 @@ class AccountingProvider extends ChangeNotifier {
   final List<CreditDebitNote> _cdNotes = [];
   
   String? _tenantId; // Track tenant context for validation
+  String? _branchId; // Track branch context for sales
 
   List<LedgerEntryModel> get ledgerEntries => List.unmodifiable(_ledgerEntries);
   List<InvoiceModel> get salesInvoices => List.unmodifiable(_salesInvoices);
@@ -42,9 +44,10 @@ class AccountingProvider extends ChangeNotifier {
   }
   
   /// Set tenant context for validation
-  void setTenantContext(String? tenantId) {
-    if (_tenantId != tenantId) {
+  void setTenantContext(String? tenantId, String? branchId) {
+    if (_tenantId != tenantId || _branchId != branchId) {
       _tenantId = tenantId;
+      _branchId = branchId;
       // Clear data when tenant context changes
       _salesInvoices.clear();
       _loadSalesFromDatabase();
@@ -197,6 +200,99 @@ class AccountingProvider extends ChangeNotifier {
       ),
     );
     notifyListeners();
+    
+    // Sync to Supabase in background
+    _syncSaleToSupabase(invoice);
+  }
+  
+  /// Sync a sale to Supabase
+  Future<void> _syncSaleToSupabase(InvoiceModel invoice) async {
+    if (_tenantId == null || _branchId == null) {
+      debugPrint('[Accounting] Cannot sync sale: missing tenant/branch context');
+      return;
+    }
+    
+    try {
+      final saleRow = {
+        'id': invoice.id,
+        'tenant_id': _tenantId,
+        'branch_id': _branchId,
+        'invoice_number': invoice.invoiceNumber,
+        'invoice_date': invoice.timestamp.toIso8601String(),
+        'customer_name': invoice.customerName,
+        'customer_phone': invoice.customerPhone,
+        'customer_gstin': invoice.customerGstin,
+        'billing_type': invoice.billingType,
+        'doctor_name': invoice.doctorName,
+        'doctor_mci_no': invoice.doctorMciNo,
+        'prescription_id': null, // Not available in InvoiceModel
+        'subtotal': invoice.subtotal,
+        'cgst_amount': invoice.totalTax / 2, // Split tax equally between CGST and SGST
+        'sgst_amount': invoice.totalTax / 2,
+        'igst_amount': 0.0,
+        'total_gst': invoice.totalTax,
+        'round_off': invoice.roundOff,
+        'grand_total': invoice.grandTotal,
+        'payment_mode': invoice.paymentMode.name,
+        'payment_status': 'completed',
+        'pharmacist_authorized_by': invoice.pharmacistPinApprovedBy,
+        'authorized_pharmacist_id': invoice.authorizedPharmacistId,
+        'is_synced': invoice.isSynced,
+        'created_at': invoice.timestamp.toIso8601String(),
+        'updated_at': DateTime.now().toIso8601String(),
+      };
+      
+      await SupabaseService().upsertSale(saleRow);
+      
+      // Sync sale items
+      for (final item in invoice.items) {
+        await _syncSaleItemToSupabase(invoice.id, item);
+      }
+      
+      debugPrint('[Accounting] Sale synced to Supabase: ${invoice.invoiceNumber}');
+    } catch (e) {
+      debugPrint('[Accounting] Sale sync error: $e');
+    }
+  }
+  
+  /// Sync a sale item to Supabase
+  Future<void> _syncSaleItemToSupabase(String saleId, InvoiceItem item) async {
+    if (_tenantId == null) {
+      debugPrint('[Accounting] Cannot sync sale item: missing tenant context');
+      return;
+    }
+    
+    try {
+      final itemRow = {
+        'id': 'si_${DateTime.now().millisecondsSinceEpoch}_${item.product.id.substring(0, 8)}',
+        'sale_id': saleId,
+        'tenant_id': _tenantId,
+        'product_id': item.product.id,
+        'batch_id': item.batch.id,
+        'product_name': item.product.name,
+        'batch_number': item.batch.batchNumber,
+        'quantity': item.quantity,
+        'free_quantity': item.freeQuantity,
+        'unit_price': item.unitPrice,
+        'mrp': item.batch.mrp,
+        'discount_percent': item.discountPercent,
+        'cgst_percent': item.taxPercent / 2,
+        'sgst_percent': item.taxPercent / 2,
+        'igst_percent': 0.0,
+        'cgst_amount': item.cgst,
+        'sgst_amount': item.sgst,
+        'igst_amount': 0.0,
+        'total_amount': item.lineTotal,
+        'exp_date': item.batch.expDate.toIso8601String(),
+        'hsn_code': item.product.hsnCode,
+        'created_at': DateTime.now().toIso8601String(),
+      };
+      
+      await SupabaseService().upsertSaleItem(itemRow);
+      debugPrint('[Accounting] Sale item synced: ${item.product.name}');
+    } catch (e) {
+      debugPrint('[Accounting] Sale item sync error: $e');
+    }
   }
 
   String generateGstr1Json() {

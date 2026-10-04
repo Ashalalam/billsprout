@@ -213,6 +213,15 @@ class SupabaseService {
     await _client.from('batches').upsert(batch);
   }
 
+  // ── Sales & Sale Items ────────────────────────────────────────────────────
+  Future<void> upsertSale(Map<String, dynamic> sale) async {
+    await _client.from('sales').upsert(sale);
+  }
+
+  Future<void> upsertSaleItem(Map<String, dynamic> saleItem) async {
+    await _client.from('sale_items').upsert(saleItem);
+  }
+
   // ── Restricted Drug Log ───────────────────────────────────────────────────
   Future<void> insertRestrictedDrugLog(Map<String, dynamic> log) async {
     await _client.from('restricted_drug_logs').insert(log);
