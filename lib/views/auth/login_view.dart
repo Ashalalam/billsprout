@@ -438,6 +438,29 @@ class _LoginViewState extends State<LoginView>
                   'No credit card required • 7-day free trial',
                   style: TextStyle(fontSize: 10, color: AppTheme.textMuted),
                 ),
+                const SizedBox(height: 16),
+                const Divider(),
+                const SizedBox(height: 8),
+                const Text(
+                  'Are you a customer?',
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+                ),
+                const SizedBox(height: 8),
+                OutlinedButton.icon(
+                  onPressed: () {
+                    Navigator.pushNamed(context, '/customer-register');
+                  },
+                  icon: const Icon(Icons.person_add, size: 18),
+                  label: const Text('Create Customer Account'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppTheme.primaryBlue,
+                    side: BorderSide(color: AppTheme.primaryBlue.withOpacity(0.5)),
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                ),
               ],
             ),
           ),
