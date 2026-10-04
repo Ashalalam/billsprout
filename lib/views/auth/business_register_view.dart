@@ -72,10 +72,14 @@ class _BusinessRegisterViewState extends State<BusinessRegisterView> {
       final email = _emailCtrl.text.trim();
       final password = _passwordCtrl.text;
       
-      // Step 1: Create auth user and automatically sign in
+      // Step 1: Create auth user
       final authResponse = await supabase.auth.signUp(
         email: email,
         password: password,
+        data: {
+          'email_confirmed': true,
+          'registration_type': 'business',
+        },
       );
 
       if (authResponse.user == null) {
@@ -84,17 +88,31 @@ class _BusinessRegisterViewState extends State<BusinessRegisterView> {
 
       final userId = authResponse.user!.id;
 
-      // Step 1.5: Ensure user is signed in (signUp sometimes doesn't auto-login)
-      if (authResponse.session == null) {
-        // Sign in to get a session
-        final signInResponse = await supabase.auth.signInWithPassword(
-          email: email,
-          password: password,
-        );
-        
-        if (signInResponse.session == null) {
-          throw Exception('Failed to authenticate. Please try logging in.');
+      // Step 1.5: Try to sign in immediately
+      // If email confirmation is required, this will fail, but we handle it gracefully
+      try {
+        if (authResponse.session == null) {
+          final signInResponse = await supabase.auth.signInWithPassword(
+            email: email,
+            password: password,
+          );
+          
+          if (signInResponse.session == null) {
+            // Email confirmation might be required
+            throw Exception('Email confirmation required');
+          }
         }
+      } catch (e) {
+        // If sign in fails due to email confirmation, show helpful message
+        if (e.toString().contains('Email not confirmed') || 
+            e.toString().contains('email_confirm')) {
+          throw Exception(
+            'Account created! However, email confirmation is enabled. '
+            'Please ask your administrator to run the auto-confirm SQL script '
+            'or disable email confirmation in Supabase settings.'
+          );
+        }
+        rethrow;
       }
 
       // Step 2: Create tenant record

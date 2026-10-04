@@ -58,6 +58,10 @@ class _CustomerRegisterViewState extends State<CustomerRegisterView> {
       final authResponse = await supabase.auth.signUp(
         email: email,
         password: password,
+        data: {
+          'email_confirmed': true,
+          'registration_type': 'customer',
+        },
       );
 
       if (authResponse.user == null) {
@@ -66,16 +70,29 @@ class _CustomerRegisterViewState extends State<CustomerRegisterView> {
 
       final userId = authResponse.user!.id;
 
-      // Step 2: Ensure user is authenticated
-      if (authResponse.session == null) {
-        final signInResponse = await supabase.auth.signInWithPassword(
-          email: email,
-          password: password,
-        );
+      // Step 2: Try to authenticate
+      try {
+        if (authResponse.session == null) {
+          final signInResponse = await supabase.auth.signInWithPassword(
+            email: email,
+            password: password,
+          );
 
-        if (signInResponse.session == null) {
-          throw Exception('Failed to authenticate. Please try logging in.');
+          if (signInResponse.session == null) {
+            throw Exception('Email confirmation required');
+          }
         }
+      } catch (e) {
+        // If sign in fails due to email confirmation, show helpful message
+        if (e.toString().contains('Email not confirmed') || 
+            e.toString().contains('email_confirm')) {
+          throw Exception(
+            'Account created! However, email confirmation is enabled. '
+            'Please ask your administrator to run the auto-confirm SQL script '
+            'or disable email confirmation in Supabase settings.'
+          );
+        }
+        rethrow;
       }
 
       // Step 3: Create customer user record

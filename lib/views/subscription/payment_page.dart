@@ -30,6 +30,7 @@ class _PaymentPageState extends State<PaymentPage> {
 
   void _generatePaymentUrl() {
     // Get PayPal.Me username from environment
+    // For web builds, use --dart-define=PAYPAL_ME_USERNAME=YourUsername
     const paypalUsername = String.fromEnvironment('PAYPAL_ME_USERNAME',
         defaultValue: 'LifeSproutCare');
 
@@ -357,12 +358,7 @@ class _PaymentPageState extends State<PaymentPage> {
                     width: double.infinity,
                     child: ElevatedButton.icon(
                       onPressed: _openPaymentLink,
-                      icon: Image.asset(
-                        'assets/images/paypal_logo.png',
-                        height: 24,
-                        errorBuilder: (_, __, ___) =>
-                            const Icon(Icons.payment, size: 24),
-                      ),
+                      icon: const Icon(Icons.account_balance_wallet, size: 24),
                       label: const Text(
                         'Pay with PayPal',
                         style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
