@@ -69,11 +69,13 @@ class _BusinessRegisterViewState extends State<BusinessRegisterView> {
 
     try {
       final supabase = Supabase.instance.client;
+      final email = _emailCtrl.text.trim();
+      final password = _passwordCtrl.text;
       
-      // Step 1: Create auth user
+      // Step 1: Create auth user and automatically sign in
       final authResponse = await supabase.auth.signUp(
-        email: _emailCtrl.text.trim(),
-        password: _passwordCtrl.text,
+        email: email,
+        password: password,
       );
 
       if (authResponse.user == null) {
@@ -81,6 +83,19 @@ class _BusinessRegisterViewState extends State<BusinessRegisterView> {
       }
 
       final userId = authResponse.user!.id;
+
+      // Step 1.5: Ensure user is signed in (signUp sometimes doesn't auto-login)
+      if (authResponse.session == null) {
+        // Sign in to get a session
+        final signInResponse = await supabase.auth.signInWithPassword(
+          email: email,
+          password: password,
+        );
+        
+        if (signInResponse.session == null) {
+          throw Exception('Failed to authenticate. Please try logging in.');
+        }
+      }
 
       // Step 2: Create tenant record
       final tenantData = {
