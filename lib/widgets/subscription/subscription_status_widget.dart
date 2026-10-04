@@ -78,7 +78,7 @@ class _SubscriptionStatusWidgetState extends State<SubscriptionStatusWidget> {
             ),
             const SizedBox(height: 12),
             const Text(
-              'Subscribe to unlock all features and continue using LifeSprout.',
+              'Subscribe to unlock all features and continue using BillSprout.',
               style: TextStyle(fontSize: 14),
             ),
             const SizedBox(height: 16),
