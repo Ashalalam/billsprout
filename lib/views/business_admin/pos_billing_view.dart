@@ -157,6 +157,30 @@ class _PosBillingViewState extends State<PosBillingView> {
   Widget _searchBar(BuildContext context, InventoryProvider inv) {
     return Row(
       children: [
+        // Refresh button to reload inventory from database
+        IconButton(
+          icon: inv.isSyncing 
+            ? const SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+            : const Icon(Icons.refresh, color: AppTheme.primaryBlue),
+          tooltip: 'Refresh inventory from database',
+          onPressed: inv.isSyncing ? null : () async {
+            // Force reload from Supabase
+            await inv.refreshFromDatabase();
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('✅ Inventory refreshed: ${inv.products.length} products loaded'),
+                  duration: const Duration(seconds: 2),
+                ),
+              );
+            }
+          },
+        ),
+        const SizedBox(width: 8),
         Expanded(
           child: TextField(
             controller: _searchCtrl,

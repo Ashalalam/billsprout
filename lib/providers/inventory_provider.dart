@@ -391,6 +391,11 @@ class InventoryProvider extends ChangeNotifier {
 
   // ── Supabase Sync ──────────────────────────────────────────────────────────
 
+  /// Manually refresh inventory from database (for POS refresh button)
+  Future<void> refreshFromDatabase() async {
+    await _syncFromSupabase();
+  }
+
   /// Sync products from Supabase to local state
   Future<void> _syncFromSupabase() async {
     if (authProvider.tenantId == null) return;
