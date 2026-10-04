@@ -63,6 +63,27 @@ class InventoryProvider extends ChangeNotifier {
     _syncProductToSupabase(product);
   }
 
+  /// Delete a product and all its batches
+  Future<void> deleteProduct(String productId) async {
+    // Validate tenant access before modifying data
+    if (authProvider.tenantId != null) {
+      await authProvider.validateTenantAccess(authProvider.tenantId!);
+    }
+    
+    final index = _products.indexWhere((p) => p.id == productId);
+    if (index < 0) return;
+    
+    final product = _products[index];
+    _products.removeAt(index);
+    await _saveToDisk();
+    notifyListeners();
+    
+    // Delete from Supabase in background
+    _deleteProductFromSupabase(productId);
+    
+    debugPrint('[Inventory] Deleted product: ${product.name}');
+  }
+
   /// Adds a new [batch] to an existing product and persists to disk.
   /// Also syncs to Supabase if configured.
   Future<void> addBatchToProduct(String productId, BatchModel batch) async {
@@ -472,6 +493,23 @@ class InventoryProvider extends ChangeNotifier {
       debugPrint('[Inventory] Batch sync failed: ${e.message}');
     } catch (e) {
       debugPrint('[Inventory] Batch sync error: $e');
+    }
+  }
+
+  /// Delete a product from Supabase
+  Future<void> _deleteProductFromSupabase(String productId) async {
+    if (authProvider.tenantId == null) {
+      debugPrint('[Inventory] Cannot delete product: missing tenant context');
+      return;
+    }
+    
+    try {
+      await SupabaseService().deleteProduct(productId);
+      debugPrint('[Inventory] Product deleted from Supabase: $productId');
+    } on PostgrestException catch (e) {
+      debugPrint('[Inventory] Product delete failed: ${e.message}');
+    } catch (e) {
+      debugPrint('[Inventory] Product delete error: $e');
     }
   }
 

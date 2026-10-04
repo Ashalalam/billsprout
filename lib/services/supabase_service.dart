@@ -205,6 +205,10 @@ class SupabaseService {
     await _client.from('products').upsert(product);
   }
 
+  Future<void> deleteProduct(String productId) async {
+    await _client.from('products').delete().eq('id', productId);
+  }
+
   Future<void> upsertBatch(Map<String, dynamic> batch) async {
     await _client.from('batches').upsert(batch);
   }

@@ -199,6 +199,14 @@ class _InventoryViewState extends State<InventoryView> with SingleTickerProvider
                             labelStyle: const TextStyle(color: AppTheme.errorRed, fontSize: 10, fontWeight: FontWeight.bold),
                           ),
                         const SizedBox(width: 4),
+                        // Delete product button
+                        IconButton(
+                          icon: const Icon(Icons.delete_outline,
+                              color: AppTheme.errorRed, size: 20),
+                          tooltip: 'Delete Medicine',
+                          onPressed: () => _confirmDeleteProduct(context, inventoryProvider, product),
+                        ),
+                        const SizedBox(width: 4),
                         // Quick add stock button per product
                         IconButton(
                           icon: const Icon(Icons.add_circle_outline,
@@ -1404,6 +1412,91 @@ class _InventoryViewState extends State<InventoryView> with SingleTickerProvider
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  void _confirmDeleteProduct(BuildContext context, InventoryProvider inv, ProductModel product) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.warning_amber_rounded, color: AppTheme.errorRed),
+            SizedBox(width: 8),
+            Text('Delete Medicine?'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Are you sure you want to delete this medicine?',
+              style: const TextStyle(fontSize: 14),
+            ),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppTheme.errorRed.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    product.name,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Total Stock: ${product.totalStock} units',
+                    style: const TextStyle(fontSize: 12),
+                  ),
+                  Text(
+                    'Batches: ${product.batches.length}',
+                    style: const TextStyle(fontSize: 12),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              '⚠️ This action cannot be undone. All batches and stock data will be permanently deleted.',
+              style: TextStyle(
+                fontSize: 12,
+                color: AppTheme.errorRed,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.errorRed,
+            ),
+            onPressed: () async {
+              Navigator.pop(ctx);
+              await inv.deleteProduct(product.id);
+              if (context.mounted) {
+                _showSnack(
+                  context,
+                  '✅ ${product.name} deleted successfully',
+                );
+              }
+            },
+            child: const Text('Delete Medicine'),
+          ),
+        ],
       ),
     );
   }
