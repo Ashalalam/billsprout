@@ -262,7 +262,7 @@ class _InventoryViewState extends State<InventoryView> with SingleTickerProvider
                                           ),
                                         ),
                                       ),
-                                      Padding(padding: EdgeInsets.all(6), child: Text('â‚¹${batch.mrp}', style: TextStyle(fontSize: 12))),
+                                      Padding(padding: EdgeInsets.all(6), child: Text('₹${batch.mrp}', style: TextStyle(fontSize: 12))),
                                       Padding(padding: EdgeInsets.all(6), child: Text('${batch.stockCount}', style: TextStyle(fontSize: 12))),
                                       Padding(padding: EdgeInsets.all(6), child: Text(batch.rackLocation, style: TextStyle(fontSize: 12))),
                                     ],
@@ -323,13 +323,13 @@ class _InventoryViewState extends State<InventoryView> with SingleTickerProvider
                             backgroundColor: Color(0xFFFFF3E0),
                             child: Icon(Icons.assignment_return, color: AppTheme.warningAmber),
                           ),
-                          title: Text('${rtv.rtvNumber} â€” ${rtv.productName}'),
+                          title: Text('${rtv.rtvNumber} – ${rtv.productName}'),
                           subtitle: Text(
                             'Supplier: ${rtv.supplierName} | Batch: ${rtv.batchNumber}\nQty Returned: ${rtv.quantity} | Reason: ${rtv.reason}',
                             style: TextStyle(fontSize: 12),
                           ),
                           trailing: Text(
-                            'â‚¹${rtv.totalRefundAmount.toStringAsFixed(2)}',
+                            '₹${rtv.totalRefundAmount.toStringAsFixed(2)}',
                             style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppTheme.warningAmber),
                           ),
                         );
@@ -381,7 +381,7 @@ class _InventoryViewState extends State<InventoryView> with SingleTickerProvider
                             backgroundColor: Color(0xFFE3F2FD),
                             child: Icon(Icons.swap_horiz, color: AppTheme.primaryBlue),
                           ),
-                          title: Text('${trf.transferNumber} â€” ${trf.productName}'),
+                          title: Text('${trf.transferNumber} – ${trf.productName}'),
                           subtitle: Text(
                             'From: ${trf.sourceBranch} âž” To: ${trf.destinationBranch}\nBatch: ${trf.batchNumber} | Qty: ${trf.quantity}',
                             style: TextStyle(fontSize: 12),
@@ -774,7 +774,7 @@ class _InventoryViewState extends State<InventoryView> with SingleTickerProvider
                         controller: mrpCtrl,
                         keyboardType: TextInputType.number,
                         decoration: const InputDecoration(
-                            labelText: 'MRP per unit (â‚¹) *'),
+                            labelText: 'MRP per unit (₹) *'),
                       ),
                     ),
                     const SizedBox(width: 10),
@@ -783,7 +783,7 @@ class _InventoryViewState extends State<InventoryView> with SingleTickerProvider
                         controller: ppCtrl,
                         keyboardType: TextInputType.number,
                         decoration: const InputDecoration(
-                            labelText: 'Purchase Price (â‚¹)'),
+                            labelText: 'Purchase Price (₹)'),
                       ),
                     ),
                     const SizedBox(width: 10),
@@ -1094,7 +1094,7 @@ class _InventoryViewState extends State<InventoryView> with SingleTickerProvider
                             controller: mrpCtrl,
                             keyboardType: TextInputType.number,
                             decoration: const InputDecoration(
-                                labelText: 'MRP per unit (â‚¹) *'),
+                                labelText: 'MRP per unit (₹) *'),
                           ),
                         ),
                         const SizedBox(width: 10),
@@ -1103,7 +1103,7 @@ class _InventoryViewState extends State<InventoryView> with SingleTickerProvider
                             controller: ppCtrl,
                             keyboardType: TextInputType.number,
                             decoration: const InputDecoration(
-                                labelText: 'Purchase Price (â‚¹)'),
+                                labelText: 'Purchase Price (₹)'),
                           ),
                         ),
                         const SizedBox(width: 10),
@@ -1112,7 +1112,7 @@ class _InventoryViewState extends State<InventoryView> with SingleTickerProvider
                             controller: wsCtrl,
                             keyboardType: TextInputType.number,
                             decoration: const InputDecoration(
-                                labelText: 'Wholesale Price (â‚¹)'),
+                                labelText: 'Wholesale Price (₹)'),
                           ),
                         ),
                       ]),
@@ -1169,8 +1169,8 @@ class _InventoryViewState extends State<InventoryView> with SingleTickerProvider
                                                 fontSize: 13),
                                           ),
                                           Text(
-                                            'MRP: â‚¹${b.mrp}  â€¢  '
-                                            'Exp: ${b.expDate.month}/${b.expDate.year}  â€¢  '
+                                            'MRP: ₹${b.mrp}  •  '
+                                            'Exp: ${b.expDate.month}/${b.expDate.year}  •  '
                                             'Stock: ${b.stockCount}',
                                             style: const TextStyle(
                                                 fontSize: 11,
@@ -1275,7 +1275,7 @@ class _InventoryViewState extends State<InventoryView> with SingleTickerProvider
                     Navigator.pop(ctx);
                     _showSnack(
                         context,
-                        'âœ… Batch ${newBatch.batchNumber} added â€” '
+                        'âœ… Batch ${newBatch.batchNumber} added – '
                         '${newBatch.stockCount} units stocked in.');
                   },
                   icon: const Icon(Icons.save),
@@ -1305,7 +1305,7 @@ class _InventoryViewState extends State<InventoryView> with SingleTickerProvider
           children: [
             Text(
               'Current stock: ${batch.stockCount} units\n'
-              'MRP: â‚¹${batch.mrp}  â€¢  '
+              'MRP: ₹${batch.mrp}  •  '
               'Exp: ${batch.expDate.month}/${batch.expDate.year}',
               style: TextStyle(fontSize: 13, color: AppTheme.textMuted),
             ),

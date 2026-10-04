@@ -20,7 +20,7 @@ class _StockTransferViewState extends State<StockTransferView> {
           id: 'st_001',
           transferNumber: 'TRF-2026-0091',
           sourceBranch: 'LIFESPROUT Main Branch',
-          destinationBranch: 'Apex Healthcare â€” Zone B',
+          destinationBranch: 'Apex Healthcare – Zone B',
           productName: 'Amoxicillin 500mg Capsules',
           batchNumber: 'AMX-2024-09',
           quantity: 50,
@@ -31,7 +31,7 @@ class _StockTransferViewState extends State<StockTransferView> {
           id: 'st_002',
           transferNumber: 'TRF-2026-0092',
           sourceBranch: 'LIFESPROUT Main Branch',
-          destinationBranch: 'Sprout Retail â€” Mall Branch',
+          destinationBranch: 'Sprout Retail – Mall Branch',
           productName: 'Paracetamol 650mg Tablets',
           batchNumber: 'PCM-650-A',
           quantity: 200,
@@ -41,7 +41,7 @@ class _StockTransferViewState extends State<StockTransferView> {
         StockTransferModel(
           id: 'st_003',
           transferNumber: 'TRF-2026-0093',
-          sourceBranch: 'Apex Healthcare â€” Zone B',
+          sourceBranch: 'Apex Healthcare – Zone B',
           destinationBranch: 'LIFESPROUT Main Branch',
           productName: 'Digital Blood Pressure Monitor',
           batchNumber: 'BPM-2024-X',
@@ -77,7 +77,7 @@ class _StockTransferViewState extends State<StockTransferView> {
                       ),
                     ),
                     Text(
-                      'Move inventory between stores Â· Real-time transfer tracking',
+                      'Move inventory between stores · Real-time transfer tracking',
                       style: TextStyle(
                           color: AppTheme.textMuted, fontSize: 13),
                     ),
@@ -250,7 +250,7 @@ class _StockTransferViewState extends State<StockTransferView> {
                           .map((b) => DropdownMenuItem(
                               value: b.batchNumber,
                               child: Text(
-                                  '${b.batchNumber} â€” Stock: ${b.stockCount}',
+                                  '${b.batchNumber} – Stock: ${b.stockCount}',
                                   style:
                                       const TextStyle(fontSize: 13))))
                           .toList(),
@@ -381,12 +381,12 @@ class _TransferTile extends StatelessWidget {
         child: Icon(statusIcon, color: statusColor),
       ),
       title: Text(
-        '${transfer.transferNumber} â€” ${transfer.productName}',
+        '${transfer.transferNumber} – ${transfer.productName}',
         style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
       ),
       subtitle: Text(
         '${transfer.sourceBranch}  â†’  ${transfer.destinationBranch}\n'
-        'Batch: ${transfer.batchNumber}  â€¢  Qty: ${transfer.quantity}  â€¢  '
+        'Batch: ${transfer.batchNumber}  •  Qty: ${transfer.quantity}  •  '
         '${transfer.timestamp.day}/${transfer.timestamp.month}/${transfer.timestamp.year}',
         style: const TextStyle(fontSize: 12, height: 1.4),
       ),

@@ -260,7 +260,7 @@ class _LoginViewState extends State<LoginView>
     );
   }
 
-  // â”€â”€ Main form â€” switches between Sign In and Register â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // â”€â”€ Main form – switches between Sign In and Register â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   Widget _mainForm() {
     // When Customer is selected and register mode is on, show register form
     final isCustomer = _selectedRole == UserRole.customer;
@@ -287,7 +287,7 @@ class _LoginViewState extends State<LoginView>
         _RoleCard(
           role: UserRole.businessAdmin,
           title: 'Business Admin & Staff',
-          subtitle: 'POS Â· FEFO Stock Â· GST Â· Regulatory',
+          subtitle: 'POS · FEFO Stock · GST · Regulatory',
           icon: Icons.store,
           selectedRole: _selectedRole,
           onTap: _onRoleSelected,
@@ -296,7 +296,7 @@ class _LoginViewState extends State<LoginView>
         _RoleCard(
           role: UserRole.superAdmin,
           title: 'Super Admin Portal',
-          subtitle: 'Global Tenants Â· Metrics Â· OTA Releases',
+          subtitle: 'Global Tenants · Metrics · OTA Releases',
           icon: Icons.admin_panel_settings,
           selectedRole: _selectedRole,
           onTap: _onRoleSelected,
@@ -305,7 +305,7 @@ class _LoginViewState extends State<LoginView>
         _RoleCard(
           role: UserRole.customer,
           title: 'Customer / Patient Portal',
-          subtitle: 'Invoice History Â· Refill Reminders Â· Rx Upload',
+          subtitle: 'Invoice History · Refill Reminders · Rx Upload',
           icon: Icons.person_pin,
           selectedRole: _selectedRole,
           onTap: _onRoleSelected,
@@ -386,7 +386,7 @@ class _LoginViewState extends State<LoginView>
                 SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'Demo mode â€” enter any credentials to proceed.',
+                    'Demo mode – enter any credentials to proceed.',
                     style: TextStyle(
                         color: AppTheme.accentOrange,
                         fontSize: 11,
@@ -524,7 +524,7 @@ class _LoginViewState extends State<LoginView>
                     height: 22,
                     child: CircularProgressIndicator(
                         strokeWidth: 2, color: Colors.white))
-                : Text('Sign In â€” ${_portalLabel(_selectedRole)}',
+                : Text('Sign In – ${_portalLabel(_selectedRole)}',
                     style: const TextStyle(fontSize: 15)),
           ),
         ),
@@ -810,7 +810,7 @@ class _HeroPanel extends StatelessWidget {
                     SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        'DEMO MODE â€” configure Supabase credentials in AppConfig.',
+                        'DEMO MODE – configure Supabase credentials in AppConfig.',
                         style: TextStyle(
                             color: AppTheme.accentOrange,
                             fontSize: 11,

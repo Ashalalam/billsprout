@@ -303,7 +303,7 @@ class _PosBillingViewState extends State<PosBillingView> {
     );
   }
 
-  // â”€â”€ Product grid â€” adaptive columns â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // â”€â”€ Product grid – adaptive columns â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   Widget _productGrid(
       BuildContext context, List products, PosProvider pos) {
     if (products.isEmpty) {
@@ -393,7 +393,7 @@ class _PosBillingViewState extends State<PosBillingView> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text('â‚¹${batch?.mrp.toStringAsFixed(0) ?? '0'}',
+                              Text('₹${batch?.mrp.toStringAsFixed(0) ?? '0'}',
                                   style: const TextStyle(
                                       fontSize: 14,
                                       fontWeight: FontWeight.bold,
@@ -810,8 +810,8 @@ class _PosBillingViewState extends State<PosBillingView> {
           children: [
             Text('Invoice: ${invoice.invoiceNumber}',
                 style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
-            Text('${invoice.customerName} â€” ${invoice.customerPhone}'),
-            Text('Total: â‚¹${invoice.grandTotal.toStringAsFixed(2)}'),
+            Text('${invoice.customerName} – ${invoice.customerPhone}'),
+            Text('Total: ₹${invoice.grandTotal.toStringAsFixed(2)}'),
             const SizedBox(height: 14),
             const Text('Distribute receipt:',
                 style: TextStyle(fontWeight: FontWeight.w600)),
@@ -1066,9 +1066,9 @@ class _MobileCartBar extends StatelessWidget {
               Expanded(
                 child: Text(
                   count == 0
-                      ? 'Cart is empty â€” tap to open'
-                      : '$count item${count == 1 ? '' : 's'}  â€¢  '
-                          'â‚¹${posProvider.grandTotal.toStringAsFixed(2)}',
+                      ? 'Cart is empty – tap to open'
+                      : '$count item${count == 1 ? '' : 's'}  •  '
+                          '₹${posProvider.grandTotal.toStringAsFixed(2)}',
                   style: const TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,

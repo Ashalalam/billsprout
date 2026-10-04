@@ -20,7 +20,7 @@ class ScheduleHRegisterView extends StatelessWidget {
           children: [
             PageHeader(
               title: 'Schedule H / H1 & Narcotic Regulatory Register',
-              subtitle: 'Statutory Drug Inspector Audit Logs â€” Protected by Pharmacist PIN Approval',
+              subtitle: 'Statutory Drug Inspector Audit Logs – Protected by Pharmacist PIN Approval',
               action: ElevatedButton.icon(
                 style: ElevatedButton.styleFrom(backgroundColor: AppTheme.errorRed),
                 onPressed: () {},
@@ -75,7 +75,7 @@ class ScheduleHRegisterView extends StatelessWidget {
                               style: TextStyle(fontSize: 12),
                             ),
                             trailing: Text(
-                              'â‚¹${inv.grandTotal.toStringAsFixed(2)}',
+                              '₹${inv.grandTotal.toStringAsFixed(2)}',
                               style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
                             ),
                           );

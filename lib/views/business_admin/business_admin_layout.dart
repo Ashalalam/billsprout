@@ -97,7 +97,7 @@ class _BusinessAdminLayoutState extends State<BusinessAdminLayout> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  isMobile ? AppConfig.appName : '${AppConfig.appName} â€” Store Operations',
+                  isMobile ? AppConfig.appName : '${AppConfig.appName} – Store Operations',
                   style: TextStyle(
                     fontSize: isMobile ? 14 : 16,
                     fontWeight: FontWeight.bold,

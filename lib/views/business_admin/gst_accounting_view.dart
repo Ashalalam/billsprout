@@ -113,7 +113,7 @@ class _GstAccountingViewState extends State<GstAccountingView> with SingleTicker
                     title: Text(entry.accountName, style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
                     subtitle: Text('${entry.description} | Ref: ${entry.referenceId}\nDate: ${entry.date.toString().substring(0, 16)}'),
                     trailing: Text(
-                      '${isCredit ? "+" : "-"}â‚¹${entry.amount.toStringAsFixed(2)}',
+                      '${isCredit ? "+" : "-"}₹${entry.amount.toStringAsFixed(2)}',
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
@@ -336,12 +336,12 @@ class _GstAccountingViewState extends State<GstAccountingView> with SingleTicker
           children: [
             const Text('Summary for GSTIN: 07AAAAA0000A1Z5', style: TextStyle(fontWeight: FontWeight.bold)),
             const SizedBox(height: 12),
-            _summaryRow('Total Outward Taxable Value:', 'â‚¹${accounting.salesInvoices.fold(0.0, (s, i) => s + i.subtotal).toStringAsFixed(2)}'),
-            _summaryRow('Output IGST Payable:', 'â‚¹0.00'),
-            _summaryRow('Output CGST Payable (6%):', 'â‚¹${(accounting.salesInvoices.fold(0.0, (s, i) => s + i.totalTax) / 2).toStringAsFixed(2)}'),
-            _summaryRow('Output SGST Payable (6%):', 'â‚¹${(accounting.salesInvoices.fold(0.0, (s, i) => s + i.totalTax) / 2).toStringAsFixed(2)}'),
+            _summaryRow('Total Outward Taxable Value:', '₹${accounting.salesInvoices.fold(0.0, (s, i) => s + i.subtotal).toStringAsFixed(2)}'),
+            _summaryRow('Output IGST Payable:', '₹0.00'),
+            _summaryRow('Output CGST Payable (6%):', '₹${(accounting.salesInvoices.fold(0.0, (s, i) => s + i.totalTax) / 2).toStringAsFixed(2)}'),
+            _summaryRow('Output SGST Payable (6%):', '₹${(accounting.salesInvoices.fold(0.0, (s, i) => s + i.totalTax) / 2).toStringAsFixed(2)}'),
             const Divider(),
-            _summaryRow('Net Tax Liability:', 'â‚¹${accounting.salesInvoices.fold(0.0, (s, i) => s + i.totalTax).toStringAsFixed(2)}', isBold: true),
+            _summaryRow('Net Tax Liability:', '₹${accounting.salesInvoices.fold(0.0, (s, i) => s + i.totalTax).toStringAsFixed(2)}', isBold: true),
           ],
         ),
         actions: [

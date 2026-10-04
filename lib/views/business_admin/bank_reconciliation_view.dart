@@ -37,13 +37,13 @@ class _BankReconciliationViewState extends State<BankReconciliationView> {
 
   static List<BankStatementEntry> _seedBankEntries() => [
         BankStatementEntry(id: 'be_001', date: DateTime.now().subtract(const Duration(days: 2)),
-            description: 'NEFT Credit â€” Pharmacy Sales', amount: 4500.00, isCredit: true),
+            description: 'NEFT Credit – Pharmacy Sales', amount: 4500.00, isCredit: true),
         BankStatementEntry(id: 'be_002', date: DateTime.now().subtract(const Duration(days: 2)),
-            description: 'UPI Debit â€” LIFESPROUT Pharma Labs', amount: 11250.00, isCredit: false),
+            description: 'UPI Debit – LIFESPROUT Pharma Labs', amount: 11250.00, isCredit: false),
         BankStatementEntry(id: 'be_003', date: DateTime.now().subtract(const Duration(days: 1)),
-            description: 'IMPS Credit â€” Wholesale Customer', amount: 28600.00, isCredit: true),
+            description: 'IMPS Credit – Wholesale Customer', amount: 28600.00, isCredit: true),
         BankStatementEntry(id: 'be_004', date: DateTime.now(),
-            description: 'UPI Credit â€” POS Terminal', amount: 1850.00, isCredit: true),
+            description: 'UPI Credit – POS Terminal', amount: 1850.00, isCredit: true),
       ];
 
   @override
@@ -76,17 +76,17 @@ class _BankReconciliationViewState extends State<BankReconciliationView> {
             ),
             const SizedBox(height: 16),
 
-            // â”€â”€ KPI row â€” wraps to 2Ã—3 on mobile â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+            // â”€â”€ KPI row – wraps to 2×3 on mobile â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
             KpiRow(kpis: [
-              _kpiCard('Bank Credits',  'â‚¹${credits.toStringAsFixed(2)}', Icons.arrow_downward, AppTheme.successGreen),
-              _kpiCard('Bank Debits',   'â‚¹${debits.toStringAsFixed(2)}',  Icons.arrow_upward,   AppTheme.errorRed),
-              _kpiCard('Net Balance',   'â‚¹${net.toStringAsFixed(2)}',     Icons.account_balance, AppTheme.primaryBlue),
+              _kpiCard('Bank Credits',  '₹${credits.toStringAsFixed(2)}', Icons.arrow_downward, AppTheme.successGreen),
+              _kpiCard('Bank Debits',   '₹${debits.toStringAsFixed(2)}',  Icons.arrow_upward,   AppTheme.errorRed),
+              _kpiCard('Net Balance',   '₹${net.toStringAsFixed(2)}',     Icons.account_balance, AppTheme.primaryBlue),
               _kpiCard('Matched',       '$matched / ${_bankEntries.length}', Icons.check_circle, AppTheme.successGreen),
               _kpiCard('Unmatched',     '$unmatched',                     Icons.warning_amber,  AppTheme.warningAmber),
             ]),
             const SizedBox(height: 16),
 
-            // â”€â”€ Split view â€” stacks on mobile â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+            // â”€â”€ Split view – stacks on mobile â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
             Expanded(
               child: LayoutBuilder(
                 builder: (context, constraints) {
@@ -209,7 +209,7 @@ class _BankReconciliationViewState extends State<BankReconciliationView> {
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
                       Text(
-                        '${entry.isCredit ? '+' : '-'}â‚¹${entry.amount.toStringAsFixed(2)}',
+                        '${entry.isCredit ? '+' : '-'}₹${entry.amount.toStringAsFixed(2)}',
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 13,
@@ -278,7 +278,7 @@ class _BankReconciliationViewState extends State<BankReconciliationView> {
                           style: TextStyle(fontSize: 11),
                         ),
                         trailing: Text(
-                          '${isCredit ? '+' : '-'}â‚¹${entry.amount.toStringAsFixed(2)}',
+                          '${isCredit ? '+' : '-'}₹${entry.amount.toStringAsFixed(2)}',
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 12,
@@ -315,8 +315,8 @@ class _BankReconciliationViewState extends State<BankReconciliationView> {
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
-                  'Bank: ${bankEntry.description}  â€¢  '
-                  '${bankEntry.isCredit ? '+' : '-'}â‚¹${bankEntry.amount.toStringAsFixed(2)}',
+                  'Bank: ${bankEntry.description}  •  '
+                  '${bankEntry.isCredit ? '+' : '-'}₹${bankEntry.amount.toStringAsFixed(2)}',
                   style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
                 ),
               ),
@@ -337,7 +337,7 @@ class _BankReconciliationViewState extends State<BankReconciliationView> {
                       title: Text(entry.accountName,
                           style: TextStyle(fontSize: 12)),
                       subtitle: Text(
-                          '${entry.type.name}  â€¢  â‚¹${entry.amount.toStringAsFixed(2)}',
+                          '${entry.type.name}  •  ₹${entry.amount.toStringAsFixed(2)}',
                           style: TextStyle(fontSize: 11)),
                       trailing: alreadyLinked
                           ? const Text('Matched',
@@ -395,7 +395,7 @@ class _BankReconciliationViewState extends State<BankReconciliationView> {
               Navigator.pop(ctx);
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
-                  content: Text('Bank statement imported â€” 4 entries loaded.'),
+                  content: Text('Bank statement imported – 4 entries loaded.'),
                   backgroundColor: AppTheme.successGreen,
                 ),
               );

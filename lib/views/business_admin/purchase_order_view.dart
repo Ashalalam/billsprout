@@ -204,7 +204,7 @@ class _PurchaseOrderViewState extends State<PurchaseOrderView>
                           color: AppTheme.primaryBlue),
                     ),
                     Text(
-                      'Vendor PO management Â· Goods Receipt Notes Â· Return to Vendor',
+                      'Vendor PO management · Goods Receipt Notes · Return to Vendor',
                       style: TextStyle(
                           color: AppTheme.textMuted, fontSize: 13),
                     ),
@@ -318,14 +318,14 @@ class _PurchaseOrderTab extends StatelessWidget {
                                 color: _poStatusColor(po.status)),
                           ),
                           title: Text(
-                            '${po.poNumber} â€” ${po.vendorName}',
+                            '${po.poNumber} – ${po.vendorName}',
                             style: const TextStyle(
                                 fontWeight: FontWeight.bold),
                           ),
                           subtitle: Text(
                             '${po.orderDate.day}/${po.orderDate.month}/${po.orderDate.year}  '
-                            'â€¢  ${po.items.length} items  â€¢  '
-                            'Total: â‚¹${po.totalAmount.toStringAsFixed(2)}',
+                            '•  ${po.items.length} items  •  '
+                            'Total: ₹${po.totalAmount.toStringAsFixed(2)}',
                             style: TextStyle(fontSize: 12),
                           ),
                           trailing: Chip(
@@ -359,8 +359,8 @@ class _PurchaseOrderTab extends StatelessWidget {
                                       _TH('Medicine'),
                                       _TH('HSN'),
                                       _TH('Qty'),
-                                      _TH('Rate (â‚¹)'),
-                                      _TH('Total (â‚¹)'),
+                                      _TH('Rate (₹)'),
+                                      _TH('Total (₹)'),
                                     ],
                                   ),
                                   ...po.items.map((item) => TableRow(
@@ -368,8 +368,8 @@ class _PurchaseOrderTab extends StatelessWidget {
                                           _TC(item.medicineName),
                                           _TC(item.hsnCode),
                                           _TC('${item.quantity}'),
-                                          _TC('â‚¹${item.purchasePrice.toStringAsFixed(2)}'),
-                                          _TC('â‚¹${item.totalCost.toStringAsFixed(2)}'),
+                                          _TC('₹${item.purchasePrice.toStringAsFixed(2)}'),
+                                          _TC('₹${item.totalCost.toStringAsFixed(2)}'),
                                         ],
                                       )),
                                 ],
@@ -447,7 +447,7 @@ class _PurchaseOrderTab extends StatelessWidget {
                           controller: priceCtrl,
                           keyboardType: TextInputType.number,
                           decoration: const InputDecoration(
-                              labelText: 'Purchase Rate (â‚¹) *'))),
+                              labelText: 'Purchase Rate (₹) *'))),
                 ]),
               ],
             ),
@@ -545,8 +545,8 @@ class _VendorTab extends StatelessWidget {
                               style: const TextStyle(
                                   fontWeight: FontWeight.bold)),
                           subtitle: Text(
-                            'GSTIN: ${v.gstin}  â€¢  DL: ${v.drugLicenseNo}\n'
-                            '${v.phone}  â€¢  ${v.email}',
+                            'GSTIN: ${v.gstin}  •  DL: ${v.drugLicenseNo}\n'
+                            '${v.phone}  •  ${v.email}',
                             style: const TextStyle(
                                 fontSize: 12, height: 1.4),
                           ),
@@ -745,7 +745,7 @@ class _RtvTab extends StatelessWidget {
                           AppTheme.warningAmber.withValues(alpha: 0.4)),
                 ),
                 child: Text(
-                  'Total Pending Refunds: â‚¹${totalRefund.toStringAsFixed(2)}',
+                  'Total Pending Refunds: ₹${totalRefund.toStringAsFixed(2)}',
                   style: const TextStyle(
                       fontWeight: FontWeight.bold,
                       color: AppTheme.warningAmber),
@@ -781,18 +781,18 @@ class _RtvTab extends StatelessWidget {
                                 color: AppTheme.warningAmber),
                           ),
                           title: Text(
-                            '${rtv.rtvNumber} â€” ${rtv.productName}',
+                            '${rtv.rtvNumber} – ${rtv.productName}',
                             style: const TextStyle(
                                 fontWeight: FontWeight.bold),
                           ),
                           subtitle: Text(
-                            'Supplier: ${rtv.supplierName}  â€¢  Batch: ${rtv.batchNumber}\n'
-                            'Reason: ${rtv.reason}  â€¢  Qty: ${rtv.quantity}  â€¢  '
+                            'Supplier: ${rtv.supplierName}  •  Batch: ${rtv.batchNumber}\n'
+                            'Reason: ${rtv.reason}  •  Qty: ${rtv.quantity}  •  '
                             '${rtv.date.day}/${rtv.date.month}/${rtv.date.year}',
                             style: TextStyle(fontSize: 12),
                           ),
                           trailing: Text(
-                            'â‚¹${rtv.totalRefundAmount.toStringAsFixed(2)}',
+                            '₹${rtv.totalRefundAmount.toStringAsFixed(2)}',
                             style: const TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 15,
@@ -868,7 +868,7 @@ class _RtvTab extends StatelessWidget {
                           controller: priceCtrl,
                           keyboardType: TextInputType.number,
                           decoration: const InputDecoration(
-                              labelText: 'Unit Price (â‚¹) *'))),
+                              labelText: 'Unit Price (₹) *'))),
                 ]),
                 const SizedBox(height: 10),
                 DropdownButtonFormField<String>(
