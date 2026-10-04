@@ -619,8 +619,11 @@ class _PosBillingViewState extends State<PosBillingView> {
           ]),
         ),
         const SizedBox(height: 10),
-        // Payment chips
-        Wrap(spacing: 4, runSpacing: 4, children: PaymentMode.values.map((mode) {
+        // Payment chips - Only Cash and PayPal
+        Wrap(spacing: 4, runSpacing: 4, children: [
+          PaymentMode.cash,
+          PaymentMode.paypal,
+        ].map((mode) {
           final sel = pos.paymentMode == mode;
           return ChoiceChip(
             label: Text(mode.name.toUpperCase()),
