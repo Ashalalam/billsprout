@@ -30,9 +30,14 @@ migrate_working_dir/
 .packages
 .pub-cache/
 .pub/
-/build/
-# IMPORTANT: Don't ignore build/web for Vercel deployment
-!build/web/
+# Build directory - ignore everything except web
+/build/app/
+/build/flutter_assets/
+/build/linux/
+/build/macos/
+/build/windows/
+/build/ios/
+/build/android/
 
 # Symbolication related
 app.*.symbols
@@ -45,8 +50,8 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 
-# Environment variables - NEVER commit secrets
-.env
+# Environment variables - NEVER commit secrets in project root
+/.env
 .env.local
 .env.*.local
 
