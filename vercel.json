@@ -1,21 +1,38 @@
 {
-  "buildCommand": null,
-  "outputDirectory": "build/web",
-  "installCommand": null,
-  "framework": null,
-  "rewrites": [
+  "version": 2,
+  "name": "billsprout",
+  "buildCommand": "cd lifesprout && flutter build web --release",
+  "outputDirectory": "lifesprout/build/web",
+  "routes": [
     {
-      "source": "/(.*)",
-      "destination": "/index.html"
+      "src": "/assets/(.*)",
+      "dest": "/assets/$1"
+    },
+    {
+      "src": "/canvaskit/(.*)",
+      "dest": "/canvaskit/$1"
+    },
+    {
+      "src": "/(.*\\.(js|css|json|ico|png|jpg|jpeg|svg|woff|woff2|ttf|eot))",
+      "dest": "/$1"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/index.html"
     }
   ],
   "headers": [
     {
       "source": "/(.*)",
       "headers": [
-        { "key": "Cross-Origin-Embedder-Policy", "value": "require-corp" },
-        { "key": "Cross-Origin-Opener-Policy", "value": "same-origin" },
-        { "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate" }
+        {
+          "key": "Cross-Origin-Embedder-Policy",
+          "value": "require-corp"
+        },
+        {
+          "key": "Cross-Origin-Opener-Policy",
+          "value": "same-origin"
+        }
       ]
     }
   ]

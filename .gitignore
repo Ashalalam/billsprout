@@ -5,11 +5,9 @@
 *.swp
 .DS_Store
 .atom/
-.build/
 .buildlog/
 .history
 .svn/
-.swiftpm/
 migrate_working_dir/
 
 # IntelliJ related
@@ -27,13 +25,14 @@ migrate_working_dir/
 **/doc/api/
 **/ios/Flutter/.last_build_id
 .dart_tool/
+.flutter-plugins
 .flutter-plugins-dependencies
+.packages
 .pub-cache/
 .pub/
-# Exclude all build artifacts EXCEPT the Flutter web output (served by Vercel)
 /build/
-!/build/web/
-/coverage/
+# IMPORTANT: Don't ignore build/web for Vercel deployment
+!build/web/
 
 # Symbolication related
 app.*.symbols
@@ -46,21 +45,16 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 
-# Widget Preview related
-.widget_preview/
-
-# Credentials — never commit. Contains Supabase keys.
+# Environment variables - NEVER commit secrets
 .env
-.env.*
-!.env.example
+.env.local
+.env.*.local
 
-# Node tooling used by the database verification scripts in tool/
-node_modules/
-package-lock.json
+# Windows specific
+Thumbs.db
+ehthumbs.db
+Desktop.ini
 
-# PayPal Credentials - NEVER commit these files
-**/paypal_credentials.json
-**/paypal_keys.dart
-MY_PAYPAL_CREDENTIALS.md
-**/.env.paypal
-**/paypal_config_local.dart
+# Temporary files
+temp_reload.txt
+*.tmp
