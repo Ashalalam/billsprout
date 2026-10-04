@@ -23,6 +23,7 @@ import 'views/auth/login_view.dart';
 import 'views/auth/business_register_view.dart';
 import 'views/auth/customer_register_view.dart';
 import 'views/subscription/subscription_plans_view.dart';
+import 'views/license/my_license_view.dart';
 import 'views/super_admin/super_admin_dashboard.dart';
 import 'views/business_admin/business_admin_layout.dart';
 import 'views/customer/customer_portal_view.dart';
@@ -124,6 +125,7 @@ class BillSproutApp extends StatelessWidget {
           '/business-register': (context) => const BusinessRegisterView(),
           '/customer-register': (context) => const CustomerRegisterView(),
           '/subscription-plans': (context) => const SubscriptionPlansView(),
+          '/my-license': (context) => const MyLicenseView(),
         },
       ),
     );
