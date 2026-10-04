@@ -1,7 +1,7 @@
 {
   "version": 2,
   "name": "billsprout",
-  "buildCommand": "echo 'Using pre-built files'",
+  "buildCommand": "echo 'Using pre-built files from build/web'",
   "outputDirectory": "build/web",
   "routes": [
     {
