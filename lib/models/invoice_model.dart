@@ -208,7 +208,7 @@ class InvoiceItem {
         looseUnits: json['looseUnits'] ?? 0,
         freeLooseUnits: json['freeLooseUnits'] ?? 0,
         sellingUnit: json['sellingUnit'] != null 
-            ? SellingUnit.fromDbValue(json['sellingUnit']) 
+            ? _parseSellingUnit(json['sellingUnit']) 
             : SellingUnit.strip,
         pricePerUnit: json['pricePerUnit'] != null 
             ? (json['pricePerUnit'] as num).toDouble() 
@@ -217,6 +217,16 @@ class InvoiceItem {
         unit: json['unit'] ?? 'Unit',
         discountPercent: (json['discountPercent'] as num? ?? 0).toDouble(),
       );
+  
+  /// Helper to parse SellingUnit from string
+  static SellingUnit _parseSellingUnit(dynamic value) {
+    if (value == null) return SellingUnit.unit;
+    final str = value.toString().toLowerCase();
+    return SellingUnit.values.firstWhere(
+      (e) => e.name == str,
+      orElse: () => SellingUnit.unit,
+    );
+  }
 }
 
 class InvoiceModel {

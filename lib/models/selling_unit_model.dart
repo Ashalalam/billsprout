@@ -94,7 +94,7 @@ extension SellingUnitX on SellingUnit {
   /// Parse from database value
   static SellingUnit fromDbValue(String value) {
     return SellingUnit.values.firstWhere(
-      (e) => e.name == value,
+      (e) => e.name == value.toLowerCase(),
       orElse: () => SellingUnit.unit,
     );
   }
@@ -316,9 +316,19 @@ class SaleQuantity {
     return SaleQuantity(
       packQuantity: json['packQuantity'] ?? 0,
       looseQuantity: json['looseQuantity'] ?? 0,
-      sellingUnit: SellingUnit.fromDbValue(json['sellingUnit'] ?? 'unit'),
+      sellingUnit: _parseSellingUnit(json['sellingUnit']),
       freePackQuantity: json['freePackQuantity'] ?? 0,
       freeLooseQuantity: json['freeLooseQuantity'] ?? 0,
+    );
+  }
+  
+  /// Helper to parse SellingUnit from string
+  static SellingUnit _parseSellingUnit(dynamic value) {
+    if (value == null) return SellingUnit.unit;
+    final str = value.toString().toLowerCase();
+    return SellingUnit.values.firstWhere(
+      (e) => e.name == str,
+      orElse: () => SellingUnit.unit,
     );
   }
   

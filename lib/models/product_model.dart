@@ -311,10 +311,20 @@ class ProductModel {
             ? (json['pricePerBaseUnit'] as num).toDouble() 
             : null,
         minSaleUnit: json['minSaleUnit'] != null 
-            ? SellingUnit.fromDbValue(json['minSaleUnit']) 
+            ? _parseSellingUnit(json['minSaleUnit']) 
             : SellingUnit.strip,
         baseUnit: json['baseUnit'] != null 
-            ? SellingUnit.fromDbValue(json['baseUnit']) 
+            ? _parseSellingUnit(json['baseUnit']) 
             : SellingUnit.tablet,
       );
+  
+  /// Helper to parse SellingUnit from string
+  static SellingUnit _parseSellingUnit(dynamic value) {
+    if (value == null) return SellingUnit.unit;
+    final str = value.toString().toLowerCase();
+    return SellingUnit.values.firstWhere(
+      (e) => e.name == str,
+      orElse: () => SellingUnit.unit,
+    );
+  }
 }
