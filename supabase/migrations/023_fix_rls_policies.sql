@@ -4,8 +4,11 @@
 -- Created: 2026-10-04
 -- ============================================================================
 
+-- Drop existing policies if they exist, then create new ones
+
 -- Allow business_admin to insert audit logs
-CREATE POLICY IF NOT EXISTS "business_admin_insert_audit" ON public.audit_logs
+DROP POLICY IF EXISTS "business_admin_insert_audit" ON public.audit_logs;
+CREATE POLICY "business_admin_insert_audit" ON public.audit_logs
   FOR INSERT WITH CHECK (
     auth.uid() IS NOT NULL AND
     EXISTS (
@@ -16,7 +19,8 @@ CREATE POLICY IF NOT EXISTS "business_admin_insert_audit" ON public.audit_logs
   );
 
 -- Allow business_admin to view their tenant's subscription
-CREATE POLICY IF NOT EXISTS "business_admin_view_subscription" ON public.subscriptions
+DROP POLICY IF EXISTS "business_admin_view_subscription" ON public.subscriptions;
+CREATE POLICY "business_admin_view_subscription" ON public.subscriptions
   FOR SELECT USING (
     tenant_id IN (
       SELECT tenant_id FROM public.users WHERE id = auth.uid()
@@ -24,7 +28,8 @@ CREATE POLICY IF NOT EXISTS "business_admin_view_subscription" ON public.subscri
   );
 
 -- Allow business_admin to insert/update their own subscription
-CREATE POLICY IF NOT EXISTS "business_admin_manage_subscription" ON public.subscriptions
+DROP POLICY IF EXISTS "business_admin_manage_subscription" ON public.subscriptions;
+CREATE POLICY "business_admin_manage_subscription" ON public.subscriptions
   FOR ALL USING (
     tenant_id IN (
       SELECT tenant_id FROM public.users WHERE id = auth.uid()
