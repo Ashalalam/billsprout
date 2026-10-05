@@ -16,10 +16,15 @@ class _SubscriptionStatusWidgetState extends State<SubscriptionStatusWidget> {
   @override
   void initState() {
     super.initState();
-    _loadSubscription();
+    // Defer subscription loading to after the frame is built
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadSubscription();
+    });
   }
 
   Future<void> _loadSubscription() async {
+    if (!mounted) return;
+    
     final authProvider = context.read<AuthProvider>();
     final subscriptionProvider = context.read<SubscriptionProvider>();
     final tenantId = authProvider.currentUser?.tenantId;
