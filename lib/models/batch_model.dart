@@ -7,7 +7,8 @@ class BatchModel {
   final double purchasePrice;
   final double wholesalePrice;
   final double ptrPrice;        // Price to Retailer
-  int stockCount;
+  int stockCount;               // Number of complete packs (strips, bottles, etc.)
+  int looseUnits;              // Loose units from opened packs (tablets, capsules, ml)
   final String rackLocation;
 
   BatchModel({
@@ -20,6 +21,7 @@ class BatchModel {
     required this.wholesalePrice,
     this.ptrPrice = 0.0,
     required this.stockCount,
+    this.looseUnits = 0,
     required this.rackLocation,
   });
 
@@ -38,6 +40,11 @@ class BatchModel {
 
   /// Display-friendly expiry date (MM/YYYY format)
   String get expiryDate => '${expDate.month.toString().padLeft(2, '0')}/${expDate.year}';
+  
+  /// Get total available units given units per pack
+  int totalAvailableUnits(int unitsPerPack) {
+    return (stockCount * unitsPerPack) + looseUnits;
+  }
 
   Map<String, dynamic> toJson() => {
         'id': id,
@@ -50,6 +57,7 @@ class BatchModel {
         'wholesalePrice': wholesalePrice,
         'ptrPrice': ptrPrice,
         'stockCount': stockCount,
+        'looseUnits': looseUnits,
         'rackLocation': rackLocation,
       };
 
@@ -63,6 +71,7 @@ class BatchModel {
         wholesalePrice: (json['wholesalePrice'] as num).toDouble(),
         ptrPrice: (json['ptrPrice'] as num? ?? 0).toDouble(),
         stockCount: json['stockCount'],
+        looseUnits: json['looseUnits'] ?? 0,
         rackLocation: json['rackLocation'],
       );
 }

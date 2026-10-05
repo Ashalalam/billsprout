@@ -1,4 +1,5 @@
 import 'batch_model.dart';
+import 'selling_unit_model.dart';
 
 // ── Dose type enum ────────────────────────────────────────────────────────────
 enum DoseType {
@@ -109,6 +110,21 @@ class PackagingConfig {
       PackagingConfig(label: '1×15', unitsPerStrip: 15, stripsPerBox: 1);
   static const PackagingConfig strip1x6 =
       PackagingConfig(label: '1×6', unitsPerStrip: 6, stripsPerBox: 1);
+  // New common pharmacy pack sizes
+  static const PackagingConfig strip1x20 =
+      PackagingConfig(label: '1×20', unitsPerStrip: 20, stripsPerBox: 1);
+  static const PackagingConfig strip2x5 =
+      PackagingConfig(label: '2×5', unitsPerStrip: 5, stripsPerBox: 2);
+  static const PackagingConfig strip2x10 =
+      PackagingConfig(label: '2×10', unitsPerStrip: 10, stripsPerBox: 2);
+  static const PackagingConfig strip3x10 =
+      PackagingConfig(label: '3×10', unitsPerStrip: 10, stripsPerBox: 3);
+  static const PackagingConfig strip4x15 =
+      PackagingConfig(label: '4×15', unitsPerStrip: 15, stripsPerBox: 4);
+  static const PackagingConfig strip5x10 =
+      PackagingConfig(label: '5×10', unitsPerStrip: 10, stripsPerBox: 5);
+  static const PackagingConfig strip10x20 =
+      PackagingConfig(label: '10×20', unitsPerStrip: 20, stripsPerBox: 10);
   static const PackagingConfig bottle30ml =
       PackagingConfig(label: '30 ml', unitsPerStrip: 30);
   static const PackagingConfig bottle60ml =
@@ -131,6 +147,8 @@ class PackagingConfig {
         return [
           strip10x10, strip10x15, strip10x6, strip6x10,
           strip4x10, strip1x10, strip1x15, strip1x6,
+          strip1x20, strip2x5, strip2x10, strip3x10,
+          strip4x15, strip5x10, strip10x20,
           PackagingConfig(label: 'Custom', unitsPerStrip: 10),
         ];
       case DoseType.syrup:
@@ -163,6 +181,13 @@ class ProductModel {
   // ── New pharma fields ──────────────────────────────────────────────────────
   final DoseType doseType;
   final PackagingConfig? packagingConfig;
+  
+  // ── Loose-unit sales configuration ─────────────────────────────────────────
+  final bool allowLooseSales;
+  final int baseUnitsPerPack;        // Authoritative conversion: tablets per strip, ml per bottle
+  final double? pricePerBaseUnit;    // Per-tablet, per-capsule, or per-ml price
+  final SellingUnit minSaleUnit;     // Minimum unit that can be sold
+  final SellingUnit baseUnit;        // Base unit for inventory (tablet, capsule, ml, gm)
 
   ProductModel({
     required this.id,
@@ -178,6 +203,11 @@ class ProductModel {
     required this.batches,
     this.doseType      = DoseType.tablet,
     this.packagingConfig,
+    this.allowLooseSales = false,
+    this.baseUnitsPerPack = 10,
+    this.pricePerBaseUnit,
+    this.minSaleUnit = SellingUnit.strip,
+    this.baseUnit = SellingUnit.tablet,
   });
 
   bool get requiresPharmacistPin => isScheduleH || isScheduleH1 || isNarcotic;
@@ -197,6 +227,26 @@ class ProductModel {
         ..sort((a, b) => a.expDate.compareTo(b.expDate));
 
   int get totalStock => batches.fold(0, (s, b) => s + b.stockCount);
+  
+  /// Total available units (packs converted to units + loose units)
+  int get totalAvailableUnits => batches.fold(
+    0, 
+    (sum, b) => sum + b.totalAvailableUnits(baseUnitsPerPack)
+  );
+  
+  /// Total loose units across all batches
+  int get totalLooseUnits => batches.fold(0, (sum, b) => sum + b.looseUnits);
+  
+  /// Get available selling units for this product
+  List<SellingUnit> get availableSellingUnits {
+    if (!allowLooseSales) {
+      // Only pack-level sales allowed
+      return [minSaleUnit];
+    }
+    
+    // Both pack and loose units can be sold
+    return [minSaleUnit, baseUnit];
+  }
 
   /// Packaging label for POS display e.g. "10×10 strips"
   String get packagingLabel {
@@ -223,6 +273,11 @@ class ProductModel {
         'packagingLabel': packagingConfig?.label,
         'packagingUnitsPerStrip': packagingConfig?.unitsPerStrip,
         'packagingStripsPerBox': packagingConfig?.stripsPerBox,
+        'allowLooseSales': allowLooseSales,
+        'baseUnitsPerPack': baseUnitsPerPack,
+        'pricePerBaseUnit': pricePerBaseUnit,
+        'minSaleUnit': minSaleUnit.dbValue,
+        'baseUnit': baseUnit.dbValue,
       };
 
   factory ProductModel.fromJson(Map<String, dynamic> json) => ProductModel(
@@ -250,5 +305,16 @@ class ProductModel {
                 stripsPerBox: json['packagingStripsPerBox'] ?? 1,
               )
             : null,
+        allowLooseSales: json['allowLooseSales'] ?? false,
+        baseUnitsPerPack: json['baseUnitsPerPack'] ?? json['packagingUnitsPerStrip'] ?? 10,
+        pricePerBaseUnit: json['pricePerBaseUnit'] != null 
+            ? (json['pricePerBaseUnit'] as num).toDouble() 
+            : null,
+        minSaleUnit: json['minSaleUnit'] != null 
+            ? SellingUnit.fromDbValue(json['minSaleUnit']) 
+            : SellingUnit.strip,
+        baseUnit: json['baseUnit'] != null 
+            ? SellingUnit.fromDbValue(json['baseUnit']) 
+            : SellingUnit.tablet,
       );
 }

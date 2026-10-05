@@ -3,6 +3,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/product_model.dart';
 import '../models/batch_model.dart';
 import '../models/invoice_model.dart';
+import '../models/selling_unit_model.dart';
+import '../services/pricing_calculator.dart';
 
 class PosProvider extends ChangeNotifier {
   final List<InvoiceItem> _cartItems = [];
@@ -135,6 +137,8 @@ class PosProvider extends ChangeNotifier {
   }
 
   // ── Cart operations ────────────────────────────────────────────────────────
+  
+  /// Add product to cart (pack-based, legacy behavior)
   void addToCart(ProductModel product, {BatchModel? selectedBatch}) {
     final batchToUse = selectedBatch ?? product.fefoBatch;
     if (batchToUse == null) return;
@@ -156,17 +160,181 @@ class PosProvider extends ChangeNotifier {
         freeQuantity: 0,
         unitPrice: unitPrice,
         taxPercent: product.taxPercent,
+        sellingUnit: product.minSaleUnit,
       ));
     }
     notifyListeners();
+  }
+  
+  /// Add product to cart with flexible quantity (NEW: supports loose units)
+  void addToCartWithQuantity(
+    ProductModel product, 
+    SaleQuantity quantity, {
+    BatchModel? selectedBatch,
+  }) {
+    final batchToUse = selectedBatch ?? _selectBestBatch(product, quantity);
+    if (batchToUse == null) {
+      debugPrint('No suitable batch found for ${product.name}');
+      return;
+    }
+    
+    // Validate stock availability
+    final validation = PricingCalculator.validateStock(
+      product: product,
+      batch: batchToUse,
+      quantity: quantity,
+    );
+    
+    if (!validation.isValid) {
+      debugPrint('Stock validation failed: ${validation.errorMessage}');
+      return;
+    }
+    
+    // Calculate prices
+    final tier = _convertPricingTier(_pricingTier);
+    final packPrice = PricingCalculator.getPackPrice(batch: batchToUse, tier: tier);
+    final unitPrice = PricingCalculator.getUnitPrice(
+      product: product,
+      batch: batchToUse,
+      tier: tier,
+    );
+    
+    // Check if item already exists in cart
+    final idx = _cartItems.indexWhere(
+        (i) => i.product.id == product.id && 
+               i.batch.id == batchToUse.id &&
+               i.sellingUnit == quantity.sellingUnit);
+    
+    if (idx >= 0) {
+      // Update existing item
+      final existing = _cartItems[idx];
+      existing.quantity += quantity.packQuantity;
+      existing.looseUnits += quantity.looseQuantity;
+      existing.freeQuantity += quantity.freePackQuantity;
+      existing.freeLooseUnits += quantity.freeLooseQuantity;
+    } else {
+      // Add new item
+      _cartItems.add(InvoiceItem.fromSaleQuantity(
+        product: product,
+        batch: batchToUse,
+        saleQty: quantity,
+        packPrice: packPrice,
+        unitPrice: unitPrice,
+        taxPercent: product.taxPercent,
+      ));
+    }
+    
+    notifyListeners();
+  }
+  
+  /// Select best batch considering loose units availability (Enhanced FEFO)
+  BatchModel? _selectBestBatch(ProductModel product, SaleQuantity quantity) {
+    if (product.batches.isEmpty) return null;
+    
+    // Filter valid batches (not expired, has stock)
+    final validBatches = product.batches.where((b) {
+      if (b.isExpired) return false;
+      
+      // Check if batch can fulfill request
+      final available = AvailableStock(
+        packStock: b.stockCount,
+        looseUnits: b.looseUnits,
+        baseUnitsPerPack: product.baseUnitsPerPack,
+      );
+      
+      return available.canFulfill(quantity);
+    }).toList();
+    
+    if (validBatches.isEmpty) return null;
+    
+    // Sort by:
+    // 1. Batches with existing loose units (prefer using opened packs)
+    // 2. Earliest expiry (FEFO)
+    validBatches.sort((a, b) {
+      // Prefer batches with loose units if we're selling loose units
+      if (quantity.hasLooseUnits) {
+        if (a.looseUnits > 0 && b.looseUnits == 0) return -1;
+        if (b.looseUnits > 0 && a.looseUnits == 0) return 1;
+      }
+      
+      // Then by expiry date (FEFO)
+      return a.expDate.compareTo(b.expDate);
+    });
+    
+    return validBatches.first;
   }
 
   void updateQuantity(InvoiceItem item, int newQty) {
     if (newQty <= 0) {
       _cartItems.remove(item);
-    } else if (newQty <= item.batch.stockCount) {
-      item.quantity = newQty;
+    } else {
+      // Validate against available stock
+      final totalUnits = item.batch.totalAvailableUnits(item.product.baseUnitsPerPack);
+      final requestedUnits = newQty * item.product.baseUnitsPerPack;
+      
+      if (requestedUnits <= totalUnits) {
+        item.quantity = newQty;
+      } else {
+        debugPrint('Insufficient stock: requested $requestedUnits, available $totalUnits');
+      }
     }
+    notifyListeners();
+  }
+  
+  /// Update loose quantity (NEW)
+  void updateLooseQuantity(InvoiceItem item, int newLooseQty) {
+    if (newLooseQty < 0) {
+      item.looseUnits = 0;
+    } else {
+      // Validate stock
+      final available = AvailableStock(
+        packStock: item.batch.stockCount,
+        looseUnits: item.batch.looseUnits,
+        baseUnitsPerPack: item.product.baseUnitsPerPack,
+      );
+      
+      final requestedQty = SaleQuantity(
+        packQuantity: item.quantity,
+        looseQuantity: newLooseQty,
+        sellingUnit: item.sellingUnit,
+      );
+      
+      if (available.canFulfill(requestedQty)) {
+        item.looseUnits = newLooseQty;
+        
+        // Recalculate price if unit price is set
+        if (item.pricePerUnit != null) {
+          // Price will be recalculated via grossLineTotal getter
+        }
+      }
+    }
+    notifyListeners();
+  }
+  
+  /// Update selling unit for an item (NEW: switch between strip/tablet/capsule)
+  void updateSellingUnit(InvoiceItem item, SellingUnit newUnit) {
+    if (!item.product.availableSellingUnits.contains(newUnit)) {
+      debugPrint('Selling unit $newUnit not available for ${item.product.name}');
+      return;
+    }
+    
+    item.sellingUnit = newUnit;
+    
+    // Recalculate unit price
+    final tier = _convertPricingTier(_pricingTier);
+    if (newUnit.isLooseUnit) {
+      item.pricePerUnit = PricingCalculator.getUnitPrice(
+        product: item.product,
+        batch: item.batch,
+        tier: tier,
+      );
+    } else {
+      item.unitPrice = PricingCalculator.getPackPrice(
+        batch: item.batch,
+        tier: tier,
+      );
+    }
+    
     notifyListeners();
   }
 
@@ -225,17 +393,42 @@ class PosProvider extends ChangeNotifier {
     );
 
     // Local (in-memory / offline) stock is decremented here so the POS grid
-    // reflects the sale immediately. Free units are included because they are
-    // physically dispensed.
+    // reflects the sale immediately. This handles both pack and loose quantities.
     //
     // Note: the authoritative deduction happens server-side in the
-    // update_stock_on_sale trigger. When the invoice syncs, the batch row is
-    // refreshed from Supabase, so this local adjustment is a display update and
-    // not a second deduction against the same stock.
+    // update_stock_on_sale_with_loose_units trigger. When the invoice syncs, 
+    // the batch row is refreshed from Supabase, so this local adjustment is a 
+    // display update and not a second deduction against the same stock.
     for (final item in _cartItems) {
-      final totalDispensed = item.quantity + item.freeQuantity;
-      item.batch.stockCount =
-          (item.batch.stockCount - totalDispensed).clamp(0, item.batch.stockCount);
+      // Deduct packs (including free packs)
+      final totalPacksDispensed = item.quantity + item.freeQuantity;
+      
+      // Deduct loose units (including free loose)
+      final totalLooseDispensed = item.looseUnits + item.freeLooseUnits;
+      
+      // Calculate packs to open for loose units
+      final available = AvailableStock(
+        packStock: item.batch.stockCount,
+        looseUnits: item.batch.looseUnits,
+        baseUnitsPerPack: item.product.baseUnitsPerPack,
+      );
+      
+      final packsToOpen = available.packsToOpen(totalLooseDispensed);
+      
+      // Update batch stock
+      item.batch.stockCount = (item.batch.stockCount - totalPacksDispensed - packsToOpen)
+          .clamp(0, item.batch.stockCount);
+      
+      // Update loose units
+      if (totalLooseDispensed <= item.batch.looseUnits) {
+        // Sufficient loose units available
+        item.batch.looseUnits = item.batch.looseUnits - totalLooseDispensed;
+      } else {
+        // Opened packs to fulfill
+        final remainingLoose = (packsToOpen * item.product.baseUnitsPerPack) - 
+                              (totalLooseDispensed - item.batch.looseUnits);
+        item.batch.looseUnits = remainingLoose.clamp(0, remainingLoose);
+      }
     }
 
     clearCart();
@@ -257,6 +450,23 @@ class PosProvider extends ChangeNotifier {
       case 'Retail':
       default:
         return batch.mrp;
+    }
+  }
+  
+  /// Convert pricing tier string to PricingTier enum
+  PricingTier _convertPricingTier(String tierString) {
+    switch (tierString) {
+      case 'PTR':
+        return PricingTier.ptr;
+      case 'Wholesale':
+        return PricingTier.wholesale;
+      case 'Distributor':
+        return PricingTier.distributor;
+      case 'Loyalty':
+        return PricingTier.loyalty;
+      case 'Retail':
+      default:
+        return PricingTier.retail;
     }
   }
 

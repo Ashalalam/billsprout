@@ -1,20 +1,28 @@
 import 'product_model.dart';
 import 'batch_model.dart';
+import 'selling_unit_model.dart';
 
 enum PaymentMode { cash, card, upi, paypal, split, credit }
 
 class InvoiceItem {
   final ProductModel product;
   final BatchModel batch;
-  int quantity;
-  int freeQuantity;       // Free goods / schemes (not charged)
-  double unitPrice;
+  int quantity;              // Number of packs (strips, bottles, boxes)
+  int freeQuantity;          // Free packs / schemes (not charged)
+  double unitPrice;          // Price per pack (for pack sales)
   double taxPercent;
-  double lineDiscount;    // Item-level discount amount (₹)
+  double lineDiscount;       // Item-level discount amount (₹)
   
-  // NEW FIELDS for enhanced invoicing
-  final String unit;      // Unit of measurement: 'Tablets', 'Capsules', 'ml', 'gm', etc.
-  double discountPercent; // Discount as percentage (for display on GST bills)
+  // Compound quantity fields for loose-unit sales
+  int looseUnits;            // Number of loose units (tablets, capsules, ml)
+  int freeLooseUnits;        // Free loose units
+  SellingUnit sellingUnit;   // Unit being sold (strip, tablet, capsule, ml, etc.)
+  double? pricePerUnit;      // Price per base unit (for loose sales)
+  int packsOpened;           // Number of packs opened to fulfill loose units
+  
+  // Legacy field for display compatibility
+  final String unit;         // Deprecated: Use sellingUnit instead
+  double discountPercent;    // Discount as percentage (for display on GST bills)
 
   InvoiceItem({
     required this.product,
@@ -24,24 +32,152 @@ class InvoiceItem {
     required this.unitPrice,
     required this.taxPercent,
     this.lineDiscount = 0.0,
+    this.looseUnits = 0,
+    this.freeLooseUnits = 0,
+    this.sellingUnit = SellingUnit.strip,
+    this.pricePerUnit,
+    this.packsOpened = 0,
     this.unit = 'Unit',
     this.discountPercent = 0.0,
   });
+  
+  /// Create InvoiceItem from SaleQuantity (new approach)
+  factory InvoiceItem.fromSaleQuantity({
+    required ProductModel product,
+    required BatchModel batch,
+    required SaleQuantity saleQty,
+    required double packPrice,
+    double? unitPrice,
+    required double taxPercent,
+    double lineDiscount = 0.0,
+    double discountPercent = 0.0,
+  }) {
+    return InvoiceItem(
+      product: product,
+      batch: batch,
+      quantity: saleQty.packQuantity,
+      freeQuantity: saleQty.freePackQuantity,
+      looseUnits: saleQty.looseQuantity,
+      freeLooseUnits: saleQty.freeLooseQuantity,
+      sellingUnit: saleQty.sellingUnit,
+      unitPrice: packPrice,
+      pricePerUnit: unitPrice,
+      taxPercent: taxPercent,
+      lineDiscount: lineDiscount,
+      discountPercent: discountPercent,
+      unit: saleQty.sellingUnit.label, // For legacy compatibility
+    );
+  }
 
   /// Billed quantity only (free qty is not charged)
   int get billedQuantity => quantity;
+  
+  /// Billed loose units only
+  int get billedLooseUnits => looseUnits;
+  
+  /// Whether this sale includes loose units
+  bool get hasLooseUnits => looseUnits > 0 || freeLooseUnits > 0;
+  
+  /// Whether this is a mixed sale (packs + loose)
+  bool get isMixedSale => quantity > 0 && looseUnits > 0;
+  
+  /// Total quantity sold (for stock deduction)
+  int get totalQuantitySold => quantity + freeQuantity;
+  
+  /// Total loose units sold (for stock deduction)
+  int get totalLooseUnitsSold => looseUnits + freeLooseUnits;
+  
+  /// Convert to SaleQuantity for processing
+  SaleQuantity toSaleQuantity() {
+    return SaleQuantity(
+      packQuantity: quantity,
+      looseQuantity: looseUnits,
+      sellingUnit: sellingUnit,
+      freePackQuantity: freeQuantity,
+      freeLooseQuantity: freeLooseUnits,
+    );
+  }
 
-  double get grossLineTotal  => quantity * unitPrice;
+  /// Calculate gross line total
+  double get grossLineTotal {
+    double packTotal = quantity * unitPrice;
+    double looseTotal = 0.0;
+    
+    if (hasLooseUnits && pricePerUnit != null) {
+      looseTotal = looseUnits * pricePerUnit!;
+    }
+    
+    return packTotal + looseTotal;
+  }
+  
   double get lineTotal       => grossLineTotal - lineDiscount;
   double get taxAmount       => lineTotal * (taxPercent / (100 + taxPercent));
   double get taxableValue    => lineTotal - taxAmount;
   double get cgst            => taxAmount / 2;
   double get sgst            => taxAmount / 2;
 
-  /// Display string e.g. "3 strips + 1 Free"
+  /// Display string for quantity
+  /// Examples:
+  /// - "3" (packs only)
+  /// - "3 + 2 Free" (packs with free items)
+  /// - "5 Tablets" (loose only)
+  /// - "1 Strip + 3 Tablets" (mixed)
+  /// - "2 Strips + 5 Tablets (+ 2 free)" (mixed with free items)
   String get quantityDisplay {
+    if (hasLooseUnits) {
+      // Use SaleQuantity display logic for loose/mixed sales
+      final saleQty = toSaleQuantity();
+      return saleQty.displayText(showFree: freeQuantity > 0 || freeLooseUnits > 0);
+    }
+    
+    // Legacy pack-only display
     if (freeQuantity > 0) return '$quantity + $freeQuantity Free';
     return '$quantity';
+  }
+  
+  /// Compact display for printing/small spaces
+  String get compactQuantityDisplay {
+    if (hasLooseUnits) {
+      return toSaleQuantity().compactDisplay();
+    }
+    return '$quantity';
+  }
+  
+  /// Unit display for invoice line (e.g., "Strip", "Tablets", "ml")
+  String get unitDisplay {
+    if (hasLooseUnits && !isMixedSale) {
+      // Loose-only: show loose unit
+      return looseUnits == 1 
+          ? _getLooseUnit().label 
+          : _getLooseUnit().pluralLabel;
+    } else if (isMixedSale) {
+      // Mixed: show "Mixed"
+      return 'Mixed';
+    } else {
+      // Pack-only: show pack unit
+      return quantity == 1 
+          ? sellingUnit.label 
+          : sellingUnit.pluralLabel;
+    }
+  }
+  
+  /// Get appropriate loose unit based on selling unit
+  SellingUnit _getLooseUnit() {
+    switch (sellingUnit) {
+      case SellingUnit.strip:
+      case SellingUnit.tablet:
+        return SellingUnit.tablet;
+      case SellingUnit.capsule:
+        return SellingUnit.capsule;
+      case SellingUnit.bottle:
+      case SellingUnit.ml:
+        return SellingUnit.ml;
+      case SellingUnit.tube:
+      case SellingUnit.gm:
+        return SellingUnit.gm;
+      default:
+        return SellingUnit.unit;
+    }
   }
 
   Map<String, dynamic> toJson() => {
@@ -52,6 +188,11 @@ class InvoiceItem {
         'unitPrice': unitPrice,
         'taxPercent': taxPercent,
         'lineDiscount': lineDiscount,
+        'looseUnits': looseUnits,
+        'freeLooseUnits': freeLooseUnits,
+        'sellingUnit': sellingUnit.dbValue,
+        'pricePerUnit': pricePerUnit,
+        'packsOpened': packsOpened,
         'unit': unit,
         'discountPercent': discountPercent,
       };
@@ -64,6 +205,15 @@ class InvoiceItem {
         unitPrice: (json['unitPrice'] as num).toDouble(),
         taxPercent: (json['taxPercent'] as num).toDouble(),
         lineDiscount: (json['lineDiscount'] as num? ?? 0).toDouble(),
+        looseUnits: json['looseUnits'] ?? 0,
+        freeLooseUnits: json['freeLooseUnits'] ?? 0,
+        sellingUnit: json['sellingUnit'] != null 
+            ? SellingUnit.fromDbValue(json['sellingUnit']) 
+            : SellingUnit.strip,
+        pricePerUnit: json['pricePerUnit'] != null 
+            ? (json['pricePerUnit'] as num).toDouble() 
+            : null,
+        packsOpened: json['packsOpened'] ?? 0,
         unit: json['unit'] ?? 'Unit',
         discountPercent: (json['discountPercent'] as num? ?? 0).toDouble(),
       );
