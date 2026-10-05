@@ -18,6 +18,8 @@ class _SubscriptionPlansViewState extends State<SubscriptionPlansView> {
   List<Map<String, dynamic>> _plans = [];
   String? _errorMessage;
   String? _selectedPlanId;
+  String _selectedCurrency = 'INR'; // Default to Indian Rupees
+  String _selectedBillingCycle = 'yearly'; // 'monthly' or 'yearly'
 
   @override
   void initState() {
@@ -126,6 +128,157 @@ class _SubscriptionPlansViewState extends State<SubscriptionPlansView> {
                           color: Colors.grey[600],
                         ),
                       ),
+                      const SizedBox(height: 24),
+                      
+                      // Currency and Billing Cycle Selectors
+                      Row(
+                        children: [
+                          // Currency Selector
+                          Expanded(
+                            child: Card(
+                              child: Padding(
+                                padding: const EdgeInsets.all(16.0),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Text(
+                                      'Currency',
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          child: RadioListTile<String>(
+                                            dense: true,
+                                            contentPadding: EdgeInsets.zero,
+                                            title: const Text('🇮🇳 INR (₹)'),
+                                            value: 'INR',
+                                            groupValue: _selectedCurrency,
+                                            onChanged: (value) {
+                                              setState(() {
+                                                _selectedCurrency = value!;
+                                              });
+                                            },
+                                          ),
+                                        ),
+                                        Expanded(
+                                          child: RadioListTile<String>(
+                                            dense: true,
+                                            contentPadding: EdgeInsets.zero,
+                                            title: const Text('🌎 USD (\$)'),
+                                            value: 'USD',
+                                            groupValue: _selectedCurrency,
+                                            onChanged: (value) {
+                                              setState(() {
+                                                _selectedCurrency = value!;
+                                              });
+                                            },
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          // Billing Cycle Selector
+                          Expanded(
+                            child: Card(
+                              child: Padding(
+                                padding: const EdgeInsets.all(16.0),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Text(
+                                      'Billing Cycle',
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          child: RadioListTile<String>(
+                                            dense: true,
+                                            contentPadding: EdgeInsets.zero,
+                                            title: const Text('Monthly'),
+                                            value: 'monthly',
+                                            groupValue: _selectedBillingCycle,
+                                            onChanged: (value) {
+                                              setState(() {
+                                                _selectedBillingCycle = value!;
+                                              });
+                                            },
+                                          ),
+                                        ),
+                                        Expanded(
+                                          child: RadioListTile<String>(
+                                            dense: true,
+                                            contentPadding: EdgeInsets.zero,
+                                            title: const Text('Yearly'),
+                                            subtitle: const Text(
+                                              'Save 10%',
+                                              style: TextStyle(
+                                                color: Colors.green,
+                                                fontSize: 11,
+                                              ),
+                                            ),
+                                            value: 'yearly',
+                                            groupValue: _selectedBillingCycle,
+                                            onChanged: (value) {
+                                              setState(() {
+                                                _selectedBillingCycle = value!;
+                                              });
+                                            },
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      
+                      const SizedBox(height: 16),
+                      
+                      // Renewal Notice
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.green[50],
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.green[200]!),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(Icons.celebration, color: Colors.green[700], size: 24),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                '🎉 Renewal Discount: Annual renewals get 50% OFF! '
+                                'First year at full price, renewals at half price.',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.green[900],
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
                       const SizedBox(height: 32),
 
                       // Plans Grid
@@ -169,15 +322,33 @@ class _SubscriptionPlansViewState extends State<SubscriptionPlansView> {
     final planId = plan['id'] as String;
     final planName = plan['plan_name'] as String;
     final planCode = plan['plan_code'] as String;
-    final priceMonthly = plan['price_monthly'] as num;
-    final priceYearly = plan['price_yearly'] as num?;
-    final currency = plan['currency'] as String? ?? 'INR';
+    
+    // Get prices based on selected currency and billing cycle
+    final priceMonthly = _selectedCurrency == 'INR' 
+        ? (plan['price_monthly'] as num)
+        : (plan['price_monthly_usd'] as num);
+    final priceYearly = _selectedCurrency == 'INR'
+        ? (plan['price_yearly'] as num?)
+        : (plan['price_yearly_usd'] as num?);
+    final renewalYearly = _selectedCurrency == 'INR'
+        ? (plan['renewal_yearly'] as num?)
+        : (plan['renewal_yearly_usd'] as num?);
+    
+    final currencySymbol = _selectedCurrency == 'INR' ? '₹' : '\$';
     final maxUsers = plan['max_users'] as int?;
     final maxBranches = plan['max_branches'] as int?;
     final features = plan['features'] as List<dynamic>? ?? [];
 
     // Determine if this is the recommended plan (Professional)
     final isRecommended = planCode == 'professional';
+    
+    // Calculate display price based on billing cycle
+    final displayPrice = _selectedBillingCycle == 'monthly' 
+        ? priceMonthly 
+        : (priceYearly ?? priceMonthly * 12);
+    final perMonth = _selectedBillingCycle == 'yearly' 
+        ? (priceYearly != null ? priceYearly / 12 : priceMonthly)
+        : priceMonthly;
 
     return Card(
       elevation: isRecommended ? 8 : 2,
@@ -223,42 +394,139 @@ class _SubscriptionPlansViewState extends State<SubscriptionPlansView> {
             const SizedBox(height: 8),
 
             // Price
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.baseline,
-              textBaseline: TextBaseline.alphabetic,
-              children: [
-                Text(
-                  currency == 'INR' ? '₹' : '\$',
-                  style: const TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
+            if (_selectedBillingCycle == 'monthly') ...[
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.baseline,
+                textBaseline: TextBaseline.alphabetic,
+                children: [
+                  Text(
+                    currencySymbol,
+                    style: const TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
-                ),
-                Text(
-                  priceMonthly.toStringAsFixed(0),
-                  style: const TextStyle(
-                    fontSize: 48,
-                    fontWeight: FontWeight.bold,
+                  Text(
+                    displayPrice.toStringAsFixed(0),
+                    style: const TextStyle(
+                      fontSize: 48,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
-                ),
-                const Text(
-                  ' /month',
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: Colors.grey,
+                  const Text(
+                    ' /month',
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: Colors.grey,
+                    ),
                   ),
-                ),
-              ],
-            ),
-
-            if (priceYearly != null) ...[
+                ],
+              ),
+            ] else ...[
+              // Yearly pricing
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.baseline,
+                textBaseline: TextBaseline.alphabetic,
+                children: [
+                  Text(
+                    currencySymbol,
+                    style: const TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  Text(
+                    displayPrice.toStringAsFixed(0),
+                    style: const TextStyle(
+                      fontSize: 48,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const Text(
+                    ' /year',
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: Colors.grey,
+                    ),
+                  ),
+                ],
+              ),
               const SizedBox(height: 4),
               Text(
-                'or ${currency == 'INR' ? '₹' : '\$'}${priceYearly.toStringAsFixed(0)}/year (Save ${(((priceMonthly * 12 - priceYearly) / (priceMonthly * 12)) * 100).toStringAsFixed(0)}%)',
+                '$currencySymbol${perMonth.toStringAsFixed(0)}/month (billed annually)',
                 style: TextStyle(
                   fontSize: 14,
-                  color: Colors.green[700],
-                  fontWeight: FontWeight.w500,
+                  color: Colors.grey[600],
+                ),
+              ),
+            ],
+            
+            // Savings Badge
+            if (priceYearly != null && _selectedBillingCycle == 'yearly') ...[
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.green[50],
+                  borderRadius: BorderRadius.circular(4),
+                  border: Border.all(color: Colors.green[300]!),
+                ),
+                child: Text(
+                  'Save ${(((priceMonthly * 12 - priceYearly) / (priceMonthly * 12)) * 100).toStringAsFixed(0)}% vs monthly',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.green[900],
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+            
+            // Renewal Pricing Notice
+            if (renewalYearly != null && _selectedBillingCycle == 'yearly') ...[
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.orange[50],
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.orange[200]!),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.autorenew, size: 16, color: Colors.orange[900]),
+                        const SizedBox(width: 4),
+                        Text(
+                          'Renewal Price',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.orange[900],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '$currencySymbol${renewalYearly.toStringAsFixed(0)}/year (50% OFF)',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.orange[900],
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'After first year',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Colors.orange[800],
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
@@ -268,10 +536,10 @@ class _SubscriptionPlansViewState extends State<SubscriptionPlansView> {
             // Limits
             if (maxUsers != null)
               _buildFeatureItem(
-                  '👥 Up to $maxUsers user${maxUsers > 1 ? 's' : ''}'),
+                  '👥 Up to ${maxUsers == 999 ? 'Unlimited' : maxUsers} user${maxUsers > 1 ? 's' : ''}'),
             if (maxBranches != null)
               _buildFeatureItem(
-                  '🏢 Up to $maxBranches branch${maxBranches > 1 ? 'es' : ''}'),
+                  '🏢 Up to ${maxBranches == 999 ? 'Unlimited' : maxBranches} branch${maxBranches > 1 ? 'es' : ''}'),
 
             const SizedBox(height: 16),
             const Divider(),

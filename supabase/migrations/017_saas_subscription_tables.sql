@@ -9,10 +9,21 @@
 -- ══════════════════════════════════════════════════════════════════════════
 CREATE TABLE IF NOT EXISTS public.subscription_plans (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  name TEXT NOT NULL UNIQUE,
+  plan_code TEXT NOT NULL UNIQUE,  -- 'basic', 'professional', 'enterprise'
+  plan_name TEXT NOT NULL,
   description TEXT,
+  
+  -- Indian Pricing (INR)
   price_monthly DECIMAL(10, 2) NOT NULL,
   price_yearly DECIMAL(10, 2) NOT NULL,
+  renewal_yearly DECIMAL(10, 2) NOT NULL,  -- 50% of yearly price
+  
+  -- International Pricing (USD)
+  price_monthly_usd DECIMAL(10, 2) NOT NULL,
+  price_yearly_usd DECIMAL(10, 2) NOT NULL,
+  renewal_yearly_usd DECIMAL(10, 2) NOT NULL,  -- 50% of yearly price
+  
+  currency TEXT NOT NULL DEFAULT 'INR',
   features JSONB DEFAULT '[]'::jsonb,
   max_branches INTEGER NOT NULL DEFAULT 1,
   max_users INTEGER NOT NULL DEFAULT 3,
@@ -23,43 +34,86 @@ CREATE TABLE IF NOT EXISTS public.subscription_plans (
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Insert default plans
-INSERT INTO public.subscription_plans (name, description, price_monthly, price_yearly, features, max_branches, max_users, storage_limit_gb, display_order)
+-- Insert default plans with renewal pricing
+INSERT INTO public.subscription_plans (
+  plan_code, 
+  plan_name, 
+  description, 
+  price_monthly, 
+  price_yearly, 
+  renewal_yearly,
+  price_monthly_usd,
+  price_yearly_usd,
+  renewal_yearly_usd,
+  features, 
+  max_branches, 
+  max_users, 
+  storage_limit_gb, 
+  display_order
+)
 VALUES 
   (
+    'basic',
     'Basic',
     'Perfect for small pharmacies',
-    999.00,
-    9990.00,
-    '["1 Branch", "3 Users", "5GB Storage", "Email Support", "Inventory Management", "POS Billing", "GST Reports"]'::jsonb,
+    499.00,    -- ₹499/month
+    5388.00,   -- ₹5,388/year (10% discount)
+    2694.00,   -- ₹2,694 renewal (50% of yearly)
+    9.00,      -- $9/month
+    97.00,     -- $97/year (10% discount)
+    48.50,     -- $48.50 renewal (50% of yearly)
+    '["1 Branch", "3 Users", "5GB Storage", "Email Support", "Inventory Management", "POS Billing", "GST Reports", "Batch Tracking", "Expiry Management"]'::jsonb,
     1,
     3,
     5,
     1
   ),
   (
+    'professional',
     'Professional',
     'Ideal for growing pharmacies',
-    2499.00,
-    24990.00,
-    '["3 Branches", "10 Users", "20GB Storage", "Priority Support", "Multi-Branch Management", "Advanced Reports", "Customer Management", "Supplier Management"]'::jsonb,
+    1499.00,   -- ₹1,499/month
+    16188.00,  -- ₹16,188/year (10% discount)
+    8094.00,   -- ₹8,094 renewal (50% of yearly)
+    24.00,     -- $24/month
+    259.00,    -- $259/year (10% discount)
+    129.50,    -- $129.50 renewal (50% of yearly)
+    '["3 Branches", "10 Users", "20GB Storage", "Priority Support", "Multi-Branch Management", "Advanced Reports", "Customer Management", "Supplier Management", "Stock Transfer", "Loyalty Program"]'::jsonb,
     3,
     10,
     20,
     2
   ),
   (
+    'enterprise',
     'Enterprise',
     'For pharmacy chains',
-    4999.00,
-    49990.00,
-    '["Unlimited Branches", "Unlimited Users", "100GB Storage", "24/7 Phone Support", "API Access", "Custom Reports", "Dedicated Account Manager", "Data Export"]'::jsonb,
+    2600.00,   -- ₹2,600/month (changed from ₹4,999)
+    28080.00,  -- ₹28,080/year (10% discount)
+    14040.00,  -- ₹14,040 renewal (50% of yearly)
+    42.00,     -- $42/month
+    453.00,    -- $453/year (10% discount)
+    226.50,    -- $226.50 renewal (50% of yearly)
+    '["Unlimited Branches", "Unlimited Users", "100GB Storage", "24/7 Phone Support", "API Access", "Custom Reports", "Dedicated Account Manager", "Data Export", "White Label Options", "Training & Onboarding"]'::jsonb,
     999,
     999,
     100,
     3
   )
-ON CONFLICT (name) DO NOTHING;
+ON CONFLICT (plan_code) DO UPDATE SET
+  plan_name = EXCLUDED.plan_name,
+  description = EXCLUDED.description,
+  price_monthly = EXCLUDED.price_monthly,
+  price_yearly = EXCLUDED.price_yearly,
+  renewal_yearly = EXCLUDED.renewal_yearly,
+  price_monthly_usd = EXCLUDED.price_monthly_usd,
+  price_yearly_usd = EXCLUDED.price_yearly_usd,
+  renewal_yearly_usd = EXCLUDED.renewal_yearly_usd,
+  features = EXCLUDED.features,
+  max_branches = EXCLUDED.max_branches,
+  max_users = EXCLUDED.max_users,
+  storage_limit_gb = EXCLUDED.storage_limit_gb,
+  updated_at = NOW();
 
 -- ══════════════════════════════════════════════════════════════════════════
 -- Table: subscriptions
@@ -70,6 +124,8 @@ CREATE TABLE IF NOT EXISTS public.subscriptions (
   plan_id UUID NOT NULL REFERENCES public.subscription_plans(id),
   status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('trial', 'active', 'expired', 'suspended', 'cancelled')),
   billing_cycle TEXT NOT NULL DEFAULT 'monthly' CHECK (billing_cycle IN ('monthly', 'yearly')),
+  is_renewal BOOLEAN DEFAULT false,  -- Track if this is a renewal subscription
+  currency TEXT NOT NULL DEFAULT 'INR',  -- 'INR' or 'USD'
   start_date DATE NOT NULL DEFAULT CURRENT_DATE,
   end_date DATE NOT NULL,
   auto_renew BOOLEAN DEFAULT true,
@@ -304,7 +360,19 @@ WHERE schemaname = 'public'
   AND tablename IN ('subscription_plans', 'subscriptions', 'payments', 'software_versions', 'download_logs');
 
 -- Check default plans
-SELECT name, price_monthly, price_yearly, max_branches, max_users FROM public.subscription_plans ORDER BY display_order;
+SELECT 
+  plan_code,
+  plan_name, 
+  price_monthly as inr_monthly, 
+  price_yearly as inr_yearly,
+  renewal_yearly as inr_renewal,
+  price_monthly_usd as usd_monthly,
+  price_yearly_usd as usd_yearly,
+  renewal_yearly_usd as usd_renewal,
+  max_branches, 
+  max_users 
+FROM public.subscription_plans 
+ORDER BY display_order;
 
 -- ============================================================================
 -- Migration complete
