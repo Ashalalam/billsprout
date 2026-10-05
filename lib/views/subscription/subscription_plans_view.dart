@@ -325,8 +325,8 @@ class _SubscriptionPlansViewState extends State<SubscriptionPlansView> {
     
     // Get prices based on selected currency and billing cycle
     final priceMonthly = _selectedCurrency == 'INR' 
-        ? (plan['price_monthly'] as num)
-        : (plan['price_monthly_usd'] as num);
+        ? (plan['price_monthly'] as num? ?? 0)
+        : (plan['price_monthly_usd'] as num? ?? 0);
     final priceYearly = _selectedCurrency == 'INR'
         ? (plan['price_yearly'] as num?)
         : (plan['price_yearly_usd'] as num?);

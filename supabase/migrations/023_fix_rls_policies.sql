@@ -40,3 +40,27 @@ CREATE POLICY "business_admin_manage_subscription" ON public.subscriptions
       AND (role = 'business_admin' OR role = 'super_admin')
     )
   );
+
+
+-- Allow business_admin to view their tenant's payments
+DROP POLICY IF EXISTS "business_admin_view_payments" ON public.payments;
+CREATE POLICY "business_admin_view_payments" ON public.payments
+  FOR SELECT USING (
+    tenant_id IN (
+      SELECT tenant_id FROM public.users WHERE id = auth.uid()
+    )
+  );
+
+-- Allow business_admin to insert payments for their tenant
+DROP POLICY IF EXISTS "business_admin_insert_payments" ON public.payments;
+CREATE POLICY "business_admin_insert_payments" ON public.payments
+  FOR INSERT WITH CHECK (
+    tenant_id IN (
+      SELECT tenant_id FROM public.users WHERE id = auth.uid()
+    ) AND
+    EXISTS (
+      SELECT 1 FROM public.users
+      WHERE id = auth.uid()
+      AND (role = 'business_admin' OR role = 'super_admin')
+    )
+  );
