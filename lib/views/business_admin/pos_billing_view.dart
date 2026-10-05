@@ -5,6 +5,7 @@ import 'package:qr_flutter/qr_flutter.dart';
 import '../../config/app_theme.dart';
 import '../../config/responsive_layout.dart';
 import '../../models/invoice_model.dart';
+import '../../models/selling_unit_model.dart';
 import '../../providers/inventory_provider.dart';
 import '../../providers/pos_provider.dart';
 import '../../providers/accounting_provider.dart';
@@ -531,6 +532,8 @@ class _PosBillingViewState extends State<PosBillingView> {
             separatorBuilder: (_, __) => const Divider(height: 1),
             itemBuilder: (context, index) {
               final item = pos.cartItems[index];
+              final allowsLoose = item.product.allowLooseSales;
+              
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -545,6 +548,17 @@ class _PosBillingViewState extends State<PosBillingView> {
                         Container(padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
                           decoration: BoxDecoration(color: AppTheme.errorRed.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(3)),
                           child: const Text('PIN', style: TextStyle(fontSize: 9, color: AppTheme.errorRed, fontWeight: FontWeight.bold))),
+                      if (allowsLoose)
+                        Container(
+                          margin: const EdgeInsets.only(left: 4),
+                          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                          decoration: BoxDecoration(
+                            color: AppTheme.successGreen.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(3),
+                          ),
+                          child: const Text('LOOSE', 
+                            style: TextStyle(fontSize: 9, color: AppTheme.successGreen, fontWeight: FontWeight.bold)),
+                        ),
                     ]),
                     subtitle: Text(
                       'HSN: ${item.product.hsnCode}  |  Batch: ${item.batch.batchNumber}  |  '
@@ -560,6 +574,90 @@ class _PosBillingViewState extends State<PosBillingView> {
                           style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
                     ]),
                   ),
+                  
+                  // Loose unit controls (if enabled)
+                  if (allowsLoose) ...[
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(0, 4, 0, 4),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.medical_services, size: 13, color: AppTheme.primaryBlue),
+                          const SizedBox(width: 4),
+                          const Text('Unit:', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600)),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            flex: 2,
+                            child: DropdownButton<SellingUnit>(
+                              value: item.sellingUnit ?? SellingUnit.pack,
+                              isDense: true,
+                              isExpanded: true,
+                              items: [
+                                DropdownMenuItem(
+                                  value: SellingUnit.pack,
+                                  child: Text(item.product.packagingLabel, 
+                                    style: const TextStyle(fontSize: 11)),
+                                ),
+                                DropdownMenuItem(
+                                  value: SellingUnit.strip,
+                                  child: Text('Strip', style: const TextStyle(fontSize: 11)),
+                                ),
+                                DropdownMenuItem(
+                                  value: SellingUnit.tablet,
+                                  child: Text('Tablet', style: const TextStyle(fontSize: 11)),
+                                ),
+                                DropdownMenuItem(
+                                  value: SellingUnit.capsule,
+                                  child: Text('Capsule', style: const TextStyle(fontSize: 11)),
+                                ),
+                                DropdownMenuItem(
+                                  value: SellingUnit.ml,
+                                  child: Text('ML', style: const TextStyle(fontSize: 11)),
+                                ),
+                                DropdownMenuItem(
+                                  value: SellingUnit.vial,
+                                  child: Text('Vial', style: const TextStyle(fontSize: 11)),
+                                ),
+                              ],
+                              onChanged: (unit) {
+                                if (unit != null) pos.updateSellingUnit(item, unit);
+                              },
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          const Text('Loose:', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600)),
+                          const SizedBox(width: 4),
+                          SizedBox(
+                            width: 50,
+                            child: TextField(
+                              keyboardType: TextInputType.number,
+                              decoration: InputDecoration(
+                                isDense: true,
+                                hintText: '0',
+                                contentPadding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                                suffixText: item.product.baseUnit?.label ?? 'U',
+                                suffixStyle: const TextStyle(fontSize: 9, color: AppTheme.textMuted),
+                              ),
+                              style: const TextStyle(fontSize: 11),
+                              controller: TextEditingController(text: '${item.looseUnits ?? 0}'),
+                              onChanged: (v) {
+                                final loose = int.tryParse(v) ?? 0;
+                                pos.updateLooseQuantity(item, loose);
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (item.looseUnits != null && item.looseUnits! > 0)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 4),
+                        child: Text(
+                          '  📦 ${item.quantity} ${item.sellingUnit?.label ?? 'pack'}${item.quantity != 1 ? 's' : ''} + ${item.looseUnits} loose ${item.product.baseUnit?.label ?? 'units'}',
+                          style: const TextStyle(fontSize: 10, color: AppTheme.successGreen, fontStyle: FontStyle.italic),
+                        ),
+                      ),
+                  ],
+                  
                   // Free qty + item-level discount row
                   Padding(
                     padding: const EdgeInsets.fromLTRB(0, 0, 0, 8),

@@ -36,7 +36,11 @@ class SupportService {
     buffer.writeln('--------------------------------');
     for (var item in invoice.items) {
       buffer.writeln('• ${item.product.name} (Batch: ${item.batch.batchNumber})');
-      buffer.writeln('   ${item.quantity} x ₹${item.unitPrice.toStringAsFixed(2)} = ₹${item.lineTotal.toStringAsFixed(2)}');
+      // Use quantityDisplay to show compound quantities like "2 Strips + 5 Tablets"
+      buffer.writeln('   ${item.quantityDisplay} @ ₹${item.unitPrice.toStringAsFixed(2)} = ₹${item.lineTotal.toStringAsFixed(2)}');
+      if (item.freeQuantity > 0) {
+        buffer.writeln('   (+ ${item.freeQuantity} FREE)');
+      }
     }
     buffer.writeln('--------------------------------');
     buffer.writeln('Grand Total: ₹${invoice.grandTotal.toStringAsFixed(2)}');

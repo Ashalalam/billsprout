@@ -5,6 +5,7 @@ import '../../config/app_theme.dart';
 import '../../config/responsive_layout.dart';
 import '../../models/product_model.dart';
 import '../../models/batch_model.dart';
+import '../../models/selling_unit_model.dart';
 import '../../providers/inventory_provider.dart';
 
 class InventoryView extends StatefulWidget {
@@ -185,9 +186,41 @@ class _InventoryViewState extends State<InventoryView> with SingleTickerProvider
                       product.name,
                       style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
                     ),
-                    subtitle: Text(
-                      'Generic Salt: ${product.genericSalt} | HSN: ${product.hsnCode} | GST: ${product.taxPercent}% | Total Stock: ${product.totalStock}',
-                      style: TextStyle(fontSize: 12),
+                    subtitle: Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            'Generic Salt: ${product.genericSalt} | HSN: ${product.hsnCode} | GST: ${product.taxPercent}% | Total Stock: ${product.totalStock}',
+                            style: TextStyle(fontSize: 12),
+                          ),
+                        ),
+                        if (product.allowLooseSales) ...[
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: AppTheme.successGreen.withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(4),
+                              border: Border.all(color: AppTheme.successGreen.withValues(alpha: 0.3)),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(Icons.medical_services, size: 10, color: AppTheme.successGreen),
+                                const SizedBox(width: 3),
+                                Text(
+                                  'LOOSE: ${product.baseUnitsPerPack ?? 10} ${product.baseUnit?.label ?? 'units'}/pack',
+                                  style: const TextStyle(
+                                    fontSize: 9,
+                                    color: AppTheme.successGreen,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
                     trailing: Row(
                       mainAxisSize: MainAxisSize.min,
@@ -238,7 +271,7 @@ class _InventoryViewState extends State<InventoryView> with SingleTickerProvider
                                 1: FlexColumnWidth(1.5),
                                 2: FlexColumnWidth(1.5),
                                 3: FlexColumnWidth(1),
-                                4: FlexColumnWidth(1),
+                                4: FlexColumnWidth(1.5),
                                 5: FlexColumnWidth(1.5),
                               },
                               children: [
@@ -255,6 +288,13 @@ class _InventoryViewState extends State<InventoryView> with SingleTickerProvider
                                 ),
                                 ...product.batches.map((batch) {
                                   final expText = '${batch.expDate.month}/${batch.expDate.year}';
+                                  // Show stock with loose units breakdown if product allows loose sales
+                                  String stockDisplay = '${batch.stockCount}';
+                                  if (product.allowLooseSales && batch.looseUnits != null && batch.looseUnits! > 0) {
+                                    final totalUnits = batch.totalAvailableUnits(product.baseUnitsPerPack ?? 10);
+                                    stockDisplay = '${batch.stockCount} packs\n+ ${batch.looseUnits} loose\n(${totalUnits} ${product.baseUnit?.label ?? 'units'})';
+                                  }
+                                  
                                   return TableRow(
                                     children: [
                                       Padding(padding: EdgeInsets.all(6), child: Text(batch.batchNumber, style: TextStyle(fontSize: 12))),
@@ -271,7 +311,21 @@ class _InventoryViewState extends State<InventoryView> with SingleTickerProvider
                                         ),
                                       ),
                                       Padding(padding: EdgeInsets.all(6), child: Text('₹${batch.mrp}', style: TextStyle(fontSize: 12))),
-                                      Padding(padding: EdgeInsets.all(6), child: Text('${batch.stockCount}', style: TextStyle(fontSize: 12))),
+                                      Padding(
+                                        padding: EdgeInsets.all(6),
+                                        child: Text(
+                                          stockDisplay,
+                                          style: TextStyle(
+                                            fontSize: 11,
+                                            color: product.allowLooseSales && batch.looseUnits != null && batch.looseUnits! > 0 
+                                                ? AppTheme.successGreen 
+                                                : Colors.black87,
+                                            fontWeight: product.allowLooseSales && batch.looseUnits != null && batch.looseUnits! > 0
+                                                ? FontWeight.w600
+                                                : FontWeight.normal,
+                                          ),
+                                        ),
+                                      ),
                                       Padding(padding: EdgeInsets.all(6), child: Text(batch.rackLocation, style: TextStyle(fontSize: 12))),
                                     ],
                                   );
@@ -579,6 +633,13 @@ class _InventoryViewState extends State<InventoryView> with SingleTickerProvider
     final expCtrl      = TextEditingController();
     DoseType doseType = DoseType.tablet;
     PackagingConfig? packagingConfig = PackagingConfig.strip10x10;
+    
+    // â"€â"€ Loose-unit sales configuration â"€â"€
+    bool allowLooseSales = false;
+    final baseUnitsPerPackCtrl = TextEditingController(text: '10');
+    final pricePerBaseUnitCtrl = TextEditingController();
+    SellingUnit minSaleUnit = SellingUnit.strip;
+    SellingUnit baseUnit = SellingUnit.tablet;
 
     showDialog(
       context: context,
@@ -691,6 +752,105 @@ class _InventoryViewState extends State<InventoryView> with SingleTickerProvider
                     onChanged: (v) =>
                         setDlg(() => taxPercent = v ?? taxPercent),
                   ),
+                  const SizedBox(height: 12),
+                  
+                  // â"€ Loose-Unit Sales Configuration â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
+                  _sectionHeader('Loose-Unit Sales Configuration'),
+                  const SizedBox(height: 8),
+                  SwitchListTile(
+                    title: const Text('Enable Loose-Unit Sales', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                    subtitle: const Text('Allow selling individual tablets, capsules, or ml instead of full packs', style: TextStyle(fontSize: 11)),
+                    value: allowLooseSales,
+                    activeColor: AppTheme.successGreen,
+                    onChanged: (v) => setDlg(() => allowLooseSales = v),
+                  ),
+                  
+                  if (allowLooseSales) ...[
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: AppTheme.primaryBlue.withValues(alpha: 0.05),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: AppTheme.primaryBlue.withValues(alpha: 0.2)),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(children: [
+                            Expanded(
+                              child: TextField(
+                                controller: baseUnitsPerPackCtrl,
+                                keyboardType: TextInputType.number,
+                                decoration: const InputDecoration(
+                                  labelText: 'Base Units per Pack *',
+                                  hintText: '10',
+                                  helperText: 'e.g., 10 tablets per strip',
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: DropdownButtonFormField<SellingUnit>(
+                                value: baseUnit,
+                                decoration: const InputDecoration(labelText: 'Base Unit *'),
+                                items: [SellingUnit.tablet, SellingUnit.capsule, SellingUnit.ml, SellingUnit.gm, SellingUnit.unit]
+                                    .map((u) => DropdownMenuItem(value: u, child: Text(u.label, style: const TextStyle(fontSize: 13))))
+                                    .toList(),
+                                onChanged: (v) => setDlg(() => baseUnit = v ?? baseUnit),
+                              ),
+                            ),
+                          ]),
+                          const SizedBox(height: 10),
+                          Row(children: [
+                            Expanded(
+                              child: TextField(
+                                controller: pricePerBaseUnitCtrl,
+                                keyboardType: TextInputType.number,
+                                decoration: const InputDecoration(
+                                  labelText: 'Price per Base Unit (₹)',
+                                  hintText: '5.50',
+                                  helperText: 'Leave empty to auto-calculate from MRP',
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: DropdownButtonFormField<SellingUnit>(
+                                value: minSaleUnit,
+                                decoration: const InputDecoration(labelText: 'Minimum Sale Unit'),
+                                items: [SellingUnit.strip, SellingUnit.tablet, SellingUnit.capsule, SellingUnit.ml]
+                                    .map((u) => DropdownMenuItem(value: u, child: Text(u.label, style: const TextStyle(fontSize: 13))))
+                                    .toList(),
+                                onChanged: (v) => setDlg(() => minSaleUnit = v ?? minSaleUnit),
+                              ),
+                            ),
+                          ]),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: AppTheme.successGreen.withValues(alpha: 0.07),
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(color: AppTheme.successGreen.withValues(alpha: 0.2)),
+                      ),
+                      child: Row(
+                        children: const [
+                          Icon(Icons.info_outline, color: AppTheme.successGreen, size: 14),
+                          SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              'Loose-unit sales allow flexible dispensing (e.g., "2 strips + 5 tablets"). The system auto-opens packs when needed.',
+                              style: TextStyle(fontSize: 10, color: AppTheme.successGreen, height: 1.3),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: 12),
 
                   // Schedule / Narcotic flags
@@ -885,6 +1045,26 @@ class _InventoryViewState extends State<InventoryView> with SingleTickerProvider
                   return;
                 }
 
+                // ── Loose-sales validation ────────────────────────────────────
+                if (allowLooseSales) {
+                  final baseUnits = int.tryParse(baseUnitsPerPackCtrl.text);
+                  if (baseUnits == null || baseUnits <= 0) {
+                    _showSnack(context,
+                        'Base units per pack must be a positive number.',
+                        isError: true);
+                    return;
+                  }
+                  if (pricePerBaseUnitCtrl.text.isNotEmpty) {
+                    final pricePerUnit = double.tryParse(pricePerBaseUnitCtrl.text);
+                    if (pricePerUnit == null || pricePerUnit <= 0) {
+                      _showSnack(context,
+                          'Price per base unit must be a positive number.',
+                          isError: true);
+                      return;
+                    }
+                  }
+                }
+
                 // â”€â”€ Parse dates â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
                 DateTime? expDate;
                 DateTime? mfgDate;
@@ -936,6 +1116,14 @@ class _InventoryViewState extends State<InventoryView> with SingleTickerProvider
                   batches: [batch],
                   doseType: doseType,
                   packagingConfig: packagingConfig,
+                  // Loose-unit sales fields
+                  allowLooseSales: allowLooseSales,
+                  baseUnitsPerPack: allowLooseSales ? (int.tryParse(baseUnitsPerPackCtrl.text) ?? 10) : 10,
+                  pricePerBaseUnit: allowLooseSales && pricePerBaseUnitCtrl.text.isNotEmpty 
+                      ? double.tryParse(pricePerBaseUnitCtrl.text) 
+                      : null,
+                  minSaleUnit: allowLooseSales ? minSaleUnit : SellingUnit.strip,
+                  baseUnit: allowLooseSales ? baseUnit : SellingUnit.tablet,
                 );
 
                 inventoryProvider.addProduct(product);
