@@ -59,8 +59,9 @@ class _CustomerRegisterViewState extends State<CustomerRegisterView> {
         email: email,
         password: password,
         data: {
-          'email_confirmed': true,
           'registration_type': 'customer',
+          'name': _nameCtrl.text.trim(),
+          'phone': _phoneCtrl.text.trim().isEmpty ? null : _phoneCtrl.text.trim(),
         },
       );
 
@@ -70,29 +71,42 @@ class _CustomerRegisterViewState extends State<CustomerRegisterView> {
 
       final userId = authResponse.user!.id;
 
-      // Step 2: Try to authenticate
+      // Step 2: Auto-confirm email using edge function (bypasses email confirmation)
       try {
-        if (authResponse.session == null) {
+        final confirmResponse = await supabase.functions.invoke(
+          'confirm-customer-email',
+          body: {'userId': userId},
+        );
+
+        if (confirmResponse.status != 200) {
+          print('Warning: Email confirmation failed, but continuing...');
+        }
+      } catch (e) {
+        print('Warning: Could not auto-confirm email: $e');
+        // Continue anyway - user might need to confirm via email
+      }
+
+      // Step 3: Try to sign in (should work now that email is confirmed)
+      if (authResponse.session == null) {
+        try {
           final signInResponse = await supabase.auth.signInWithPassword(
             email: email,
             password: password,
           );
 
           if (signInResponse.session == null) {
-            throw Exception('Email confirmation required');
+            throw Exception(
+              'Account created! Please check your email to confirm your account.',
+            );
           }
-        }
-      } catch (e) {
-        // If sign in fails due to email confirmation, show helpful message
-        if (e.toString().contains('Email not confirmed') || 
-            e.toString().contains('email_confirm')) {
+        } catch (e) {
+          // If sign-in still fails, show helpful message
           throw Exception(
-            'Account created! However, email confirmation is enabled. '
-            'Please ask your administrator to run the auto-confirm SQL script '
-            'or disable email confirmation in Supabase settings.'
+            'Account created successfully! '
+            'However, you need to confirm your email before logging in. '
+            'Please check your inbox for a confirmation link.',
           );
         }
-        rethrow;
       }
 
       // Step 3: Create customer user record
@@ -105,8 +119,7 @@ class _CustomerRegisterViewState extends State<CustomerRegisterView> {
         'phone': _phoneCtrl.text.trim().isEmpty ? null : _phoneCtrl.text.trim(),
         'role': 'customer',
         'is_active': true,
-        'email_verified': false,
-        'registration_date': DateTime.now().toIso8601String(),
+        // created_at and updated_at will be set automatically by the database
       };
 
       await supabase.from('users').insert(userData);
@@ -115,11 +128,24 @@ class _CustomerRegisterViewState extends State<CustomerRegisterView> {
         _showSuccessDialog();
       }
     } on AuthException catch (e) {
-      setState(() => _errorMessage = e.message);
+      // Handle rate limiting with user-friendly message
+      if (e.message.toLowerCase().contains('rate limit')) {
+        setState(() => _errorMessage = 
+          'Too many registration attempts. Please wait a few minutes and try again.');
+      } else {
+        setState(() => _errorMessage = e.message);
+      }
     } on PostgrestException catch (e) {
       setState(() => _errorMessage = 'Database error: ${e.message}');
     } catch (e) {
-      setState(() => _errorMessage = 'Registration failed: ${e.toString()}');
+      final errorMsg = e.toString();
+      // Check for rate limiting in generic exceptions too
+      if (errorMsg.toLowerCase().contains('rate limit')) {
+        setState(() => _errorMessage = 
+          'Too many registration attempts. Please wait a few minutes and try again.');
+      } else {
+        setState(() => _errorMessage = 'Registration failed: $errorMsg');
+      }
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);
