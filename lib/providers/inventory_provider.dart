@@ -32,7 +32,7 @@ class InventoryProvider extends ChangeNotifier {
 
   InventoryProvider({required this.authProvider}) {
     _loadFromDisk();
-    // Auto-sync from Supabase if configured
+    // Auto-sync from Supabase if configured (this will overwrite disk cache with fresh data)
     if (authProvider.tenantId != null) {
       _syncFromSupabase();
     }
@@ -427,7 +427,9 @@ class InventoryProvider extends ChangeNotifier {
     
     try {
       final tenantId = authProvider.tenantId!;
+      debugPrint('[Inventory] Starting sync for tenant: $tenantId');
       final productsData = await SupabaseService().fetchProducts(tenantId);
+      debugPrint('[Inventory] Fetched ${productsData.length} products from Supabase');
       
       if (productsData.isNotEmpty) {
         _products.clear();
@@ -440,9 +442,12 @@ class InventoryProvider extends ChangeNotifier {
         
         await _saveToDisk();
         debugPrint('[Inventory] Synced ${_products.length} products from Supabase');
+      } else {
+        debugPrint('[Inventory] WARNING: No products returned from database!');
       }
     } on PostgrestException catch (e) {
       debugPrint('[Inventory] Supabase sync error: ${e.message}');
+      debugPrint('[Inventory] Error details: ${e.details}');
     } catch (e) {
       debugPrint('[Inventory] Sync error: $e');
     } finally {
@@ -521,6 +526,10 @@ class InventoryProvider extends ChangeNotifier {
     // Extract batches if present
     final batchesData = row['batches'] as List<dynamic>? ?? [];
     debugPrint('[Inventory] Loading product ${row['name']}: found ${batchesData.length} batches');
+    debugPrint('[Inventory] Raw batch data type: ${batchesData.runtimeType}');
+    if (batchesData.isNotEmpty) {
+      debugPrint('[Inventory] First batch raw data: ${batchesData.first}');
+    }
     final batches = batchesData.map((b) {
       final batchMap = b as Map<String, dynamic>;
       debugPrint('[Inventory]   Batch ${batchMap['batch_number']}: stock_quantity=${batchMap['stock_quantity']}, loose_units=${batchMap['loose_units']}');
