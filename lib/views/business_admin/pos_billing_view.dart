@@ -442,7 +442,7 @@ class _PosBillingViewState extends State<PosBillingView> {
                             minimumSize: const Size(36, 28),
                           ),
                           onPressed:
-                              outOfStock ? null : () => pos.addToCart(product),
+                              outOfStock ? null : () => _showQuantityDialog(context, product, pos),
                           child: const Icon(Icons.add, size: 16),
                         ),
                       ],
@@ -1133,6 +1133,184 @@ class _PosBillingViewState extends State<PosBillingView> {
       }
       return false;
     }
+  }
+  
+  /// Show dialog to enter strips + loose tablets quantity
+  void _showQuantityDialog(BuildContext context, ProductModel product, PosProvider pos) {
+    final stripsCtrl = TextEditingController(text: '0');
+    final looseCtrl = TextEditingController(text: '1');
+    
+    // Get pack configuration
+    final baseUnitsPerPack = product.baseUnitsPerPack ?? 10;
+    final packLabel = product.packagingConfig?.label ?? '1×$baseUnitsPerPack';
+    final batch = product.fefoBatch;
+    
+    if (batch == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No available batch for this product')),
+      );
+      return;
+    }
+    
+    final stripPrice = batch.mrp;
+    final tabletPrice = stripPrice / baseUnitsPerPack;
+    
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            // Calculate totals
+            final strips = int.tryParse(stripsCtrl.text) ?? 0;
+            final loose = int.tryParse(looseCtrl.text) ?? 0;
+            
+            // Auto-normalize if loose >= baseUnitsPerPack
+            int normalizedStrips = strips;
+            int normalizedLoose = loose;
+            if (loose >= baseUnitsPerPack) {
+              normalizedStrips = strips + (loose ~/ baseUnitsPerPack);
+              normalizedLoose = loose % baseUnitsPerPack;
+            }
+            
+            final totalTablets = (normalizedStrips * baseUnitsPerPack) + normalizedLoose;
+            final stripAmount = normalizedStrips * stripPrice;
+            final looseAmount = normalizedLoose * tabletPrice;
+            final totalAmount = stripAmount + looseAmount;
+            
+            // Check stock
+            final availableTablets = batch.totalAvailableUnits(baseUnitsPerPack);
+            final isStockSufficient = totalTablets <= availableTablets;
+            
+            return AlertDialog(
+              title: Text(product.name),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Pack info
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.blue.shade50,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Pack: $packLabel', style: const TextStyle(fontWeight: FontWeight.bold)),
+                          Text('Strip MRP: ₹${stripPrice.toStringAsFixed(2)}'),
+                          Text('Per Tablet: ₹${tabletPrice.toStringAsFixed(2)}'),
+                          Text('Available: $availableTablets tablets', 
+                            style: TextStyle(
+                              color: isStockSufficient ? Colors.green : Colors.red,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    
+                    // Strips input
+                    TextField(
+                      controller: stripsCtrl,
+                      decoration: const InputDecoration(
+                        labelText: 'Strips',
+                        border: OutlineInputBorder(),
+                        prefixIcon: Icon(Icons.inventory_2),
+                      ),
+                      keyboardType: TextInputType.number,
+                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                      onChanged: (_) => setDialogState(() {}),
+                    ),
+                    const SizedBox(height: 12),
+                    
+                    // Loose tablets input
+                    TextField(
+                      controller: looseCtrl,
+                      decoration: const InputDecoration(
+                        labelText: 'Loose Tablets',
+                        border: OutlineInputBorder(),
+                        prefixIcon: Icon(Icons.medication),
+                      ),
+                      keyboardType: TextInputType.number,
+                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                      onChanged: (_) => setDialogState(() {}),
+                    ),
+                    const SizedBox(height: 16),
+                    
+                    // Calculation display
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade100,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.grey.shade300),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          if (normalizedStrips != strips || normalizedLoose != loose)
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 8),
+                              child: Text(
+                                'Normalized: $normalizedStrips Strips + $normalizedLoose Tablets',
+                                style: TextStyle(color: Colors.orange.shade700, fontSize: 12),
+                              ),
+                            ),
+                          Text(
+                            'Total: $totalTablets Tablets',
+                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                          ),
+                          const Divider(),
+                          if (normalizedStrips > 0)
+                            Text('$normalizedStrips Strips × ₹${stripPrice.toStringAsFixed(2)} = ₹${stripAmount.toStringAsFixed(2)}'),
+                          if (normalizedLoose > 0)
+                            Text('$normalizedLoose Tablets × ₹${tabletPrice.toStringAsFixed(2)} = ₹${looseAmount.toStringAsFixed(2)}'),
+                          const Divider(),
+                          Text(
+                            'Amount: ₹${totalAmount.toStringAsFixed(2)}',
+                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: AppTheme.primaryBlue),
+                          ),
+                          if (!isStockSufficient)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 8),
+                              child: Text(
+                                'INSUFFICIENT STOCK!',
+                                style: TextStyle(color: Colors.red.shade700, fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Cancel'),
+                ),
+                ElevatedButton(
+                  onPressed: !isStockSufficient || totalTablets == 0 ? null : () {
+                    // Add to cart with mixed quantity
+                    final saleQty = SaleQuantity.mixed(
+                      packs: normalizedStrips,
+                      loose: normalizedLoose,
+                      sellingUnit: SellingUnit.tablet,
+                    );
+                    pos.addToCartWithQuantity(product, saleQty);
+                    Navigator.pop(context);
+                  },
+                  child: const Text('Add to Cart'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
   }
 }
 
