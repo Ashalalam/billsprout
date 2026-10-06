@@ -43,6 +43,16 @@ class InventoryProvider extends ChangeNotifier {
       // If no products loaded from Supabase, load from disk
       if (_products.isEmpty) {
         await _loadFromDisk();
+        // If we loaded from disk and have products with batches, force sync to Supabase
+        if (_products.isNotEmpty) {
+          final hasAnyBatches = _products.any((p) => p.batches.isNotEmpty);
+          if (hasAnyBatches) {
+            debugPrint('[STOCK DEBUG] Loaded from disk with batches, force syncing to Supabase...');
+            await forceSyncAllToSupabase();
+            // Now reload from Supabase to get the synced data
+            await _syncFromSupabase();
+          }
+        }
       }
     } else {
       await _loadFromDisk();
@@ -67,6 +77,20 @@ class InventoryProvider extends ChangeNotifier {
     await prefs.remove('inv_transfers');
     await _syncFromSupabase();
     notifyListeners();
+  }
+  
+  /// Force sync all products and batches to Supabase
+  Future<void> forceSyncAllToSupabase() async {
+    if (authProvider.tenantId == null) {
+      debugPrint('[Inventory] Cannot force sync: no tenant context');
+      return;
+    }
+    
+    debugPrint('[STOCK DEBUG] Force syncing ${_products.length} products to Supabase...');
+    for (final product in _products) {
+      await _syncProductToSupabase(product);
+    }
+    debugPrint('[STOCK DEBUG] Force sync complete!');
   }
 
   /// Adds a brand-new product to the catalogue and persists to disk.
@@ -119,14 +143,20 @@ class InventoryProvider extends ChangeNotifier {
       await authProvider.validateTenantAccess(authProvider.tenantId!);
     }
     
+    debugPrint('[STOCK DEBUG] Adding batch to product $productId: ${batch.batchNumber} | stockCount: ${batch.stockCount}');
+    
     final index = _products.indexWhere((p) => p.id == productId);
-    if (index < 0) return;
+    if (index < 0) {
+      debugPrint('[STOCK DEBUG] ERROR: Product $productId not found!');
+      return;
+    }
     _products[index].batches.add(batch);
     await _saveToDisk();
     notifyListeners();
     
+    debugPrint('[STOCK DEBUG] Batch added locally, now syncing to Supabase...');
     // Sync batch to Supabase in background
-    _syncBatchToSupabase(productId, batch);
+    await _syncBatchToSupabase(productId, batch);
   }
 
   /// Update stock quantity for an existing batch (e.g. stock-in).
