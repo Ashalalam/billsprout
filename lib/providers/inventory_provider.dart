@@ -521,6 +521,14 @@ class InventoryProvider extends ChangeNotifier {
     final batchesData = row['batches'] as List<dynamic>? ?? [];
     final batches = batchesData.map((b) => _batchFromDbRow(b as Map<String, dynamic>)).toList();
     
+    // Parse base_unit and min_sale_unit from database
+    final baseUnitStr = (row['base_unit'] as String?) ?? 'tablet';
+    final minSaleUnitStr = (row['min_sale_unit'] as String?) ?? 'strip';
+    
+    // Parse dose type from dosage_form
+    final dosageForm = (row['dosage_form'] as String?) ?? 'tablet';
+    final doseType = _parseDoseType(dosageForm);
+    
     return ProductModel(
       id: row['id'] as String,
       name: row['name'] as String,
@@ -533,7 +541,50 @@ class InventoryProvider extends ChangeNotifier {
       isScheduleH1: row['is_schedule_h1'] as bool? ?? false,
       isNarcotic: row['is_narcotic'] as bool? ?? false,
       batches: batches,
+      doseType: doseType,
+      allowLooseSales: row['allow_loose_sales'] as bool? ?? false,
+      baseUnitsPerPack: row['base_units_per_pack'] as int? ?? 10,
+      pricePerBaseUnit: (row['price_per_base_unit'] as num?)?.toDouble(),
+      minSaleUnit: _parseSellingUnit(minSaleUnitStr),
+      baseUnit: _parseSellingUnit(baseUnitStr),
     );
+  }
+  
+  /// Parse DoseType from dosage_form string
+  DoseType _parseDoseType(String? dosageForm) {
+    if (dosageForm == null) return DoseType.tablet;
+    switch (dosageForm.toLowerCase()) {
+      case 'tablet': return DoseType.tablet;
+      case 'capsule': return DoseType.capsule;
+      case 'syrup': return DoseType.syrup;
+      case 'injection': return DoseType.injection;
+      case 'drops': return DoseType.drops;
+      case 'cream': return DoseType.cream;
+      case 'ointment': return DoseType.ointment;
+      case 'gel': return DoseType.gel;
+      case 'powder': return DoseType.powder;
+      case 'suspension': return DoseType.syrup;
+      case 'lotion': return DoseType.cream;
+      case 'inhaler': return DoseType.inhaler;
+      case 'spray': return DoseType.inhaler;
+      default: return DoseType.other;
+    }
+  }
+  
+  /// Parse SellingUnit from string
+  SellingUnit _parseSellingUnit(String value) {
+    switch (value.toLowerCase()) {
+      case 'tablet': return SellingUnit.tablet;
+      case 'capsule': return SellingUnit.capsule;
+      case 'strip': return SellingUnit.strip;
+      case 'bottle': return SellingUnit.bottle;
+      case 'vial': return SellingUnit.vial;
+      case 'ml': return SellingUnit.ml;
+      case 'gm': return SellingUnit.gm;
+      case 'tube': return SellingUnit.tube;
+      case 'unit': return SellingUnit.unit;
+      default: return SellingUnit.unit;
+    }
   }
 
   /// Convert database row (snake_case) to BatchModel (camelCase)
@@ -580,6 +631,12 @@ class InventoryProvider extends ChangeNotifier {
       'packaging_units_per_strip': product.packagingConfig?.unitsPerStrip,
       'packaging_strips_per_box': product.packagingConfig?.stripsPerBox,
       'pack_size': product.packagingConfig?.label,
+      // ✅ FIXED: Add unit conversion fields from migration 021
+      'allow_loose_sales': product.allowLooseSales,
+      'base_units_per_pack': product.baseUnitsPerPack,
+      'price_per_base_unit': product.pricePerBaseUnit,
+      'min_sale_unit': product.minSaleUnit.dbValue,
+      'base_unit': product.baseUnit.dbValue,
       'created_at': DateTime.now().toIso8601String(),
       'updated_at': DateTime.now().toIso8601String(),
     };
