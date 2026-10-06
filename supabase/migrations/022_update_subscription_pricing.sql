@@ -75,16 +75,16 @@ SET
   updated_at = NOW()
 WHERE plan_name = 'Professional';
 
--- Update Enterprise Plan (NEW PRICING: ₹26,000/year instead of ₹49,990)
+-- Update Enterprise Plan (NEW PRICING: ₹26,000/year instead of ₹49,999)
 UPDATE public.subscription_plans
 SET 
   plan_code = 'enterprise',
-  price_monthly = 2600.00,   -- Changed from ₹4,999 to ₹2,600
-  price_yearly = 28080.00,   -- Changed from ₹49,990 to ₹28,080 (10% discount)
-  renewal_yearly = 14040.00, -- 50% of yearly (₹14,040)
-  price_monthly_usd = 42.00,
-  price_yearly_usd = 453.00,
-  renewal_yearly_usd = 226.50,  -- 50% of yearly
+  price_monthly = 2167.00,   -- ₹26,000 / 12 months (for monthly option)
+  price_yearly = 26000.00,   -- Changed from ₹49,999 to ₹26,000
+  renewal_yearly = 13000.00, -- 50% of yearly (₹13,000)
+  price_monthly_usd = 35.00,
+  price_yearly_usd = 350.00,
+  renewal_yearly_usd = 175.00,  -- 50% of yearly
   features = '["Unlimited Branches", "Unlimited Users", "100GB Storage", "24/7 Phone Support", "API Access", "Custom Reports", "Dedicated Account Manager", "Data Export", "White Label Options", "Training & Onboarding"]'::jsonb,
   updated_at = NOW()
 WHERE plan_name = 'Enterprise';

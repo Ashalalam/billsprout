@@ -24,6 +24,11 @@ import 'views/auth/business_register_view.dart';
 import 'views/auth/customer_register_view.dart';
 import 'views/subscription/subscription_plans_view.dart';
 import 'views/license/my_license_view.dart';
+import 'views/legal/terms_and_conditions_view.dart';
+import 'views/legal/privacy_policy_view.dart';
+import 'views/legal/cancellation_refund_view.dart';
+import 'views/legal/shipping_exchange_view.dart';
+import 'views/legal/contact_us_view.dart';
 import 'views/super_admin/super_admin_dashboard.dart';
 import 'views/business_admin/business_admin_layout.dart';
 import 'views/customer/customer_portal_view.dart';
@@ -126,6 +131,11 @@ class BillSproutApp extends StatelessWidget {
           '/customer-register': (context) => const CustomerRegisterView(),
           '/subscription-plans': (context) => const SubscriptionPlansView(),
           '/my-license': (context) => const MyLicenseView(),
+          '/terms-conditions': (context) => const TermsAndConditionsView(),
+          '/privacy-policy': (context) => const PrivacyPolicyView(),
+          '/cancellation-refund': (context) => const CancellationRefundView(),
+          '/shipping-exchange': (context) => const ShippingExchangeView(),
+          '/contact-us': (context) => const ContactUsView(),
         },
       ),
     );

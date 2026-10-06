@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../config/app_theme.dart';
+import '../../widgets/app_footer.dart';
 import 'payment_page.dart';
 
 /// Displays available subscription plans for pharmacy owners to choose from
@@ -58,13 +59,22 @@ class _SubscriptionPlansViewState extends State<SubscriptionPlansView> {
 
     // Find the selected plan
     final selectedPlan = _plans.firstWhere((plan) => plan['id'] == planId);
+    
+    // Create plan data with selected currency and billing cycle
+    final planWithCurrency = Map<String, dynamic>.from(selectedPlan);
+    planWithCurrency['selected_currency'] = _selectedCurrency;
+    planWithCurrency['selected_billing_cycle'] = _selectedBillingCycle;
 
     // Navigate to payment page
     if (mounted) {
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (context) => PaymentPage(plan: selectedPlan),
+          builder: (context) => PaymentPage(
+            plan: planWithCurrency,
+            currency: _selectedCurrency,
+            billingCycle: _selectedBillingCycle,
+          ),
         ),
       ).then((_) {
         // Reset selection when coming back
@@ -312,6 +322,11 @@ class _SubscriptionPlansViewState extends State<SubscriptionPlansView> {
                           }
                         },
                       ),
+
+                      const SizedBox(height: 32),
+                      
+                      // Footer
+                      const AppFooter(),
                     ],
                   ),
                 ),

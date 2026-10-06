@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 import '../../config/app_theme.dart';
@@ -7,6 +7,8 @@ import '../../models/product_model.dart';
 import '../../models/batch_model.dart';
 import '../../models/selling_unit_model.dart';
 import '../../providers/inventory_provider.dart';
+import '../../widgets/medicine_scanner_dialog.dart';
+import '../../services/medicine_data_extractor.dart';
 
 class InventoryView extends StatefulWidget {
   const InventoryView({super.key});
@@ -99,7 +101,17 @@ class _InventoryViewState extends State<InventoryView> with SingleTickerProvider
               ),
               Row(
                 children: [
-                  // â”€â”€ Add New Medicine â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+                  // ── Add New Medicine ──────────────────────────────
+                  // Scan Medicine (Camera/Photo)
+                  ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                        backgroundColor: AppTheme.primaryBlue),
+                    onPressed: () => _handleScanMedicine(context, inventoryProvider),
+                    icon: const Icon(Icons.qr_code_scanner),
+                    label: const Text('Scan Medicine'),
+                  ),
+                  const SizedBox(width: 8),
+                  // Add New Medicine
                   ElevatedButton.icon(
                     style: ElevatedButton.styleFrom(
                         backgroundColor: AppTheme.successGreen),
@@ -109,7 +121,7 @@ class _InventoryViewState extends State<InventoryView> with SingleTickerProvider
                     label: const Text('Add New Medicine'),
                   ),
                   const SizedBox(width: 8),
-                  // â”€â”€ Add Stock to existing product â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+                  // ── Add Stock to existing product ─────────────────
                   ElevatedButton.icon(
                     style: ElevatedButton.styleFrom(
                         backgroundColor: AppTheme.primaryBlue),
@@ -310,7 +322,7 @@ class _InventoryViewState extends State<InventoryView> with SingleTickerProvider
                                           ),
                                         ),
                                       ),
-                                      Padding(padding: EdgeInsets.all(6), child: Text('₹${batch.mrp}', style: TextStyle(fontSize: 12))),
+                                      Padding(padding: EdgeInsets.all(6), child: Text('?${batch.mrp}', style: TextStyle(fontSize: 12))),
                                       Padding(
                                         padding: EdgeInsets.all(6),
                                         child: Text(
@@ -385,13 +397,13 @@ class _InventoryViewState extends State<InventoryView> with SingleTickerProvider
                             backgroundColor: Color(0xFFFFF3E0),
                             child: Icon(Icons.assignment_return, color: AppTheme.warningAmber),
                           ),
-                          title: Text('${rtv.rtvNumber} – ${rtv.productName}'),
+                          title: Text('${rtv.rtvNumber} � ${rtv.productName}'),
                           subtitle: Text(
                             'Supplier: ${rtv.supplierName} | Batch: ${rtv.batchNumber}\nQty Returned: ${rtv.quantity} | Reason: ${rtv.reason}',
                             style: TextStyle(fontSize: 12),
                           ),
                           trailing: Text(
-                            '₹${rtv.totalRefundAmount.toStringAsFixed(2)}',
+                            '?${rtv.totalRefundAmount.toStringAsFixed(2)}',
                             style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppTheme.warningAmber),
                           ),
                         );
@@ -443,9 +455,9 @@ class _InventoryViewState extends State<InventoryView> with SingleTickerProvider
                             backgroundColor: Color(0xFFE3F2FD),
                             child: Icon(Icons.swap_horiz, color: AppTheme.primaryBlue),
                           ),
-                          title: Text('${trf.transferNumber} – ${trf.productName}'),
+                          title: Text('${trf.transferNumber} � ${trf.productName}'),
                           subtitle: Text(
-                            'From: ${trf.sourceBranch} âž” To: ${trf.destinationBranch}\nBatch: ${trf.batchNumber} | Qty: ${trf.quantity}',
+                            'From: ${trf.sourceBranch} ➔ To: ${trf.destinationBranch}\nBatch: ${trf.batchNumber} | Qty: ${trf.quantity}',
                             style: TextStyle(fontSize: 12),
                           ),
                           trailing: Chip(
@@ -599,16 +611,15 @@ class _InventoryViewState extends State<InventoryView> with SingleTickerProvider
       ),
     );
   }
-}
 
-  // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ─────────────────────────────────────────────────────────────────────────
   // ADD NEW MEDICINE DIALOG
   // Creates a brand-new product entry with its first batch
-  // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ─────────────────────────────────────────────────────────────────────────
   void _showAddMedicineDialog(
       BuildContext context, InventoryProvider inventoryProvider,
-      {String? prefilledBarcode}) {
-    // â”€â”€ Product fields â”€â”€
+      {String? prefilledBarcode, Map<String, dynamic>? prefilledData}) {
+    // ── Product fields ──
     final nameCtrl         = TextEditingController();
     final saltCtrl         = TextEditingController();
     // Prefilled when the operator scanned a code that matched no product.
@@ -620,7 +631,7 @@ class _InventoryViewState extends State<InventoryView> with SingleTickerProvider
     bool isScheduleH1      = false;
     bool isNarcotic        = false;
 
-    // â”€â”€ First batch fields â”€â”€
+    // ── First batch fields ──
     final batchNoCtrl  = TextEditingController();
     final mrpCtrl      = TextEditingController();
     final wsCtrl       = TextEditingController();
@@ -634,7 +645,47 @@ class _InventoryViewState extends State<InventoryView> with SingleTickerProvider
     DoseType doseType = DoseType.tablet;
     PackagingConfig? packagingConfig = PackagingConfig.strip10x10;
     
-    // â"€â"€ Loose-unit sales configuration â"€â"€
+    // Pre-fill from scanned data if available
+    if (prefilledData != null) {
+      if (prefilledData.containsKey('name')) {
+        nameCtrl.text = prefilledData['name'].toString();
+      }
+      if (prefilledData.containsKey('genericSalt')) {
+        saltCtrl.text = prefilledData['genericSalt'].toString();
+      }
+      if (prefilledData.containsKey('barcode')) {
+        barcodeCtrl.text = prefilledData['barcode'].toString();
+      }
+      if (prefilledData.containsKey('manufacturer')) {
+        manufacturerCtrl.text = prefilledData['manufacturer'].toString();
+      }
+      if (prefilledData.containsKey('doseType')) {
+        doseType = prefilledData['doseType'] as DoseType;
+        // Update packaging config based on dose type
+        final presets = PackagingConfig.presetsFor(doseType);
+        if (presets.isNotEmpty) {
+          packagingConfig = presets.first;
+        }
+      }
+      // Pre-fill batch information if available
+      if (prefilledData.containsKey('batchInfo')) {
+        final batchInfo = prefilledData['batchInfo'] as Map<String, dynamic>;
+        if (batchInfo.containsKey('batchNumber')) {
+          batchNoCtrl.text = batchInfo['batchNumber'].toString();
+        }
+        if (batchInfo.containsKey('mrp')) {
+          mrpCtrl.text = batchInfo['mrp'].toString();
+        }
+        if (batchInfo.containsKey('expiryDate')) {
+          expCtrl.text = batchInfo['expiryDate'].toString();
+        }
+        if (batchInfo.containsKey('mfgDate')) {
+          mfgCtrl.text = batchInfo['mfgDate'].toString();
+        }
+      }
+    }
+    
+    // �"��"� Loose-unit sales configuration �"��"�
     bool allowLooseSales = false;
     final baseUnitsPerPackCtrl = TextEditingController(text: '10');
     final pricePerBaseUnitCtrl = TextEditingController();
@@ -658,7 +709,7 @@ class _InventoryViewState extends State<InventoryView> with SingleTickerProvider
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // â”€ Section: Product Details â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+                  // ─ Section: Product Details ─────────────────────────────
                   _sectionHeader('Product Details'),
                   const SizedBox(height: 8),
                   TextField(
@@ -754,7 +805,7 @@ class _InventoryViewState extends State<InventoryView> with SingleTickerProvider
                   ),
                   const SizedBox(height: 12),
                   
-                  // â"€ Loose-Unit Sales Configuration â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
+                  // �"� Loose-Unit Sales Configuration �"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"�
                   _sectionHeader('Loose-Unit Sales Configuration'),
                   const SizedBox(height: 8),
                   SwitchListTile(
@@ -808,7 +859,7 @@ class _InventoryViewState extends State<InventoryView> with SingleTickerProvider
                                 controller: pricePerBaseUnitCtrl,
                                 keyboardType: TextInputType.number,
                                 decoration: const InputDecoration(
-                                  labelText: 'Price per Base Unit (₹)',
+                                  labelText: 'Price per Base Unit (?)',
                                   hintText: '5.50',
                                   helperText: 'Leave empty to auto-calculate from MRP',
                                 ),
@@ -890,7 +941,7 @@ class _InventoryViewState extends State<InventoryView> with SingleTickerProvider
                   const Divider(),
                   const SizedBox(height: 8),
 
-                  // â”€ Section: First Batch / Opening Stock â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+                  // ─ Section: First Batch / Opening Stock ─────────────────
                   _sectionHeader('Opening Stock Batch'),
                   const SizedBox(height: 8),
                   Row(children: [
@@ -942,7 +993,7 @@ class _InventoryViewState extends State<InventoryView> with SingleTickerProvider
                         controller: mrpCtrl,
                         keyboardType: TextInputType.number,
                         decoration: const InputDecoration(
-                            labelText: 'MRP per unit (₹) *'),
+                            labelText: 'MRP per unit (?) *'),
                       ),
                     ),
                     const SizedBox(width: 10),
@@ -951,7 +1002,7 @@ class _InventoryViewState extends State<InventoryView> with SingleTickerProvider
                         controller: ppCtrl,
                         keyboardType: TextInputType.number,
                         decoration: const InputDecoration(
-                            labelText: 'Purchase Price (₹)'),
+                            labelText: 'Purchase Price (?)'),
                       ),
                     ),
                     const SizedBox(width: 10),
@@ -970,7 +1021,7 @@ class _InventoryViewState extends State<InventoryView> with SingleTickerProvider
                     controller: ptrCtrl,
                     keyboardType: TextInputType.number,
                     decoration: const InputDecoration(
-                      labelText: 'PTR — Price to Retailer (Rs.)',
+                      labelText: 'PTR � Price to Retailer (Rs.)',
                       hintText: 'e.g. 95.00',
                       prefixIcon: Icon(Icons.storefront),
                     ),
@@ -1025,7 +1076,7 @@ class _InventoryViewState extends State<InventoryView> with SingleTickerProvider
               style: ElevatedButton.styleFrom(
                   backgroundColor: AppTheme.successGreen),
               onPressed: () {
-                // â”€â”€ Validation â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+                // ── Validation ────────────────────────────────────────────
                 if (nameCtrl.text.trim().isEmpty) {
                   _showSnack(context, 'Enter medicine name.', isError: true);
                   return;
@@ -1045,7 +1096,7 @@ class _InventoryViewState extends State<InventoryView> with SingleTickerProvider
                   return;
                 }
 
-                // ── Loose-sales validation ────────────────────────────────────
+                // -- Loose-sales validation ------------------------------------
                 if (allowLooseSales) {
                   final baseUnits = int.tryParse(baseUnitsPerPackCtrl.text);
                   if (baseUnits == null || baseUnits <= 0) {
@@ -1065,7 +1116,7 @@ class _InventoryViewState extends State<InventoryView> with SingleTickerProvider
                   }
                 }
 
-                // â”€â”€ Parse dates â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+                // ── Parse dates ───────────────────────────────────────────
                 DateTime? expDate;
                 DateTime? mfgDate;
                 try {
@@ -1079,7 +1130,7 @@ class _InventoryViewState extends State<InventoryView> with SingleTickerProvider
                   return;
                 }
 
-                // â”€â”€ Build batch â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+                // ── Build batch ────────────────────────────────────────────
                 final batch = BatchModel(
                   id: 'b_${DateTime.now().millisecondsSinceEpoch}',
                   batchNumber: batchNoCtrl.text.trim(),
@@ -1095,7 +1146,7 @@ class _InventoryViewState extends State<InventoryView> with SingleTickerProvider
                       : rackCtrl.text.trim(),
                 );
 
-                // â”€â”€ Build product â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+                // ── Build product ──────────────────────────────────────────
                 final product = ProductModel(
                   id: const Uuid().v4(),
                   name: nameCtrl.text.trim(),
@@ -1130,7 +1181,7 @@ class _InventoryViewState extends State<InventoryView> with SingleTickerProvider
                 Navigator.pop(ctx);
                 _showSnack(
                     context,
-                    'âœ… ${product.name} added to inventory with '
+                    '✅ ${product.name} added to inventory with '
                     '${batch.stockCount} units in batch ${batch.batchNumber}.');
               },
               icon: const Icon(Icons.save),
@@ -1142,9 +1193,9 @@ class _InventoryViewState extends State<InventoryView> with SingleTickerProvider
     );
   }
 
-  // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ─────────────────────────────────────────────────────────────────────────
   // ADD STOCK / NEW BATCH TO EXISTING PRODUCT DIALOG
-  // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ─────────────────────────────────────────────────────────────────────────
   void _showAddStockDialog(
     BuildContext context,
     InventoryProvider inventoryProvider, {
@@ -1240,7 +1291,7 @@ class _InventoryViewState extends State<InventoryView> with SingleTickerProvider
                     const SizedBox(height: 14),
 
                     if (addNewBatch) ...[
-                      // â”€â”€ New batch fields â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+                      // ── New batch fields ──────────────────────────────
                       Row(children: [
                         Expanded(
                           child: TextField(
@@ -1290,7 +1341,7 @@ class _InventoryViewState extends State<InventoryView> with SingleTickerProvider
                             controller: mrpCtrl,
                             keyboardType: TextInputType.number,
                             decoration: const InputDecoration(
-                                labelText: 'MRP per unit (₹) *'),
+                                labelText: 'MRP per unit (?) *'),
                           ),
                         ),
                         const SizedBox(width: 10),
@@ -1299,7 +1350,7 @@ class _InventoryViewState extends State<InventoryView> with SingleTickerProvider
                             controller: ppCtrl,
                             keyboardType: TextInputType.number,
                             decoration: const InputDecoration(
-                                labelText: 'Purchase Price (₹)'),
+                                labelText: 'Purchase Price (?)'),
                           ),
                         ),
                         const SizedBox(width: 10),
@@ -1308,7 +1359,7 @@ class _InventoryViewState extends State<InventoryView> with SingleTickerProvider
                             controller: wsCtrl,
                             keyboardType: TextInputType.number,
                             decoration: const InputDecoration(
-                                labelText: 'Wholesale Price (₹)'),
+                                labelText: 'Wholesale Price (?)'),
                           ),
                         ),
                       ]),
@@ -1320,7 +1371,7 @@ class _InventoryViewState extends State<InventoryView> with SingleTickerProvider
                             hintText: 'e.g. Rack A-1'),
                       ),
                     ] else ...[
-                      // â”€â”€ Top-up existing batch â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+                      // ── Top-up existing batch ─────────────────────────
                       if (selectedProduct.batches.isEmpty)
                         const Text(
                           'No batches found for this product. Add a new batch instead.',
@@ -1365,8 +1416,8 @@ class _InventoryViewState extends State<InventoryView> with SingleTickerProvider
                                                 fontSize: 13),
                                           ),
                                           Text(
-                                            'MRP: ₹${b.mrp}  •  '
-                                            'Exp: ${b.expDate.month}/${b.expDate.year}  •  '
+                                            'MRP: ?${b.mrp}  �  '
+                                            'Exp: ${b.expDate.month}/${b.expDate.year}  �  '
                                             'Stock: ${b.stockCount}',
                                             style: const TextStyle(
                                                 fontSize: 11,
@@ -1471,7 +1522,7 @@ class _InventoryViewState extends State<InventoryView> with SingleTickerProvider
                     Navigator.pop(ctx);
                     _showSnack(
                         context,
-                        'âœ… Batch ${newBatch.batchNumber} added – '
+                        '✅ Batch ${newBatch.batchNumber} added � '
                         '${newBatch.stockCount} units stocked in.');
                   },
                   icon: const Icon(Icons.save),
@@ -1501,7 +1552,7 @@ class _InventoryViewState extends State<InventoryView> with SingleTickerProvider
           children: [
             Text(
               'Current stock: ${batch.stockCount} units\n'
-              'MRP: ₹${batch.mrp}  •  '
+              'MRP: ?${batch.mrp}  �  '
               'Exp: ${batch.expDate.month}/${batch.expDate.year}',
               style: TextStyle(fontSize: 13, color: AppTheme.textMuted),
             ),
@@ -1539,7 +1590,7 @@ class _InventoryViewState extends State<InventoryView> with SingleTickerProvider
               Navigator.pop(ctx); // close top-up dialog
               Navigator.pop(context); // close add-stock dialog
               _showSnack(context,
-                  'âœ… $qty units added to batch ${batch.batchNumber}. '
+                  '✅ $qty units added to batch ${batch.batchNumber}. '
                   'New stock: ${batch.stockCount} units.');
             },
             child: const Text('Confirm Add Stock'),
@@ -1549,7 +1600,7 @@ class _InventoryViewState extends State<InventoryView> with SingleTickerProvider
     );
   }
 
-  // â”€â”€ Shared helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Shared helpers ────────────────────────────────────────────────────────
   Widget _sectionHeader(String text) {
     return Text(
       text,
@@ -1654,7 +1705,7 @@ class _InventoryViewState extends State<InventoryView> with SingleTickerProvider
             ),
             const SizedBox(height: 12),
             const Text(
-              '⚠️ This action cannot be undone. All batches and stock data will be permanently deleted.',
+              '?? This action cannot be undone. All batches and stock data will be permanently deleted.',
               style: TextStyle(
                 fontSize: 12,
                 color: AppTheme.errorRed,
@@ -1678,7 +1729,7 @@ class _InventoryViewState extends State<InventoryView> with SingleTickerProvider
               if (context.mounted) {
                 _showSnack(
                   context,
-                  '✅ ${product.name} deleted successfully',
+                  '? ${product.name} deleted successfully',
                 );
               }
             },
@@ -1700,3 +1751,160 @@ class _InventoryViewState extends State<InventoryView> with SingleTickerProvider
       ),
     );
   }
+
+
+  // MEDICINE SCANNING METHODS
+  Future<void> _handleScanMedicine(
+      BuildContext context, InventoryProvider inventoryProvider) async {
+    try {
+      // Show scanner dialog
+      final scannedData = await showMedicineScannerDialog(context);
+      
+      if (scannedData == null || !mounted) return;
+
+      // Extract and validate product data
+      final dataExtractor = MedicineDataExtractor();
+      final productData = dataExtractor.extractProductData(scannedData);
+      
+      // Validate extracted data
+      final errors = dataExtractor.validateExtractedData(productData);
+      if (errors.isNotEmpty) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Validation errors:\n${errors.join('\n')}'),
+            backgroundColor: Colors.orange,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
+
+      // Show review/confirmation dialog
+      if (!mounted) return;
+      final confirmed = await _showScanReviewDialog(context, productData, dataExtractor);
+      
+      if (confirmed == true && mounted) {
+        // User confirmed, pre-fill the add medicine dialog
+        _showAddMedicineDialog(
+          context,
+          inventoryProvider,
+          prefilledData: productData,
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Scanning failed: $e'),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 4),
+        ),
+      );
+    }
+  }
+
+  Future<bool?> _showScanReviewDialog(
+      BuildContext context,
+      Map<String, dynamic> productData,
+      MedicineDataExtractor dataExtractor) async {
+    final displayData = dataExtractor.formatForDisplay(productData);
+
+    if (displayData.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No data was extracted from the image'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return false;
+    }
+
+    return await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Row(
+          children: const [
+            Icon(Icons.preview, color: AppTheme.primaryBlue, size: 28),
+            SizedBox(width: 10),
+            Text('Review Scanned Data'),
+          ],
+        ),
+        content: SizedBox(
+          width: 450,
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  'Please review the extracted information before proceeding:',
+                  style: TextStyle(fontSize: 14, color: Colors.grey),
+                ),
+                const SizedBox(height: 16),
+                ...displayData.entries.map((entry) => Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          SizedBox(
+                            width: 140,
+                            child: Text(
+                              '${entry.key}:',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                              ),
+                            ),
+                          ),
+                          Expanded(
+                            child: Text(
+                              entry.value,
+                              style: const TextStyle(fontSize: 14),
+                            ),
+                          ),
+                        ],
+                      ),
+                    )),
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.shade50,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    children: const [
+                      Icon(Icons.info_outline, color: Colors.blue, size: 20),
+                      SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'You can edit all fields in the next step',
+                          style: TextStyle(fontSize: 12, color: Colors.blue),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton.icon(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            icon: const Icon(Icons.check),
+            label: const Text('Continue to Form'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.successGreen,
+              foregroundColor: Colors.white,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
