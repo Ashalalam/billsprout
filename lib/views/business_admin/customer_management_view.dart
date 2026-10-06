@@ -458,21 +458,24 @@ class _CustomerManagementViewState extends State<CustomerManagementView> {
                     ),
                     keyboardType: TextInputType.number,
                   ),
-                  if (selectedType != CustomerType.retail) ...[
+                  // Show GST and DL fields ONLY for Retail Customer
+                  if (selectedType == CustomerType.retail) ...[
                     const SizedBox(height: 12),
                     TextField(
                       controller: gstinCtrl,
                       decoration: const InputDecoration(
-                        labelText: 'GSTIN',
+                        labelText: 'GST Number (Optional)',
                         border: OutlineInputBorder(),
+                        helperText: 'Optional for retail customers',
                       ),
                     ),
                     const SizedBox(height: 12),
                     TextField(
                       controller: drugLicenseCtrl,
                       decoration: const InputDecoration(
-                        labelText: 'Drug License No',
+                        labelText: 'Drug Licence / DL Number (Optional)',
                         border: OutlineInputBorder(),
+                        helperText: 'Optional for retail customers',
                       ),
                     ),
                   ],
@@ -505,6 +508,14 @@ class _CustomerManagementViewState extends State<CustomerManagementView> {
                 // Generate a valid tenant ID if missing (for demo mode)
                 final tenantId = auth.currentUser?.tenantId ?? const Uuid().v4();
 
+                // Only save GST and DL if customer type is retail
+                final gstinValue = selectedType == CustomerType.retail && gstinCtrl.text.isNotEmpty
+                    ? gstinCtrl.text
+                    : null;
+                final drugLicenseValue = selectedType == CustomerType.retail && drugLicenseCtrl.text.isNotEmpty
+                    ? drugLicenseCtrl.text
+                    : null;
+
                 final newCustomer = CustomerModel(
                   id: customer?.id ?? const Uuid().v4(),
                   tenantId: tenantId,
@@ -515,9 +526,8 @@ class _CustomerManagementViewState extends State<CustomerManagementView> {
                   city: cityCtrl.text,
                   state: stateCtrl.text,
                   pincode: pincodeCtrl.text,
-                  gstin: gstinCtrl.text.isEmpty ? null : gstinCtrl.text,
-                  drugLicenseNo:
-                      drugLicenseCtrl.text.isEmpty ? null : drugLicenseCtrl.text,
+                  gstin: gstinValue,
+                  drugLicenseNo: drugLicenseValue,
                   customerType: selectedType,
                   createdAt: customer?.createdAt ?? DateTime.now(),
                   updatedAt: DateTime.now(),
