@@ -31,10 +31,24 @@ class InventoryProvider extends ChangeNotifier {
   }
 
   InventoryProvider({required this.authProvider}) {
-    _loadFromDisk();
-    // Auto-sync from Supabase if configured (this will overwrite disk cache with fresh data)
+    // CHANGED: Wait for Supabase sync first, THEN fall back to disk cache
+    // This ensures fresh data from database takes priority
+    _initializeInventory();
+  }
+  
+  /// Initialize inventory: Try Supabase first, fall back to disk cache
+  Future<void> _initializeInventory() async {
     if (authProvider.tenantId != null) {
-      _syncFromSupabase();
+      debugPrint('[Inventory] Initializing from Supabase...');
+      await _syncFromSupabase();
+      // If no products loaded from Supabase, load from disk
+      if (_products.isEmpty) {
+        debugPrint('[Inventory] No products from Supabase, loading from disk...');
+        await _loadFromDisk();
+      }
+    } else {
+      debugPrint('[Inventory] No tenant context, loading from disk...');
+      await _loadFromDisk();
     }
   }
 
@@ -44,8 +58,21 @@ class InventoryProvider extends ChangeNotifier {
     authProvider = auth;
     if (tenantChanged && auth.tenantId != null) {
       debugPrint('[Inventory] Tenant context updated, re-syncing from Supabase');
-      _syncFromSupabase();
+      _initializeInventory();
     }
+  }
+  
+  /// Force refresh from database (clears cache first)
+  Future<void> forceRefreshFromDatabase() async {
+    debugPrint('[Inventory] Force refresh: clearing cache...');
+    _products.clear();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('inv_products');
+    await prefs.remove('inv_rtv');
+    await prefs.remove('inv_transfers');
+    debugPrint('[Inventory] Cache cleared, syncing from Supabase...');
+    await _syncFromSupabase();
+    notifyListeners();
   }
 
   /// Adds a brand-new product to the catalogue and persists to disk.
