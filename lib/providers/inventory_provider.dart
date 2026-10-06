@@ -6,6 +6,7 @@ import '../models/product_model.dart';
 import '../models/batch_model.dart';
 import '../models/rtv_model.dart';
 import '../models/stock_transfer_model.dart';
+import '../models/selling_unit_model.dart'; // ✅ Added import for SellingUnit
 import '../services/supabase_service.dart';
 import '../providers/auth_provider.dart';
 
