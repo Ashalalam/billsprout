@@ -202,7 +202,7 @@ class SupabaseService {
     debugPrint('[STOCK DEBUG] Products query returned ${(response as List).length} products');
     if ((response as List).isNotEmpty) {
       final first = (response as List).first;
-      debugPrint('[STOCK DEBUG] First product: ${first['name']} | batches field type: ${first['batches'].runtimeType} | batches: ${first['batches']}');
+      debugPrint('[STOCK DEBUG] First product: ${first['name']} | batches field: ${first['batches']}');
     }
     return List<Map<String, dynamic>>.from(response as List);
   }

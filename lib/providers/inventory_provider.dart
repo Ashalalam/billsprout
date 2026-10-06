@@ -509,10 +509,12 @@ class InventoryProvider extends ChangeNotifier {
       final branchId = authProvider.branchId!;
       final batchRow = _batchToDbRow(batch, productId, tenantId, branchId);
       
+      debugPrint('[STOCK DEBUG] Syncing batch to DB: ${batch.batchNumber} | stock_quantity: ${batchRow['stock_quantity']} | product_id: $productId');
       await SupabaseService().upsertBatch(batchRow);
       debugPrint('[Inventory] Batch synced to Supabase: ${batch.batchNumber}');
     } on PostgrestException catch (e) {
       debugPrint('[Inventory] Batch sync failed: ${e.message}');
+      debugPrint('[STOCK DEBUG] PostgrestException details: ${e.details}');
     } catch (e) {
       debugPrint('[Inventory] Batch sync error: $e');
     }
