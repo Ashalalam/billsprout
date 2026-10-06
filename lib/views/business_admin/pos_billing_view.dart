@@ -1,7 +1,6 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import 'package:qr_flutter/qr_flutter.dart';
 import '../../config/app_theme.dart';
 import '../../config/responsive_layout.dart';
 import '../../models/invoice_model.dart';
@@ -11,13 +10,14 @@ import '../../providers/inventory_provider.dart';
 import '../../providers/pos_provider.dart';
 import '../../providers/accounting_provider.dart';
 import '../../providers/company_profile_provider.dart';
-import '../../providers/paypal_config_provider.dart';
 import '../../services/sync_service.dart';
+import '../../services/razorpay_web_service.dart';
 import 'inventory_view.dart';
 import '../../services/printing_service.dart';
 import '../../services/support_service.dart';
 import '../common/pharmacist_pin_dialog.dart';
 import '../common/barcode_scanner_modal.dart';
+import '../../utils/logger.dart';
 
 class PosBillingView extends StatefulWidget {
   const PosBillingView({super.key});
@@ -742,10 +742,10 @@ class _PosBillingViewState extends State<PosBillingView> {
           ]),
         ),
         const SizedBox(height: 10),
-        // Payment chips - Only Cash and PayPal
+        // Payment chips - Cash and Razorpay
         Wrap(spacing: 4, runSpacing: 4, children: [
           PaymentMode.cash,
-          PaymentMode.paypal,
+          PaymentMode.razorpay,
         ].map((mode) {
           final sel = pos.paymentMode == mode;
           return ChoiceChip(
@@ -880,9 +880,9 @@ class _PosBillingViewState extends State<PosBillingView> {
       pharmacistId = result.pharmacistId;
     }
 
-    // Handle PayPal payment with QR code
-    if (pos.paymentMode == PaymentMode.paypal) {
-      final paymentCompleted = await _handlePayPalPayment(context, pos);
+    // Handle Razorpay payment (online payment gateway)
+    if (pos.paymentMode == PaymentMode.razorpay) {
+      final paymentCompleted = await _handleRazorpayPayment(context, pos);
       if (!paymentCompleted) return; // User cancelled or payment failed
     }
 
@@ -969,165 +969,139 @@ class _PosBillingViewState extends State<PosBillingView> {
     );
   }
 
-  /// Handle PayPal payment with QR code
-  Future<bool> _handlePayPalPayment(BuildContext context, PosProvider pos) async {
+  /// Handle Razorpay payment (reuses existing subscription integration)
+  Future<bool> _handleRazorpayPayment(BuildContext context, PosProvider pos) async {
     try {
       if (!mounted) return false;
       
-      final paypalConfig = Provider.of<PayPalConfigProvider>(context, listen: false);
-      final amount = pos.grandTotal.toStringAsFixed(2);
+      final razorpayService = RazorpayWebService();
+      final amount = pos.grandTotal; // Amount in rupees
       
-      // Generate PayPal.Me link or payment URL
-      String paymentUrl = '';
-      String paymentMethod = '';
-      
-      if (paypalConfig.paypalMeUsername.isNotEmpty) {
-        // Use PayPal.Me link (easiest for customers)
-        paymentUrl = 'https://paypal.me/${paypalConfig.paypalMeUsername}/$amount';
-        paymentMethod = 'PayPal.Me';
-      } else {
-        // Fallback to PayPal Send Money link
-        paymentUrl = 'https://www.paypal.com/paypalme';
-        paymentMethod = 'PayPal';
-      }
-      
-      // Show dialog with QR code and payment link
-      final confirmed = await showDialog<bool>(
+      // Show loading dialog
+      if (!mounted) return false;
+      showDialog(
         context: context,
         barrierDismissible: false,
-        builder: (ctx) => AlertDialog(
-          title: Row(
-            children: [
-              Icon(Icons.qr_code_2, color: AppTheme.primaryBlue, size: 28),
-              SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('PayPal Payment', style: TextStyle(fontSize: 18)),
-                    Text(
-                      '\$${amount}',
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: AppTheme.primaryBlue,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // QR Code
-                Container(
-                  padding: EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    border: Border.all(color: Colors.grey[300]!),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: QrImageView(
-                    data: paymentUrl,
-                    version: QrVersions.auto,
-                    size: 200,
-                    backgroundColor: Colors.white,
-                  ),
-                ),
-                SizedBox(height: 16),
-                
-                // Instructions
-                Container(
-                  padding: EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.blue[50],
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Column(
-                    children: [
-                      Icon(Icons.phone_android, color: AppTheme.primaryBlue, size: 32),
-                      SizedBox(height: 8),
-                      Text(
-                        'Scan QR code with PayPal app',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                      SizedBox(height: 4),
-                      Text(
-                        'Or tap the link below',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: AppTheme.textMuted,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ],
-                  ),
-                ),
-                
-                SizedBox(height: 12),
-                
-                // Payment link button
-                if (paypalConfig.paypalMeUsername.isNotEmpty)
-                  OutlinedButton.icon(
-                    onPressed: () {
-                      // Copy to clipboard or open in browser
-                      Clipboard.setData(ClipboardData(text: paymentUrl));
-                      ScaffoldMessenger.of(ctx).showSnackBar(
-                        SnackBar(
-                          content: Text('Payment link copied!'),
-                          duration: Duration(seconds: 2),
-                        ),
-                      );
-                    },
-                    icon: Icon(Icons.copy, size: 16),
-                    label: Text('Copy Payment Link'),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: AppTheme.primaryBlue,
-                    ),
-                  ),
-                
-                SizedBox(height: 8),
-                Text(
-                  'Waiting for payment confirmation...',
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: AppTheme.textMuted,
-                    fontStyle: FontStyle.italic,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: Text('Cancel'),
-            ),
-            ElevatedButton.icon(
-              onPressed: () => Navigator.pop(ctx, true),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.green,
-              ),
-              icon: Icon(Icons.check_circle, size: 20),
-              label: Text('Payment Received'),
-            ),
-          ],
+        builder: (ctx) => const Center(
+          child: CircularProgressIndicator(),
         ),
       );
-
-      return confirmed ?? false;
+      
+      // Step 1: Create Razorpay order
+      Logger.info('POS: Creating Razorpay order for ₹$amount');
+      final orderResult = await razorpayService.createRazorpayOrder(
+        amount: amount,
+        currency: 'INR',
+        transactionId: 'pos_${DateTime.now().millisecondsSinceEpoch}',
+      );
+      
+      if (!mounted) return false;
+      Navigator.pop(context); // Close loading dialog
+      
+      if (!orderResult['success']) {
+        final error = orderResult['error'] ?? 'Failed to create order';
+        Logger.error('POS: Razorpay order creation failed', error: error);
+        
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Payment error: $error'),
+              backgroundColor: AppTheme.errorRed,
+            ),
+          );
+        }
+        return false;
+      }
+      
+      final orderId = orderResult['order_id'] as String;
+      Logger.info('POS: Razorpay order created: $orderId');
+      
+      // Step 2: Open Razorpay Web Checkout
+      bool paymentSuccess = false;
+      String? paymentId;
+      String? signature;
+      
+      await razorpayService.openCheckout(
+        orderId: orderId,
+        amount: amount,
+        currency: 'INR',
+        customerName: pos.customerName,
+        customerEmail: 'customer@pharmacy.com', // Generic email for POS
+        customerPhone: pos.customerPhone.isEmpty ? '9999999999' : pos.customerPhone,
+        description: 'Pharmacy POS Payment',
+        onSuccess: (response) async {
+          paymentId = response['razorpay_payment_id'] as String;
+          signature = response['razorpay_signature'] as String;
+          Logger.info('POS: Razorpay payment success - $paymentId');
+          
+          // Step 3: Verify payment signature (CRITICAL - Server-side verification)
+          final verifyResult = await razorpayService.verifyPayment(
+            orderId: orderId,
+            paymentId: paymentId!,
+            signature: signature!,
+          );
+          
+          if (verifyResult['verified'] == true) {
+            Logger.info('POS: Payment signature verified successfully');
+            paymentSuccess = true;
+          } else {
+            Logger.error('POS: Payment signature verification FAILED - PAYMENT NOT AUTHORIZED');
+            paymentSuccess = false;
+            
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Payment verification failed. Transaction not authorized.'),
+                  backgroundColor: AppTheme.errorRed,
+                  duration: Duration(seconds: 5),
+                ),
+              );
+            }
+          }
+        },
+        onError: (error) {
+          final errorCode = error['code'] ?? 'UNKNOWN';
+          final errorDesc = error['description'] ?? 'Payment failed';
+          Logger.error('POS: Razorpay payment error', error: '$errorCode - $errorDesc');
+          paymentSuccess = false;
+          
+          if (mounted && errorCode != 'USER_CANCELLED') {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Payment failed: $errorDesc'),
+                backgroundColor: AppTheme.errorRed,
+              ),
+            );
+          }
+        },
+      );
+      
+      // Wait briefly for async handlers to complete
+      await Future.delayed(const Duration(milliseconds: 500));
+      
+      if (paymentSuccess) {
+        Logger.info('POS: Payment verified - proceeding with sale');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Payment successful!'),
+              backgroundColor: AppTheme.successGreen,
+              duration: Duration(seconds: 2),
+            ),
+          );
+        }
+        return true;
+      } else {
+        Logger.info('POS: Payment not completed or verification failed');
+        return false;
+      }
+      
     } catch (e) {
+      Logger.error('POS: Razorpay payment exception', error: e);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('PayPal payment error: $e'),
+            content: Text('Payment error: $e'),
             backgroundColor: AppTheme.errorRed,
           ),
         );
