@@ -194,10 +194,16 @@ class SupabaseService {
 
   // ── Products & Batches ────────────────────────────────────────────────────
   Future<List<Map<String, dynamic>>> fetchProducts(String tenantId) async {
+    debugPrint('[STOCK DEBUG] Fetching products for tenant: $tenantId');
     final response = await _client
         .from('products')
         .select('*, batches(*)')
         .eq('tenant_id', tenantId);
+    debugPrint('[STOCK DEBUG] Products query returned ${(response as List).length} products');
+    if ((response as List).isNotEmpty) {
+      final first = (response as List).first;
+      debugPrint('[STOCK DEBUG] First product: ${first['name']} | batches field type: ${first['batches'].runtimeType} | batches: ${first['batches']}');
+    }
     return List<Map<String, dynamic>>.from(response as List);
   }
 
