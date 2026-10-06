@@ -203,8 +203,8 @@ CREATE OR REPLACE VIEW public.business_admin_access_overview AS
 SELECT 
   t.id as tenant_id,
   t.business_name,
-  t.contact_email as admin_email,
-  t.contact_person as admin_name,
+  t.email as admin_email,
+  t.owner_name as admin_name,
   t.access_status,
   t.subscription_status,
   sp.plan_name,
