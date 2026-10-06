@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../config/app_theme.dart';
 import '../../models/demo_request_model.dart';
@@ -105,10 +106,16 @@ class _DemoRequestFormState extends State<DemoRequestForm> {
     );
 
     try {
+      // Save to database
       await SupabaseService().insertDemoRequest(request.toJson());
       
-      // Send confirmation email
-      _sendDemoConfirmationEmail(request);
+      // Send notification email to arifsheik@lifesproutcare.com
+      await _sendDemoNotification(request);
+      
+      // Send confirmation email to requester (optional)
+      if (request.email != null && request.email!.isNotEmpty) {
+        _sendDemoConfirmationEmail(request);
+      }
       
       if (!mounted) return;
       setState(() {
@@ -121,6 +128,39 @@ class _DemoRequestFormState extends State<DemoRequestForm> {
         _submitting = false;
         _error = SupabaseService.describeError(e);
       });
+    }
+  }
+
+  Future<void> _sendDemoNotification(DemoRequestModel request) async {
+    try {
+      final supabase = Supabase.instance.client;
+      
+      // Call notify-demo-request edge function
+      final response = await supabase.functions.invoke(
+        'notify-demo-request',
+        body: {
+          'name': request.name,
+          'email': request.email,
+          'mobile': request.mobile,
+          'businessName': request.businessName,
+          'city': request.city,
+          'pincode': request.pincode,
+          'businessType': request.businessType,
+          'numBranches': request.numBranches,
+          'message': request.message,
+        },
+      );
+
+      if (response.status != 200) {
+        throw Exception('Failed to send demo notification');
+      }
+      
+      debugPrint('Demo notification sent to arifsheik@lifesproutcare.com');
+    } catch (e) {
+      // Log error but don't fail the submission
+      debugPrint('Failed to send demo notification: $e');
+      // Rethrow so user knows the notification failed
+      rethrow;
     }
   }
 
