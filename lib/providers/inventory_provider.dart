@@ -77,6 +77,11 @@ class InventoryProvider extends ChangeNotifier {
       await authProvider.validateTenantAccess(authProvider.tenantId!);
     }
     
+    debugPrint('[STOCK DEBUG] Adding product: ${product.name} with ${product.batches.length} batches');
+    for (final batch in product.batches) {
+      debugPrint('[STOCK DEBUG] Batch: ${batch.batchNumber} | stockCount: ${batch.stockCount}');
+    }
+    
     _products.add(product);
     await _saveToDisk();
     notifyListeners();
