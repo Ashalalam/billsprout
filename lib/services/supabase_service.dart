@@ -547,4 +547,157 @@ class SupabaseService {
     );
     debugPrint('[Supabase] Email sent to: $to');
   }
+
+  // ── Software Downloads & License Management ───────────────────────────────
+  /// Fetch all software versions (for Super Admin)
+  Future<List<Map<String, dynamic>>> fetchSoftwareVersions() async {
+    final response = await _client
+        .from('software_versions')
+        .select()
+        .order('release_date', ascending: false);
+    return List<Map<String, dynamic>>.from(response as List);
+  }
+
+  /// Upload new software version metadata
+  Future<Map<String, dynamic>> createSoftwareVersion({
+    required String versionNumber,
+    required String platform,
+    required String filePath,
+    String? releaseNotes,
+    String? fileSize,
+    bool isLatest = false,
+  }) async {
+    final response = await _client.from('software_versions').insert({
+      'version_number': versionNumber,
+      'platform': platform,
+      'file_path': filePath,
+      'release_notes': releaseNotes,
+      'file_size': fileSize,
+      'is_latest': isLatest,
+      'status': 'active',
+    }).select().single();
+    return response as Map<String, dynamic>;
+  }
+
+  /// Update software version
+  Future<void> updateSoftwareVersion(
+    String versionId,
+    Map<String, dynamic> updates,
+  ) async {
+    await _client
+        .from('software_versions')
+        .update(updates)
+        .eq('id', versionId);
+  }
+
+  /// Fetch Business Admin access overview (for Super Admin dashboard)
+  Future<List<Map<String, dynamic>>> fetchBusinessAdminAccess() async {
+    final response = await _client
+        .from('business_admin_access_overview')
+        .select()
+        .order('tenant_name');
+    return List<Map<String, dynamic>>.from(response as List);
+  }
+
+  /// Update tenant access status (activate/suspend)
+  Future<void> updateTenantAccessStatus({
+    required String tenantId,
+    required String status,
+  }) async {
+    if (status != 'active' && status != 'suspended') {
+      throw ArgumentError('Status must be "active" or "suspended"');
+    }
+    await _client.from('tenants').update({
+      'access_status': status,
+    }).eq('id', tenantId);
+    debugPrint('[Supabase] Tenant $tenantId access status → $status');
+  }
+
+  /// Fetch download logs (for Super Admin)
+  Future<List<Map<String, dynamic>>> fetchDownloadLogs({
+    String? tenantId,
+    int limit = 100,
+  }) async {
+    var query = _client
+        .from('download_logs')
+        .select('''
+          *,
+          tenant:tenants!tenant_id(business_name),
+          user:profiles!user_id(full_name, email),
+          version:software_versions!version_id(version_number, platform)
+        ''')
+        .order('downloaded_at', ascending: false)
+        .limit(limit);
+
+    if (tenantId != null) {
+      query = query.eq('tenant_id', tenantId);
+    }
+
+    final response = await query;
+    return List<Map<String, dynamic>>.from(response as List);
+  }
+
+  /// Check if current tenant can download software
+  Future<Map<String, dynamic>> checkDownloadAuthorization(
+    String tenantId,
+  ) async {
+    final response = await _client.rpc('get_download_authorization', params: {
+      'p_tenant_id': tenantId,
+    });
+    return response as Map<String, dynamic>;
+  }
+
+  /// Generate authorized download URL via Edge Function
+  Future<String> generateDownloadUrl({
+    required String tenantId,
+    required String versionId,
+  }) async {
+    final response = await _client.functions.invoke(
+      'download-software',
+      body: {
+        'tenant_id': tenantId,
+        'version_id': versionId,
+      },
+    );
+
+    if (response.status != 200) {
+      throw Exception(response.data['error'] ?? 'Download authorization failed');
+    }
+
+    return response.data['download_url'] as String;
+  }
+
+  /// Upload software file to Supabase Storage
+  Future<String> uploadSoftwareFile({
+    required String fileName,
+    required List<int> fileBytes,
+    required String platform,
+  }) async {
+    final path = 'software/$platform/$fileName';
+    await _client.storage.from('software').uploadBinary(
+          path,
+          fileBytes,
+          fileOptions: const FileOptions(
+            cacheControl: '3600',
+            upsert: false,
+          ),
+        );
+    debugPrint('[Supabase] Software file uploaded → $path');
+    return path;
+  }
+
+  /// Fetch current subscription for Business Admin
+  Future<Map<String, dynamic>?> fetchCurrentSubscription(
+    String tenantId,
+  ) async {
+    final response = await _client
+        .from('subscriptions')
+        .select('''
+          *,
+          plan:subscription_plans!plan_id(*)
+        ''')
+        .eq('tenant_id', tenantId)
+        .maybeSingle();
+    return response as Map<String, dynamic>?;
+  }
 }

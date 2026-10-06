@@ -24,6 +24,7 @@ import 'views/auth/business_register_view.dart';
 import 'views/auth/customer_register_view.dart';
 import 'views/subscription/subscription_plans_view.dart';
 import 'views/license/my_license_view.dart';
+import 'views/business_admin/software_download_view.dart';
 import 'views/legal/terms_and_conditions_view.dart';
 import 'views/legal/privacy_policy_view.dart';
 import 'views/legal/cancellation_refund_view.dart';
@@ -131,6 +132,7 @@ class BillSproutApp extends StatelessWidget {
           '/customer-register': (context) => const CustomerRegisterView(),
           '/subscription-plans': (context) => const SubscriptionPlansView(),
           '/my-license': (context) => const MyLicenseView(),
+          '/software-downloads': (context) => const SoftwareDownloadView(),
           '/terms-conditions': (context) => const TermsAndConditionsView(),
           '/privacy-policy': (context) => const PrivacyPolicyView(),
           '/cancellation-refund': (context) => const CancellationRefundView(),

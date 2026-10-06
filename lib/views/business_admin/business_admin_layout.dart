@@ -16,6 +16,7 @@ import 'stock_transfer_view.dart';
 import 'purchase_order_view.dart';
 import 'bank_reconciliation_view.dart';
 import 'sales_dashboard_view.dart';
+import 'software_download_view.dart';
 import 'settings_view.dart';
 import 'near_expiry_view.dart';
 
@@ -41,6 +42,7 @@ class _BusinessAdminLayoutState extends State<BusinessAdminLayout> {
     _NavDest(Icons.compare_arrows,                  'Transfers'),
     _NavDest(Icons.shopping_bag_outlined,           'Purchase'),
     _NavDest(Icons.account_balance_wallet_outlined, 'Bank Recon'),
+    _NavDest(Icons.cloud_download_outlined,         'Software'),
     _NavDest(Icons.settings_outlined,               'Settings'),
   ];
 
@@ -55,6 +57,7 @@ class _BusinessAdminLayoutState extends State<BusinessAdminLayout> {
     const StockTransferView(),
     const PurchaseOrderView(),
     const BankReconciliationView(),
+    const SoftwareDownloadView(),
     const SettingsView(),
   ];
 
