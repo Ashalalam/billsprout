@@ -39,15 +39,12 @@ class InventoryProvider extends ChangeNotifier {
   /// Initialize inventory: Try Supabase first, fall back to disk cache
   Future<void> _initializeInventory() async {
     if (authProvider.tenantId != null) {
-      debugPrint('[Inventory] Initializing from Supabase...');
       await _syncFromSupabase();
       // If no products loaded from Supabase, load from disk
       if (_products.isEmpty) {
-        debugPrint('[Inventory] No products from Supabase, loading from disk...');
         await _loadFromDisk();
       }
     } else {
-      debugPrint('[Inventory] No tenant context, loading from disk...');
       await _loadFromDisk();
     }
   }
@@ -57,20 +54,17 @@ class InventoryProvider extends ChangeNotifier {
     final tenantChanged = authProvider.tenantId != auth.tenantId;
     authProvider = auth;
     if (tenantChanged && auth.tenantId != null) {
-      debugPrint('[Inventory] Tenant context updated, re-syncing from Supabase');
       _initializeInventory();
     }
   }
   
   /// Force refresh from database (clears cache first)
   Future<void> forceRefreshFromDatabase() async {
-    debugPrint('[Inventory] Force refresh: clearing cache...');
     _products.clear();
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('inv_products');
     await prefs.remove('inv_rtv');
     await prefs.remove('inv_transfers');
-    debugPrint('[Inventory] Cache cleared, syncing from Supabase...');
     await _syncFromSupabase();
     notifyListeners();
   }
@@ -454,9 +448,7 @@ class InventoryProvider extends ChangeNotifier {
     
     try {
       final tenantId = authProvider.tenantId!;
-      debugPrint('[Inventory] Starting sync for tenant: $tenantId');
       final productsData = await SupabaseService().fetchProducts(tenantId);
-      debugPrint('[Inventory] Fetched ${productsData.length} products from Supabase');
       
       if (productsData.isNotEmpty) {
         _products.clear();
@@ -469,12 +461,9 @@ class InventoryProvider extends ChangeNotifier {
         
         await _saveToDisk();
         debugPrint('[Inventory] Synced ${_products.length} products from Supabase');
-      } else {
-        debugPrint('[Inventory] WARNING: No products returned from database!');
       }
     } on PostgrestException catch (e) {
       debugPrint('[Inventory] Supabase sync error: ${e.message}');
-      debugPrint('[Inventory] Error details: ${e.details}');
     } catch (e) {
       debugPrint('[Inventory] Sync error: $e');
     } finally {
@@ -552,16 +541,7 @@ class InventoryProvider extends ChangeNotifier {
   ProductModel _productFromDbRow(Map<String, dynamic> row) {
     // Extract batches if present
     final batchesData = row['batches'] as List<dynamic>? ?? [];
-    debugPrint('[Inventory] Loading product ${row['name']}: found ${batchesData.length} batches');
-    debugPrint('[Inventory] Raw batch data type: ${batchesData.runtimeType}');
-    if (batchesData.isNotEmpty) {
-      debugPrint('[Inventory] First batch raw data: ${batchesData.first}');
-    }
-    final batches = batchesData.map((b) {
-      final batchMap = b as Map<String, dynamic>;
-      debugPrint('[Inventory]   Batch ${batchMap['batch_number']}: stock_quantity=${batchMap['stock_quantity']}, loose_units=${batchMap['loose_units']}');
-      return _batchFromDbRow(batchMap);
-    }).toList();
+    final batches = batchesData.map((b) => _batchFromDbRow(b as Map<String, dynamic>)).toList();
     
     // Parse base_unit and min_sale_unit from database
     final baseUnitStr = (row['base_unit'] as String?) ?? 'tablet';
@@ -631,10 +611,6 @@ class InventoryProvider extends ChangeNotifier {
 
   /// Convert database row (snake_case) to BatchModel (camelCase)
   BatchModel _batchFromDbRow(Map<String, dynamic> row) {
-    final stockQty = row['stock_quantity'] as int? ?? 0;
-    final looseQty = row['loose_units'] as int? ?? 0;
-    debugPrint('[Inventory]     _batchFromDbRow: stock_quantity=$stockQty, loose_units=$looseQty');
-    
     return BatchModel(
       id: row['id'] as String,
       batchNumber: row['batch_number'] as String,
@@ -648,8 +624,8 @@ class InventoryProvider extends ChangeNotifier {
       purchasePrice: (row['purchase_price'] as num).toDouble(),
       wholesalePrice: (row['wholesale_price'] as num?)?.toDouble() ?? 0.0,
       ptrPrice: (row['ptr_price'] as num?)?.toDouble() ?? 0.0,
-      stockCount: stockQty,
-      looseUnits: looseQty, // ✅ FIXED: Added loose_units field
+      stockCount: row['stock_quantity'] as int? ?? 0,
+      looseUnits: row['loose_units'] as int? ?? 0,
       rackLocation: row['rack_location'] as String? ?? '',
     );
   }
