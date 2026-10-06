@@ -552,6 +552,7 @@ class InventoryProvider extends ChangeNotifier {
       wholesalePrice: (row['wholesale_price'] as num?)?.toDouble() ?? 0.0,
       ptrPrice: (row['ptr_price'] as num?)?.toDouble() ?? 0.0,
       stockCount: row['stock_quantity'] as int? ?? 0,
+      looseUnits: row['loose_units'] as int? ?? 0, // ✅ FIXED: Added loose_units field
       rackLocation: row['rack_location'] as String? ?? '',
     );
   }
@@ -607,6 +608,7 @@ class InventoryProvider extends ChangeNotifier {
       'selling_price': batch.mrp, // Default selling price to MRP
       'wholesale_price': batch.wholesalePrice,
       'stock_quantity': batch.stockCount,
+      'loose_units': batch.looseUnits, // ✅ FIXED: Added loose_units field
       'rack_location': batch.rackLocation,
       'created_at': DateTime.now().toIso8601String(),
       'updated_at': DateTime.now().toIso8601String(),
