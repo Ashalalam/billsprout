@@ -201,18 +201,33 @@ class AccountingProvider extends ChangeNotifier {
     );
     notifyListeners();
     
-    // Sync to Supabase in background
-    _syncSaleToSupabase(invoice);
+    // Sync to Supabase (fire-and-forget but with error logging)
+    // We don't await here to avoid blocking the UI, but errors are logged
+    _syncSaleToSupabase(invoice).catchError((error, stackTrace) {
+      debugPrint('❌ [Accounting] CRITICAL: Sale sync failed for ${invoice.invoiceNumber}');
+      debugPrint('Error: $error');
+      debugPrint('Stack trace: $stackTrace');
+      // TODO: Queue for retry or show user notification
+    });
   }
   
   /// Sync a sale to Supabase
   Future<void> _syncSaleToSupabase(InvoiceModel invoice) async {
     if (_tenantId == null || _branchId == null) {
-      debugPrint('[Accounting] Cannot sync sale: missing tenant/branch context');
+      debugPrint('❌ [Accounting] Cannot sync sale: missing tenant/branch context (tenant: $_tenantId, branch: $_branchId)');
+      return;
+    }
+    
+    // Get current user ID from Supabase auth
+    final currentUser = SupabaseService().currentUser;
+    if (currentUser == null) {
+      debugPrint('❌ [Accounting] Cannot sync sale: no authenticated user');
       return;
     }
     
     try {
+      debugPrint('🔄 [Accounting] Starting sync for invoice ${invoice.invoiceNumber} (tenant: $_tenantId, branch: $_branchId, user: ${currentUser.id})');
+      
       final saleRow = {
         'id': invoice.id,
         'tenant_id': _tenantId,
@@ -227,6 +242,9 @@ class AccountingProvider extends ChangeNotifier {
         'doctor_mci_no': invoice.doctorMciNo,
         'prescription_id': null, // Not available in InvoiceModel
         'subtotal': invoice.subtotal,
+        'item_discount_total': invoice.totalLineDiscounts,
+        'invoice_discount': invoice.effectiveDiscount,
+        'taxable_amount': invoice.subtotal - invoice.totalTax,
         'cgst_amount': invoice.totalTax / 2, // Split tax equally between CGST and SGST
         'sgst_amount': invoice.totalTax / 2,
         'igst_amount': 0.0,
@@ -234,64 +252,63 @@ class AccountingProvider extends ChangeNotifier {
         'round_off': invoice.roundOff,
         'grand_total': invoice.grandTotal,
         'payment_mode': invoice.paymentMode.name,
-        'payment_status': 'completed',
-        'pharmacist_authorized_by': invoice.pharmacistPinApprovedBy,
-        'authorized_pharmacist_id': invoice.authorizedPharmacistId,
+        'payment_status': 'paid',
+        'pharmacist_authorized_by': invoice.authorizedPharmacistId,
         'is_synced': invoice.isSynced,
+        'created_by': currentUser.id, // ✅ FIXED: Required field was missing
         'created_at': invoice.timestamp.toIso8601String(),
         'updated_at': DateTime.now().toIso8601String(),
       };
       
+      debugPrint('📝 [Accounting] Upserting sale row to database...');
       await SupabaseService().upsertSale(saleRow);
+      debugPrint('✅ [Accounting] Sale row upserted successfully');
       
       // Sync sale items
+      debugPrint('📦 [Accounting] Syncing ${invoice.items.length} sale items...');
       for (final item in invoice.items) {
         await _syncSaleItemToSupabase(invoice.id, item);
       }
       
-      debugPrint('[Accounting] Sale synced to Supabase: ${invoice.invoiceNumber}');
-    } catch (e) {
-      debugPrint('[Accounting] Sale sync error: $e');
+      debugPrint('✅ [Accounting] Sale synced to Supabase: ${invoice.invoiceNumber}');
+    } catch (e, stackTrace) {
+      debugPrint('❌ [Accounting] Sale sync error: $e');
+      debugPrint('Stack trace: $stackTrace');
     }
   }
   
   /// Sync a sale item to Supabase
   Future<void> _syncSaleItemToSupabase(String saleId, InvoiceItem item) async {
-    if (_tenantId == null) {
-      debugPrint('[Accounting] Cannot sync sale item: missing tenant context');
-      return;
-    }
-    
     try {
       final itemRow = {
         'id': 'si_${DateTime.now().millisecondsSinceEpoch}_${item.product.id.substring(0, 8)}',
         'sale_id': saleId,
-        'tenant_id': _tenantId,
         'product_id': item.product.id,
         'batch_id': item.batch.id,
         'product_name': item.product.name,
+        'hsn_code': item.product.hsnCode,
         'batch_number': item.batch.batchNumber,
+        'expiry_date': item.batch.expDate.toIso8601String().split('T')[0], // DATE format, not timestamp
         'quantity': item.quantity,
         'free_quantity': item.freeQuantity,
         'unit_price': item.unitPrice,
+        'ptr_price': item.batch.ptrPrice, // ✅ Added PTR price from batch
         'mrp': item.batch.mrp,
-        'discount_percent': item.discountPercent,
-        'cgst_percent': item.taxPercent / 2,
-        'sgst_percent': item.taxPercent / 2,
-        'igst_percent': 0.0,
+        'line_discount': item.lineDiscount, // ✅ FIXED: was discount_percent
+        'taxable_value': item.taxableValue, // ✅ FIXED: was missing
+        'gst_percent': item.taxPercent, // ✅ FIXED: Full GST percent
         'cgst_amount': item.cgst,
         'sgst_amount': item.sgst,
         'igst_amount': 0.0,
-        'total_amount': item.lineTotal,
-        'exp_date': item.batch.expDate.toIso8601String(),
-        'hsn_code': item.product.hsnCode,
+        'line_total': item.lineTotal, // ✅ FIXED: was total_amount
         'created_at': DateTime.now().toIso8601String(),
       };
       
       await SupabaseService().upsertSaleItem(itemRow);
-      debugPrint('[Accounting] Sale item synced: ${item.product.name}');
-    } catch (e) {
-      debugPrint('[Accounting] Sale item sync error: $e');
+      debugPrint('  ✅ [Accounting] Sale item synced: ${item.product.name}');
+    } catch (e, stackTrace) {
+      debugPrint('  ❌ [Accounting] Sale item sync error: $e');
+      debugPrint('  Stack trace: $stackTrace');
     }
   }
 
