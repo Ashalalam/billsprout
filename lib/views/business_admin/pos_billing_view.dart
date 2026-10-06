@@ -5,6 +5,7 @@ import 'package:qr_flutter/qr_flutter.dart';
 import '../../config/app_theme.dart';
 import '../../config/responsive_layout.dart';
 import '../../models/invoice_model.dart';
+import '../../models/product_model.dart';
 import '../../models/selling_unit_model.dart';
 import '../../providers/inventory_provider.dart';
 import '../../providers/pos_provider.dart';
