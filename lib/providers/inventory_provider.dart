@@ -520,7 +520,12 @@ class InventoryProvider extends ChangeNotifier {
   ProductModel _productFromDbRow(Map<String, dynamic> row) {
     // Extract batches if present
     final batchesData = row['batches'] as List<dynamic>? ?? [];
-    final batches = batchesData.map((b) => _batchFromDbRow(b as Map<String, dynamic>)).toList();
+    debugPrint('[Inventory] Loading product ${row['name']}: found ${batchesData.length} batches');
+    final batches = batchesData.map((b) {
+      final batchMap = b as Map<String, dynamic>;
+      debugPrint('[Inventory]   Batch ${batchMap['batch_number']}: stock_quantity=${batchMap['stock_quantity']}, loose_units=${batchMap['loose_units']}');
+      return _batchFromDbRow(batchMap);
+    }).toList();
     
     // Parse base_unit and min_sale_unit from database
     final baseUnitStr = (row['base_unit'] as String?) ?? 'tablet';
@@ -590,6 +595,10 @@ class InventoryProvider extends ChangeNotifier {
 
   /// Convert database row (snake_case) to BatchModel (camelCase)
   BatchModel _batchFromDbRow(Map<String, dynamic> row) {
+    final stockQty = row['stock_quantity'] as int? ?? 0;
+    final looseQty = row['loose_units'] as int? ?? 0;
+    debugPrint('[Inventory]     _batchFromDbRow: stock_quantity=$stockQty, loose_units=$looseQty');
+    
     return BatchModel(
       id: row['id'] as String,
       batchNumber: row['batch_number'] as String,
@@ -603,8 +612,8 @@ class InventoryProvider extends ChangeNotifier {
       purchasePrice: (row['purchase_price'] as num).toDouble(),
       wholesalePrice: (row['wholesale_price'] as num?)?.toDouble() ?? 0.0,
       ptrPrice: (row['ptr_price'] as num?)?.toDouble() ?? 0.0,
-      stockCount: row['stock_quantity'] as int? ?? 0,
-      looseUnits: row['loose_units'] as int? ?? 0, // ✅ FIXED: Added loose_units field
+      stockCount: stockQty,
+      looseUnits: looseQty, // ✅ FIXED: Added loose_units field
       rackLocation: row['rack_location'] as String? ?? '',
     );
   }
