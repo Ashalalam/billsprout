@@ -568,7 +568,7 @@ class SupabaseService {
     String? fileSize,
     bool isLatest = false,
   }) async {
-    final response = await _client.from('software_versions').insert({
+    await _client.from('software_versions').insert({
       'version_number': versionNumber,
       'platform': platform,
       'file_path': filePath,
@@ -577,8 +577,13 @@ class SupabaseService {
       'is_latest': isLatest,
       'status': 'active',
       'release_date': DateTime.now().toIso8601String(),
-    }).select().single();
-    return response as Map<String, dynamic>;
+    });
+    // Return a minimal success response instead of trying to select
+    return {
+      'version_number': versionNumber,
+      'platform': platform,
+      'status': 'uploaded'
+    };
   }
 
   /// Update software version
