@@ -45,6 +45,26 @@ class BatchModel {
   int totalAvailableUnits(int unitsPerPack) {
     return (stockCount * unitsPerPack) + looseUnits;
   }
+  
+  /// Format stock display: "100 strips" or "97 strips + 7 tablets"
+  String formatStockDisplay(String packLabel, String unitLabel, int unitsPerPack) {
+    final totalUnits = totalAvailableUnits(unitsPerPack);
+    
+    if (totalUnits == 0) {
+      return 'Out of stock';
+    }
+    
+    if (looseUnits == 0) {
+      // Only complete packs
+      return '$stockCount $packLabel${stockCount != 1 ? 's' : ''}';
+    } else if (stockCount == 0) {
+      // Only loose units
+      return '$looseUnits $unitLabel${looseUnits != 1 ? 's' : ''}';
+    } else {
+      // Both packs and loose units
+      return '$stockCount $packLabel${stockCount != 1 ? 's' : ''} + $looseUnits $unitLabel${looseUnits != 1 ? 's' : ''}';
+    }
+  }
 
   Map<String, dynamic> toJson() => {
         'id': id,

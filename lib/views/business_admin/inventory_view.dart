@@ -202,7 +202,7 @@ class _InventoryViewState extends State<InventoryView> with SingleTickerProvider
                       children: [
                         Expanded(
                           child: Text(
-                            'Generic Salt: ${product.genericSalt} | HSN: ${product.hsnCode} | GST: ${product.taxPercent}% | Total Stock: ${product.totalStock}',
+                            'Generic Salt: ${product.genericSalt} | HSN: ${product.hsnCode} | GST: ${product.taxPercent}% | Stock: ${product.formattedTotalStock}',
                             style: TextStyle(fontSize: 12),
                           ),
                         ),
@@ -691,6 +691,9 @@ class _InventoryViewState extends State<InventoryView> with SingleTickerProvider
     final pricePerBaseUnitCtrl = TextEditingController();
     SellingUnit minSaleUnit = SellingUnit.strip;
     SellingUnit baseUnit = SellingUnit.tablet;
+    
+    // Opening stock unit (pack or base unit)
+    String openingStockUnit = 'pack';  // Default to packs/strips
 
     showDialog(
       context: context,
@@ -963,6 +966,24 @@ class _InventoryViewState extends State<InventoryView> with SingleTickerProvider
                             labelText: 'Opening Stock Qty *'),
                       ),
                     ),
+                    const SizedBox(width: 10),
+                    // Opening Stock Unit Selector
+                    Expanded(
+                      flex: 1,
+                      child: DropdownButtonFormField<String>(
+                        value: openingStockUnit,
+                        decoration: const InputDecoration(
+                          labelText: 'Unit *',
+                          helperText: 'Stock is measured in',
+                        ),
+                        items: [
+                          DropdownMenuItem(value: 'pack', child: Text(doseType.unitLabel, style: const TextStyle(fontSize: 13))),
+                          if (allowLooseSales)
+                            DropdownMenuItem(value: 'unit', child: Text(baseUnit.label, style: const TextStyle(fontSize: 13))),
+                        ],
+                        onChanged: (v) => setDlg(() => openingStockUnit = v ?? openingStockUnit),
+                      ),
+                    ),
                   ]),
                   const SizedBox(height: 10),
                   Row(children: [
@@ -1130,7 +1151,29 @@ class _InventoryViewState extends State<InventoryView> with SingleTickerProvider
                   return;
                 }
 
-                // ── Build batch ────────────────────────────────────────────
+                // ── Build batch with stock conversion ──────────────────────
+                final int openingStockQty = int.tryParse(stockCtrl.text) ?? 0;
+                final int baseUnitsPerPack = int.tryParse(baseUnitsPerPackCtrl.text) ?? 10;
+                
+                int finalStockCount;
+                int finalLooseUnits;
+                
+                if (openingStockUnit == 'pack') {
+                  // User entered packs/strips - store directly
+                  finalStockCount = openingStockQty;
+                  finalLooseUnits = 0;
+                } else {
+                  // User entered base units (tablets/capsules/ml) - convert to packs + loose
+                  finalStockCount = openingStockQty ~/ baseUnitsPerPack;  // Integer division
+                  finalLooseUnits = openingStockQty % baseUnitsPerPack;   // Remainder
+                }
+                
+                debugPrint('[STOCK DEBUG] Opening stock conversion:');
+                debugPrint('  Input: $openingStockQty $openingStockUnit');
+                debugPrint('  Base units per pack: $baseUnitsPerPack');
+                debugPrint('  Stored as: $finalStockCount packs + $finalLooseUnits loose units');
+                debugPrint('  Total available: ${(finalStockCount * baseUnitsPerPack) + finalLooseUnits} base units');
+                
                 final batch = BatchModel(
                   id: const Uuid().v4(), // ✅ FIXED: Use proper UUID instead of timestamp
                   batchNumber: batchNoCtrl.text.trim(),
@@ -1140,7 +1183,8 @@ class _InventoryViewState extends State<InventoryView> with SingleTickerProvider
                   purchasePrice: double.tryParse(ppCtrl.text) ?? 0,
                   wholesalePrice: double.tryParse(wsCtrl.text) ?? 0,
                   ptrPrice: double.tryParse(ptrCtrl.text) ?? 0,
-                  stockCount: int.tryParse(stockCtrl.text) ?? 0,
+                  stockCount: finalStockCount,      // ✅ FIXED: Converted stock count
+                  looseUnits: finalLooseUnits,       // ✅ FIXED: Loose units from conversion
                   rackLocation: rackCtrl.text.trim().isEmpty
                       ? 'General Shelf'
                       : rackCtrl.text.trim(),

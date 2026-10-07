@@ -228,6 +228,41 @@ class ProductModel {
 
   int get totalStock => batches.fold(0, (s, b) => s + b.stockCount);
   
+  /// Format total stock display across all batches
+  String get formattedTotalStock {
+    final packLabel = doseType.unitLabel;
+    final unitLabel = baseUnit.label;
+    
+    int totalPacks = 0;
+    int totalLoose = 0;
+    
+    for (final batch in batches) {
+      totalPacks += batch.stockCount;
+      totalLoose += batch.looseUnits;
+    }
+    
+    // Normalize: convert excess loose units to packs
+    if (totalLoose >= baseUnitsPerPack) {
+      final extraPacks = totalLoose ~/ baseUnitsPerPack;
+      totalPacks += extraPacks;
+      totalLoose = totalLoose % baseUnitsPerPack;
+    }
+    
+    final totalUnits = (totalPacks * baseUnitsPerPack) + totalLoose;
+    
+    if (totalUnits == 0) {
+      return 'Out of stock';
+    }
+    
+    if (totalLoose == 0) {
+      return '$totalPacks $packLabel${totalPacks != 1 ? 's' : ''}';
+    } else if (totalPacks == 0) {
+      return '$totalLoose $unitLabel${totalLoose != 1 ? 's' : ''}';
+    } else {
+      return '$totalPacks $packLabel${totalPacks != 1 ? 's' : ''} + $totalLoose $unitLabel${totalLoose != 1 ? 's' : ''}';
+    }
+  }
+  
   /// Total available units (packs converted to units + loose units)
   int get totalAvailableUnits => batches.fold(
     0, 
