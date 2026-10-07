@@ -672,7 +672,7 @@ class SupabaseService {
     required List<int> fileBytes,
     required String platform,
   }) async {
-    final path = 'software/$platform/$fileName';
+    final path = '$platform/$fileName';
     await _client.storage.from('software').uploadBinary(
           path,
           Uint8List.fromList(fileBytes),
