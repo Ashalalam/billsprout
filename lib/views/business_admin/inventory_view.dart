@@ -1075,7 +1075,7 @@ class _InventoryViewState extends State<InventoryView> with SingleTickerProvider
             ElevatedButton.icon(
               style: ElevatedButton.styleFrom(
                   backgroundColor: AppTheme.successGreen),
-              onPressed: () {
+              onPressed: () async {
                 // ── Validation ────────────────────────────────────────────
                 if (nameCtrl.text.trim().isEmpty) {
                   _showSnack(context, 'Enter medicine name.', isError: true);
@@ -1177,12 +1177,27 @@ class _InventoryViewState extends State<InventoryView> with SingleTickerProvider
                   baseUnit: allowLooseSales ? baseUnit : SellingUnit.tablet,
                 );
 
-                inventoryProvider.addProduct(product);
-                Navigator.pop(ctx);
-                _showSnack(
-                    context,
-                    '✅ ${product.name} added to inventory with '
-                    '${batch.stockCount} units in batch ${batch.batchNumber}.');
+                // ── Save to database FIRST, then update UI ────────────────
+                try {
+                  await inventoryProvider.addProduct(product);
+                  
+                  // Only close dialog and show success if database save succeeded
+                  if (ctx.mounted) {
+                    Navigator.pop(ctx);
+                    _showSnack(
+                        context,
+                        '✅ ${product.name} added to inventory with '
+                        '${batch.stockCount} units in batch ${batch.batchNumber}.');
+                  }
+                } catch (e) {
+                  // Show actual error if database save fails
+                  if (ctx.mounted) {
+                    _showSnack(
+                        context,
+                        '❌ Failed to save medicine: ${e.toString()}',
+                        isError: true);
+                  }
+                }
               },
               icon: const Icon(Icons.save),
               label: const Text('Save New Medicine'),
