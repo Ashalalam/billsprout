@@ -225,10 +225,22 @@ class SupabaseService {
     required String batchId,
     required int newStockQuantity,
   }) async {
-    await _client
-        .from('batches')
-        .update({'stock_quantity': newStockQuantity, 'updated_at': DateTime.now().toIso8601String()})
-        .eq('id', batchId);
+    debugPrint('[SupabaseService] 🔄 Updating batch stock: $batchId → $newStockQuantity');
+    try {
+      final response = await _client
+          .from('batches')
+          .update({
+            'stock_quantity': newStockQuantity,
+            'updated_at': DateTime.now().toIso8601String()
+          })
+          .eq('id', batchId)
+          .select();
+      debugPrint('[SupabaseService] ✅ Batch stock updated successfully: ${response.length} rows affected');
+    } catch (e, stackTrace) {
+      debugPrint('[SupabaseService] ❌ Failed to update batch stock: $e');
+      debugPrint('[SupabaseService] ❌ Stack trace: $stackTrace');
+      rethrow;
+    }
   }
 
   // ── Sales & Sale Items ────────────────────────────────────────────────────

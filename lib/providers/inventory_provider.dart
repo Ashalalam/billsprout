@@ -226,14 +226,16 @@ class InventoryProvider extends ChangeNotifier {
     batch.stockCount = newStock;
     
     // CRITICAL FIX: Update Supabase database
+    debugPrint('[Inventory] 🔄 Calling updateBatchStock for batch: $batchId, newStock: $newStock');
     try {
       await SupabaseService().updateBatchStock(
         batchId: batchId,
         newStockQuantity: newStock,
       );
       debugPrint('[Inventory] ✅ Stock updated in database: ${batch.batchNumber} → $newStock');
-    } catch (e) {
+    } catch (e, stackTrace) {
       debugPrint('[Inventory] ❌ Failed to update stock in database: $e');
+      debugPrint('[Inventory] ❌ Stack trace: $stackTrace');
       // Revert local change if database update fails
       batch.stockCount = oldStock;
       rethrow;

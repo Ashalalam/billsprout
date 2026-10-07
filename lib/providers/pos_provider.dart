@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:uuid/uuid.dart';
 import '../models/product_model.dart';
 import '../models/batch_model.dart';
 import '../models/invoice_model.dart';
@@ -374,7 +375,7 @@ class PosProvider extends ChangeNotifier {
         'INV-${DateTime.now().millisecondsSinceEpoch.toString().substring(5)}';
 
     final invoice = InvoiceModel(
-      id: 'inv_${DateTime.now().millisecondsSinceEpoch}',
+      id: const Uuid().v4(),  // Use proper UUID instead of timestamp
       invoiceNumber: invoiceNum,
       timestamp: DateTime.now(),
       customerName: _customerName,
