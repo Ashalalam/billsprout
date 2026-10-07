@@ -385,7 +385,7 @@ class _SoftwareManagementViewState extends State<SoftwareManagementView>
   Future<void> _showUploadDialog() async {
     final formKey = GlobalKey<FormState>();
     String versionNumber = '';
-    String platform = 'windows';
+    String platform = 'Windows';
     String? releaseNotes;
     bool isLatest = false;
     PlatformFile? selectedFile;
@@ -420,14 +420,14 @@ class _SoftwareManagementViewState extends State<SoftwareManagementView>
                     ),
                     items: const [
                       DropdownMenuItem(
-                        value: 'windows',
+                        value: 'Windows',
                         child: Text('Windows'),
                       ),
-                      DropdownMenuItem(value: 'macos', child: Text('macOS')),
-                      DropdownMenuItem(value: 'linux', child: Text('Linux')),
+                      DropdownMenuItem(value: 'Mac', child: Text('macOS')),
+                      DropdownMenuItem(value: 'Linux', child: Text('Linux')),
                       DropdownMenuItem(
-                        value: 'android',
-                        child: Text('Android'),
+                        value: 'Web',
+                        child: Text('Web'),
                       ),
                     ],
                     onChanged: (v) => setDialogState(() => platform = v!),
