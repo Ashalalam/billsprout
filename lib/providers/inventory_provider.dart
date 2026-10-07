@@ -116,12 +116,12 @@ class InventoryProvider extends ChangeNotifier {
       rethrow; // Propagate error to show in UI
     }
     
-    // Only add to local state if Supabase sync succeeded
-    _products.add(product);
+    // CRITICAL FIX: Reload from Supabase to get actual database state
+    // This ensures stock displays correctly (from saved batch)
+    await _syncFromSupabase();
     await _saveToDisk();
-    notifyListeners();
     
-    debugPrint('[Inventory] ✅ Product added to local inventory: ${product.name}');
+    debugPrint('[Inventory] ✅ Product reloaded from database: ${product.name}');
   }
 
   /// Delete a product and all its batches
