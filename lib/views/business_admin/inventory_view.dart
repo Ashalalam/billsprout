@@ -1132,7 +1132,7 @@ class _InventoryViewState extends State<InventoryView> with SingleTickerProvider
 
                 // ── Build batch ────────────────────────────────────────────
                 final batch = BatchModel(
-                  id: 'b_${DateTime.now().millisecondsSinceEpoch}',
+                  id: const Uuid().v4(), // ✅ FIXED: Use proper UUID instead of timestamp
                   batchNumber: batchNoCtrl.text.trim(),
                   mfgDate: mfgDate,
                   expDate: expDate,
