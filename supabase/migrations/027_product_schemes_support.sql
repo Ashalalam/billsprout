@@ -7,6 +7,18 @@
 --              e.g., "Buy 10 Strips Get 1 Strip Free"
 
 -- =====================================================
+-- 0. HELPER FUNCTION: update_timestamp()
+-- =====================================================
+-- This function is used by triggers to automatically update updated_at columns
+CREATE OR REPLACE FUNCTION update_timestamp()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = CURRENT_TIMESTAMP;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- =====================================================
 -- 1. PRODUCT_SCHEMES TABLE
 -- =====================================================
 CREATE TABLE IF NOT EXISTS product_schemes (
