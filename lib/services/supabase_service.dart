@@ -576,6 +576,7 @@ class SupabaseService {
       'file_size': fileSize,
       'is_latest': isLatest,
       'status': 'active',
+      'release_date': DateTime.now().toIso8601String(),
     }).select().single();
     return response as Map<String, dynamic>;
   }
