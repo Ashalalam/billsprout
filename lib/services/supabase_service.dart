@@ -624,7 +624,7 @@ class SupabaseService {
         .select('''
           *,
           tenant:tenants!tenant_id(business_name),
-          user:profiles!user_id(full_name, email),
+          user:users!user_id(name, email),
           version:software_versions!version_id(version_number, platform)
         ''');
 
