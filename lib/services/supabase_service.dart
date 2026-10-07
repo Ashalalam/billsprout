@@ -596,7 +596,7 @@ class SupabaseService {
     final response = await _client
         .from('business_admin_access_overview')
         .select()
-        .order('tenant_name');
+        .order('business_name');
     return List<Map<String, dynamic>>.from(response as List);
   }
 
