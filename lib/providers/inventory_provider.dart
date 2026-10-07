@@ -106,12 +106,22 @@ class InventoryProvider extends ChangeNotifier {
       debugPrint('[STOCK DEBUG] Batch: ${batch.batchNumber} | stockCount: ${batch.stockCount}');
     }
     
+    // CRITICAL FIX: Sync to Supabase FIRST before adding to local state
+    // This ensures we don't show success if database insert fails
+    try {
+      await _syncProductToSupabase(product);
+      debugPrint('[Inventory] ✅ Product successfully saved to Supabase: ${product.name}');
+    } catch (e) {
+      debugPrint('[Inventory] ❌ FAILED to save product to Supabase: $e');
+      rethrow; // Propagate error to show in UI
+    }
+    
+    // Only add to local state if Supabase sync succeeded
     _products.add(product);
     await _saveToDisk();
     notifyListeners();
     
-    // Sync to Supabase in background
-    _syncProductToSupabase(product);
+    debugPrint('[Inventory] ✅ Product added to local inventory: ${product.name}');
   }
 
   /// Delete a product and all its batches
@@ -511,7 +521,7 @@ class InventoryProvider extends ChangeNotifier {
   Future<void> _syncProductToSupabase(ProductModel product) async {
     if (authProvider.tenantId == null) {
       debugPrint('[Inventory] Cannot sync product: missing tenant context');
-      return;
+      throw Exception('Cannot sync product: missing tenant context');
     }
     
     try {
@@ -527,8 +537,10 @@ class InventoryProvider extends ChangeNotifier {
       }
     } on PostgrestException catch (e) {
       debugPrint('[Inventory] Product sync failed: ${e.message}');
+      rethrow; // Propagate error to caller
     } catch (e) {
       debugPrint('[Inventory] Product sync error: $e');
+      rethrow; // Propagate error to caller
     }
   }
 
@@ -536,7 +548,7 @@ class InventoryProvider extends ChangeNotifier {
   Future<void> _syncBatchToSupabase(String productId, BatchModel batch) async {
     if (authProvider.tenantId == null || authProvider.branchId == null) {
       debugPrint('[Inventory] Cannot sync batch: missing tenant/branch context');
-      return;
+      throw Exception('Cannot sync batch: missing tenant/branch context');
     }
     
     try {
@@ -550,8 +562,10 @@ class InventoryProvider extends ChangeNotifier {
     } on PostgrestException catch (e) {
       debugPrint('[Inventory] Batch sync failed: ${e.message}');
       debugPrint('[STOCK DEBUG] PostgrestException details: ${e.details}');
+      rethrow; // Propagate error to caller
     } catch (e) {
       debugPrint('[Inventory] Batch sync error: $e');
+      rethrow; // Propagate error to caller
     }
   }
 
