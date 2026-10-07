@@ -202,16 +202,47 @@ class InventoryProvider extends ChangeNotifier {
     }
     
     final pIdx = _products.indexWhere((p) => p.id == productId);
-    if (pIdx < 0) return;
+    if (pIdx < 0) {
+      debugPrint('[Inventory] ❌ Product not found: $productId');
+      return;
+    }
     final bIdx = _products[pIdx].batches.indexWhere((b) => b.id == batchId);
-    if (bIdx < 0) return;
+    if (bIdx < 0) {
+      debugPrint('[Inventory] ❌ Batch not found: $batchId');
+      return;
+    }
     
     final batch = _products[pIdx].batches[bIdx];
-    batch.stockCount = (batch.stockCount - quantity).clamp(0, batch.stockCount);
+    final oldStock = batch.stockCount;
+    final newStock = (batch.stockCount - quantity).clamp(0, batch.stockCount);
     
-    _saveToDisk();
+    debugPrint('[STOCK DEBUG] Reducing stock for ${_products[pIdx].name}');
+    debugPrint('[STOCK DEBUG]   Batch: ${batch.batchNumber}');
+    debugPrint('[STOCK DEBUG]   Before: $oldStock');
+    debugPrint('[STOCK DEBUG]   Deducting: $quantity');
+    debugPrint('[STOCK DEBUG]   After: $newStock');
+    
+    // Update local state
+    batch.stockCount = newStock;
+    
+    // CRITICAL FIX: Update Supabase database
+    try {
+      await SupabaseService().updateBatchStock(
+        batchId: batchId,
+        newStockQuantity: newStock,
+      );
+      debugPrint('[Inventory] ✅ Stock updated in database: ${batch.batchNumber} → $newStock');
+    } catch (e) {
+      debugPrint('[Inventory] ❌ Failed to update stock in database: $e');
+      // Revert local change if database update fails
+      batch.stockCount = oldStock;
+      rethrow;
+    }
+    
+    await _saveToDisk();
     notifyListeners();
-    debugPrint('[Inventory] Reduced stock for ${_products[pIdx].name} batch ${batch.batchNumber}: -$quantity (now: ${batch.stockCount})');
+    
+    debugPrint('[Inventory] ✅ Reduced stock for ${_products[pIdx].name} batch ${batch.batchNumber}: -$quantity (now: ${batch.stockCount})');
   }
 
   List<ProductModel> searchProducts(String query) {

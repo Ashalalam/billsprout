@@ -219,6 +219,17 @@ class SupabaseService {
   Future<void> upsertBatch(Map<String, dynamic> batch) async {
     await _client.from('batches').upsert(batch);
   }
+  
+  /// Update batch stock quantity after a sale
+  Future<void> updateBatchStock({
+    required String batchId,
+    required int newStockQuantity,
+  }) async {
+    await _client
+        .from('batches')
+        .update({'stock_quantity': newStockQuantity, 'updated_at': DateTime.now().toIso8601String()})
+        .eq('id', batchId);
+  }
 
   // ── Sales & Sale Items ────────────────────────────────────────────────────
   Future<void> upsertSale(Map<String, dynamic> sale) async {
