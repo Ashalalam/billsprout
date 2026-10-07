@@ -632,9 +632,7 @@ class SupabaseService {
       query = query.eq('tenant_id', tenantId);
     }
 
-    query = query.order('downloaded_at', ascending: false).limit(limit);
-
-    final response = await query;
+    final response = await query.order('downloaded_at', ascending: false).limit(limit);
     return List<Map<String, dynamic>>.from(response as List);
   }
 
