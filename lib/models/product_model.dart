@@ -1,5 +1,6 @@
 import 'batch_model.dart';
 import 'selling_unit_model.dart';
+import 'product_scheme_model.dart';
 
 // ── Dose type enum ────────────────────────────────────────────────────────────
 enum DoseType {
@@ -188,6 +189,9 @@ class ProductModel {
   final double? pricePerBaseUnit;    // Per-tablet, per-capsule, or per-ml price
   final SellingUnit minSaleUnit;     // Minimum unit that can be sold
   final SellingUnit baseUnit;        // Base unit for inventory (tablet, capsule, ml, gm)
+  
+  // ── Scheme/Offer configuration ─────────────────────────────────────────────
+  final ProductScheme? scheme;       // Active promotional scheme (Buy X Get Y Free)
 
   ProductModel({
     required this.id,
@@ -208,9 +212,37 @@ class ProductModel {
     this.pricePerBaseUnit,
     this.minSaleUnit = SellingUnit.strip,
     this.baseUnit = SellingUnit.tablet,
+    this.scheme,
   });
 
   bool get requiresPharmacistPin => isScheduleH || isScheduleH1 || isNarcotic;
+
+  // ── Scheme/Offer helpers ───────────────────────────────────────────────────
+  
+  /// Check if product has an active scheme
+  bool get hasActiveScheme => scheme != null && scheme!.isCurrentlyValid;
+  
+  /// Get the active scheme (if currently valid)
+  ProductScheme? get activeScheme => hasActiveScheme ? scheme : null;
+  
+  /// Calculate free quantity for a given paid quantity based on active scheme
+  /// Returns 0 if no active scheme
+  int calculateFreeQuantity(int paidQuantity) {
+    if (!hasActiveScheme) return 0;
+    return scheme!.calculateFreeQuantity(paidQuantity);
+  }
+  
+  /// Calculate total quantity (paid + free) for a given paid quantity
+  int calculateTotalQuantity(int paidQuantity) {
+    if (!hasActiveScheme) return paidQuantity;
+    return scheme!.calculateTotalQuantity(paidQuantity);
+  }
+  
+  /// Display scheme info for UI (empty if no active scheme)
+  String get schemeDisplay => hasActiveScheme ? scheme!.displayText : '';
+  
+  /// Short scheme display for compact views (empty if no active scheme)
+  String get schemeShortDisplay => hasActiveScheme ? scheme!.shortDisplay : '';
 
   // ── FEFO: first non-expired in-stock batch by earliest expiry ─────────────
   BatchModel? get fefoBatch {
@@ -313,6 +345,7 @@ class ProductModel {
         'pricePerBaseUnit': pricePerBaseUnit,
         'minSaleUnit': minSaleUnit.dbValue,
         'baseUnit': baseUnit.dbValue,
+        'scheme': scheme?.toJson(),
       };
 
   factory ProductModel.fromJson(Map<String, dynamic> json) => ProductModel(
@@ -351,6 +384,9 @@ class ProductModel {
         baseUnit: json['baseUnit'] != null 
             ? _parseSellingUnit(json['baseUnit']) 
             : SellingUnit.tablet,
+        scheme: json['scheme'] != null 
+            ? ProductScheme.fromJson(json['scheme']) 
+            : null,
       );
   
   /// Helper to parse SellingUnit from string

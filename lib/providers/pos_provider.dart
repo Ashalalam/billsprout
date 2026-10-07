@@ -152,13 +152,31 @@ class PosProvider extends ChangeNotifier {
     if (idx >= 0) {
       if (_cartItems[idx].quantity < batchToUse.stockCount) {
         _cartItems[idx].quantity++;
+        
+        // Calculate and update free quantity based on scheme
+        if (product.hasActiveScheme) {
+          final scheme = product.activeScheme!;
+          final newFreeQty = scheme.calculateFreeQuantity(_cartItems[idx].quantity);
+          _cartItems[idx].freeQuantity = newFreeQty;
+          debugPrint('[POS SCHEME] ${product.name}: Updated to ${_cartItems[idx].quantity} paid + $newFreeQty free');
+        }
       }
     } else {
+      // Calculate free quantity for first item
+      int freeQty = 0;
+      if (product.hasActiveScheme) {
+        final scheme = product.activeScheme!;
+        freeQty = scheme.calculateFreeQuantity(1);
+        if (freeQty > 0) {
+          debugPrint('[POS SCHEME] ${product.name}: Buy 1 Get $freeQty Free');
+        }
+      }
+      
       _cartItems.add(InvoiceItem(
         product: product,
         batch: batchToUse,
         quantity: 1,
-        freeQuantity: 0,
+        freeQuantity: freeQty,
         unitPrice: unitPrice,
         taxPercent: product.taxPercent,
         sellingUnit: product.minSaleUnit,
@@ -179,11 +197,32 @@ class PosProvider extends ChangeNotifier {
       return;
     }
     
-    // Validate stock availability
+    // Calculate free quantity based on active scheme
+    SaleQuantity finalQuantity = quantity;
+    if (product.hasActiveScheme) {
+      final scheme = product.activeScheme!;
+      final paidQty = quantity.packQuantity;
+      final freeQty = scheme.calculateFreeQuantity(paidQty);
+      
+      if (freeQty > 0) {
+        debugPrint('[POS SCHEME] ${product.name}: Buy $paidQty Get $freeQty Free (${scheme.schemeUnit.label})');
+        
+        // Add free quantity to the sale
+        finalQuantity = SaleQuantity(
+          packQuantity: quantity.packQuantity,
+          looseQuantity: quantity.looseQuantity,
+          freePackQuantity: freeQty,
+          freeLooseQuantity: 0,
+          sellingUnit: quantity.sellingUnit,
+        );
+      }
+    }
+    
+    // Validate stock availability (including free quantity)
     final validation = PricingCalculator.validateStock(
       product: product,
       batch: batchToUse,
-      quantity: quantity,
+      quantity: finalQuantity,
     );
     
     if (!validation.isValid) {
@@ -204,21 +243,21 @@ class PosProvider extends ChangeNotifier {
     final idx = _cartItems.indexWhere(
         (i) => i.product.id == product.id && 
                i.batch.id == batchToUse.id &&
-               i.sellingUnit == quantity.sellingUnit);
+               i.sellingUnit == finalQuantity.sellingUnit);
     
     if (idx >= 0) {
       // Update existing item
       final existing = _cartItems[idx];
-      existing.quantity += quantity.packQuantity;
-      existing.looseUnits += quantity.looseQuantity;
-      existing.freeQuantity += quantity.freePackQuantity;
-      existing.freeLooseUnits += quantity.freeLooseQuantity;
+      existing.quantity += finalQuantity.packQuantity;
+      existing.looseUnits += finalQuantity.looseQuantity;
+      existing.freeQuantity += finalQuantity.freePackQuantity;
+      existing.freeLooseUnits += finalQuantity.freeLooseQuantity;
     } else {
       // Add new item
       _cartItems.add(InvoiceItem.fromSaleQuantity(
         product: product,
         batch: batchToUse,
-        saleQty: quantity,
+        saleQty: finalQuantity,
         packPrice: packPrice,
         unitPrice: unitPrice,
         taxPercent: product.taxPercent,

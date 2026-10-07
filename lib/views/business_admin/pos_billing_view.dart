@@ -668,11 +668,20 @@ class _PosBillingViewState extends State<PosBillingView> {
                       const Text('Free:', style: TextStyle(fontSize: 11, color: AppTheme.successGreen)),
                       const SizedBox(width: 4),
                       SizedBox(width: 46, child: TextField(
+                        controller: TextEditingController(text: item.freeQuantity.toString()),
                         keyboardType: TextInputType.number,
                         decoration: const InputDecoration(isDense: true, hintText: '0',
                             contentPadding: EdgeInsets.symmetric(horizontal: 6, vertical: 4)),
                         style: const TextStyle(fontSize: 11),
                         onChanged: (v) => pos.updateFreeQuantity(item, int.tryParse(v) ?? 0))),
+                      // Show scheme indicator if active
+                      if (item.product.hasActiveScheme) ...[
+                        const SizedBox(width: 4),
+                        Tooltip(
+                          message: item.product.schemeDisplay,
+                          child: const Icon(Icons.local_offer, size: 12, color: AppTheme.primaryBlue),
+                        ),
+                      ],
                       const SizedBox(width: 10),
                       const Icon(Icons.local_offer, size: 13, color: AppTheme.accentOrange),
                       const SizedBox(width: 3),

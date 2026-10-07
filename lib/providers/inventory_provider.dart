@@ -7,6 +7,7 @@ import '../models/batch_model.dart';
 import '../models/rtv_model.dart';
 import '../models/stock_transfer_model.dart';
 import '../models/selling_unit_model.dart'; // ✅ Added import for SellingUnit
+import '../models/product_scheme_model.dart'; // ✅ Added import for ProductScheme
 import '../services/supabase_service.dart';
 import '../providers/auth_provider.dart';
 
@@ -534,7 +535,43 @@ class InventoryProvider extends ChangeNotifier {
         for (final productRow in productsData) {
           // Convert snake_case DB fields to camelCase for model
           final product = _productFromDbRow(productRow);
-          _products.add(product);
+          
+          // Load active scheme for this product
+          try {
+            final schemeData = await SupabaseService().getActiveSchemeForProduct(product.id);
+            if (schemeData != null) {
+              final scheme = ProductScheme.fromJson(schemeData);
+              // Create a new product with scheme attached
+              final productWithScheme = ProductModel(
+                id: product.id,
+                name: product.name,
+                genericSalt: product.genericSalt,
+                barcode: product.barcode,
+                hsnCode: product.hsnCode,
+                taxPercent: product.taxPercent,
+                manufacturer: product.manufacturer,
+                isScheduleH: product.isScheduleH,
+                isScheduleH1: product.isScheduleH1,
+                isNarcotic: product.isNarcotic,
+                batches: product.batches,
+                doseType: product.doseType,
+                packagingConfig: product.packagingConfig,
+                allowLooseSales: product.allowLooseSales,
+                baseUnitsPerPack: product.baseUnitsPerPack,
+                pricePerBaseUnit: product.pricePerBaseUnit,
+                minSaleUnit: product.minSaleUnit,
+                baseUnit: product.baseUnit,
+                scheme: scheme,
+              );
+              _products.add(productWithScheme);
+              debugPrint('[Inventory] Loaded scheme for ${product.name}: ${scheme.displayText}');
+            } else {
+              _products.add(product);
+            }
+          } catch (e) {
+            debugPrint('[Inventory] Failed to load scheme for ${product.name}: $e');
+            _products.add(product); // Add product without scheme
+          }
         }
         
         await _saveToDisk();
@@ -567,6 +604,17 @@ class InventoryProvider extends ChangeNotifier {
       // Sync batches
       for (final batch in product.batches) {
         await _syncBatchToSupabase(product.id, batch);
+      }
+      
+      // Sync scheme if present
+      if (product.scheme != null) {
+        debugPrint('[Inventory] Syncing scheme for product: ${product.name}');
+        final schemeData = product.scheme!.toJson();
+        schemeData['product_id'] = product.id; // Ensure product_id is set
+        schemeData['tenant_id'] = tenantId; // Ensure tenant_id is set
+        
+        await SupabaseService().createScheme(schemeData);
+        debugPrint('[Inventory] Scheme synced: ${product.scheme!.displayText}');
       }
     } on PostgrestException catch (e) {
       debugPrint('[Inventory] Product sync failed: ${e.message}');

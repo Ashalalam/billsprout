@@ -6,6 +6,7 @@ import '../../config/responsive_layout.dart';
 import '../../models/product_model.dart';
 import '../../models/batch_model.dart';
 import '../../models/selling_unit_model.dart';
+import '../../models/product_scheme_model.dart';
 import '../../providers/inventory_provider.dart';
 import '../../widgets/medicine_scanner_dialog.dart';
 import '../../services/medicine_data_extractor.dart';
@@ -694,6 +695,15 @@ class _InventoryViewState extends State<InventoryView> with SingleTickerProvider
     
     // Opening stock unit (pack or base unit)
     String openingStockUnit = 'pack';  // Default to packs/strips
+    
+    // Scheme/Offer configuration
+    bool enableScheme = false;
+    final schemeBuyQtyCtrl = TextEditingController(text: '10');
+    final schemeFreeQtyCtrl = TextEditingController(text: '1');
+    String schemeUnit = 'strip';
+    final schemeValidFromCtrl = TextEditingController(
+        text: '${DateTime.now().day.toString().padLeft(2, '0')}/${DateTime.now().month.toString().padLeft(2, '0')}/${DateTime.now().year}');
+    final schemeValidUntilCtrl = TextEditingController();  // Empty = ongoing
 
     showDialog(
       context: context,
@@ -939,6 +949,132 @@ class _InventoryViewState extends State<InventoryView> with SingleTickerProvider
                       ),
                     ],
                   ),
+
+                  const SizedBox(height: 16),
+                  const Divider(),
+                  const SizedBox(height: 8),
+
+                  // ─ Section: Scheme & Offers ──────────────────────────────
+                  _sectionHeader('Scheme & Offers'),
+                  const SizedBox(height: 8),
+                  SwitchListTile(
+                    dense: true,
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('Enable Free Scheme', style: TextStyle(fontSize: 14)),
+                    subtitle: const Text('e.g., Buy 10 Get 1 Free', style: TextStyle(fontSize: 11)),
+                    value: enableScheme,
+                    onChanged: (v) => setDlg(() => enableScheme = v),
+                  ),
+                  if (enableScheme) ...[
+                    const SizedBox(height: 10),
+                    Row(children: [
+                      Expanded(
+                        child: TextField(
+                          controller: schemeBuyQtyCtrl,
+                          keyboardType: TextInputType.number,
+                          decoration: const InputDecoration(
+                            labelText: 'Buy Quantity *',
+                            hintText: 'e.g., 10',
+                            prefixIcon: Icon(Icons.shopping_cart, size: 18),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: TextField(
+                          controller: schemeFreeQtyCtrl,
+                          keyboardType: TextInputType.number,
+                          decoration: const InputDecoration(
+                            labelText: 'Free Quantity *',
+                            hintText: 'e.g., 1',
+                            prefixIcon: Icon(Icons.card_giftcard, size: 18),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        flex: 1,
+                        child: DropdownButtonFormField<String>(
+                          value: schemeUnit,
+                          decoration: const InputDecoration(
+                            labelText: 'Unit *',
+                            helperText: 'Scheme applies to',
+                          ),
+                          items: [
+                            DropdownMenuItem(value: 'strip', child: Text('Strip', style: const TextStyle(fontSize: 13))),
+                            DropdownMenuItem(value: 'tablet', child: Text('Tablet', style: const TextStyle(fontSize: 13))),
+                            DropdownMenuItem(value: 'capsule', child: Text('Capsule', style: const TextStyle(fontSize: 13))),
+                            DropdownMenuItem(value: 'bottle', child: Text('Bottle', style: const TextStyle(fontSize: 13))),
+                            DropdownMenuItem(value: 'vial', child: Text('Vial', style: const TextStyle(fontSize: 13))),
+                            DropdownMenuItem(value: 'unit', child: Text('Unit', style: const TextStyle(fontSize: 13))),
+                          ],
+                          onChanged: (v) => setDlg(() => schemeUnit = v ?? schemeUnit),
+                        ),
+                      ),
+                    ]),
+                    const SizedBox(height: 10),
+                    Row(children: [
+                      Expanded(
+                        child: TextField(
+                          controller: schemeValidFromCtrl,
+                          decoration: const InputDecoration(
+                            labelText: 'Valid From *',
+                            hintText: 'DD/MM/YYYY',
+                            prefixIcon: Icon(Icons.calendar_today, size: 18),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: TextField(
+                          controller: schemeValidUntilCtrl,
+                          decoration: const InputDecoration(
+                            labelText: 'Valid Until',
+                            hintText: 'DD/MM/YYYY (empty = ongoing)',
+                            prefixIcon: Icon(Icons.event, size: 18),
+                          ),
+                        ),
+                      ),
+                    ]),
+                    const SizedBox(height: 10),
+                    // Scheme Preview
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: AppTheme.primaryBlue.withValues(alpha: 0.07),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                            color: AppTheme.primaryBlue.withValues(alpha: 0.3)),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.local_offer,
+                              color: AppTheme.primaryBlue, size: 16),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: () {
+                              final buyQty = int.tryParse(schemeBuyQtyCtrl.text) ?? 0;
+                              final freeQty = int.tryParse(schemeFreeQtyCtrl.text) ?? 0;
+                              final unitText = schemeUnit == 'strip' ? 'Strip' :
+                                             schemeUnit == 'tablet' ? 'Tablet' :
+                                             schemeUnit == 'capsule' ? 'Capsule' :
+                                             schemeUnit == 'bottle' ? 'Bottle' :
+                                             schemeUnit == 'vial' ? 'Vial' : 'Unit';
+                              final plural = (buyQty > 1 || freeQty > 1) ? '${unitText}s' : unitText;
+                              return Text(
+                                'Preview: Buy $buyQty Get $freeQty Free ($plural)',
+                                style: const TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                    color: AppTheme.primaryBlue,
+                                    height: 1.3),
+                              );
+                            }(),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
 
                   const SizedBox(height: 16),
                   const Divider(),
@@ -1191,6 +1327,69 @@ class _InventoryViewState extends State<InventoryView> with SingleTickerProvider
                 );
 
                 // ── Build product ──────────────────────────────────────────
+                // Create scheme if enabled
+                ProductScheme? productScheme;
+                if (enableScheme) {
+                  final buyQty = int.tryParse(schemeBuyQtyCtrl.text) ?? 10;
+                  final freeQty = int.tryParse(schemeFreeQtyCtrl.text) ?? 1;
+                  
+                  // Parse dates
+                  DateTime schemeValidFrom;
+                  DateTime? schemeValidUntil;
+                  
+                  try {
+                    final fromParts = schemeValidFromCtrl.text.trim().split('/');
+                    schemeValidFrom = DateTime(
+                      int.parse(fromParts[2]),  // year
+                      int.parse(fromParts[1]),  // month
+                      int.parse(fromParts[0]),  // day
+                    );
+                    
+                    if (schemeValidUntilCtrl.text.trim().isNotEmpty) {
+                      final untilParts = schemeValidUntilCtrl.text.trim().split('/');
+                      schemeValidUntil = DateTime(
+                        int.parse(untilParts[2]),  // year
+                        int.parse(untilParts[1]),  // month
+                        int.parse(untilParts[0]),  // day
+                      );
+                    }
+                  } catch (e) {
+                    _showSnack(context, 'Invalid scheme date format. Use DD/MM/YYYY.',
+                        isError: true);
+                    return;
+                  }
+                  
+                  // Validation
+                  if (buyQty <= 0 || freeQty <= 0) {
+                    _showSnack(context, 'Scheme quantities must be positive.',
+                        isError: true);
+                    return;
+                  }
+                  
+                  if (schemeValidUntil != null && schemeValidUntil.isBefore(schemeValidFrom)) {
+                    _showSnack(context, 'Scheme end date must be after start date.',
+                        isError: true);
+                    return;
+                  }
+                  
+                  // Create scheme object (will be saved with product)
+                  productScheme = ProductScheme(
+                    id: const Uuid().v4(),
+                    productId: '', // Will be set after product is created
+                    tenantId: inventoryProvider.authProvider.tenantId ?? '',
+                    branchId: inventoryProvider.authProvider.branchId,
+                    schemeType: SchemeType.buyXGetYFree,
+                    buyQuantity: buyQty,
+                    freeQuantity: freeQty,
+                    schemeUnit: SchemeUnitX.fromString(schemeUnit),
+                    validFrom: schemeValidFrom,
+                    validUntil: schemeValidUntil,
+                    isActive: true,
+                    createdAt: DateTime.now(),
+                    updatedAt: DateTime.now(),
+                  );
+                }
+                
                 final product = ProductModel(
                   id: const Uuid().v4(),
                   name: nameCtrl.text.trim(),
@@ -1219,6 +1418,7 @@ class _InventoryViewState extends State<InventoryView> with SingleTickerProvider
                       : null,
                   minSaleUnit: allowLooseSales ? minSaleUnit : SellingUnit.strip,
                   baseUnit: allowLooseSales ? baseUnit : SellingUnit.tablet,
+                  scheme: productScheme,
                 );
 
                 // ── Save to database FIRST, then update UI ────────────────

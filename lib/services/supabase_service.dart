@@ -243,6 +243,134 @@ class SupabaseService {
     }
   }
 
+  // ── Product Schemes (Buy X Get Y Free) ────────────────────────────────────
+  
+  /// Create a new product scheme
+  Future<Map<String, dynamic>> createScheme(Map<String, dynamic> scheme) async {
+    debugPrint('[SupabaseService] 🔄 Creating product scheme for product: ${scheme['product_id']}');
+    try {
+      final response = await _client
+          .from('product_schemes')
+          .insert(scheme)
+          .select()
+          .single();
+      debugPrint('[SupabaseService] ✅ Scheme created successfully: ${response['id']}');
+      return response;
+    } catch (e, stackTrace) {
+      debugPrint('[SupabaseService] ❌ Failed to create scheme: $e');
+      debugPrint('[SupabaseService] ❌ Stack trace: $stackTrace');
+      rethrow;
+    }
+  }
+  
+  /// Update an existing product scheme
+  Future<Map<String, dynamic>> updateScheme(
+    String schemeId,
+    Map<String, dynamic> updates,
+  ) async {
+    debugPrint('[SupabaseService] 🔄 Updating scheme: $schemeId');
+    try {
+      updates['updated_at'] = DateTime.now().toIso8601String();
+      final response = await _client
+          .from('product_schemes')
+          .update(updates)
+          .eq('id', schemeId)
+          .select()
+          .single();
+      debugPrint('[SupabaseService] ✅ Scheme updated successfully');
+      return response;
+    } catch (e, stackTrace) {
+      debugPrint('[SupabaseService] ❌ Failed to update scheme: $e');
+      debugPrint('[SupabaseService] ❌ Stack trace: $stackTrace');
+      rethrow;
+    }
+  }
+  
+  /// Get active scheme for a product
+  Future<Map<String, dynamic>?> getActiveSchemeForProduct(String productId) async {
+    debugPrint('[SupabaseService] 🔍 Fetching active scheme for product: $productId');
+    try {
+      final now = DateTime.now().toIso8601String().split('T')[0]; // YYYY-MM-DD format
+      
+      final response = await _client
+          .from('product_schemes')
+          .select()
+          .eq('product_id', productId)
+          .eq('is_active', true)
+          .lte('valid_from', now)
+          .or('valid_until.is.null,valid_until.gte.$now')
+          .order('created_at', ascending: false)
+          .limit(1)
+          .maybeSingle();
+      
+      if (response != null) {
+        debugPrint('[SupabaseService] ✅ Found active scheme: ${response['id']}');
+      } else {
+        debugPrint('[SupabaseService] ℹ️  No active scheme found for product');
+      }
+      
+      return response;
+    } catch (e, stackTrace) {
+      debugPrint('[SupabaseService] ❌ Failed to fetch active scheme: $e');
+      debugPrint('[SupabaseService] ❌ Stack trace: $stackTrace');
+      rethrow;
+    }
+  }
+  
+  /// Get all schemes for a product (including inactive/expired)
+  Future<List<Map<String, dynamic>>> getSchemesForProduct(String productId) async {
+    debugPrint('[SupabaseService] 🔍 Fetching all schemes for product: $productId');
+    try {
+      final response = await _client
+          .from('product_schemes')
+          .select()
+          .eq('product_id', productId)
+          .order('created_at', ascending: false);
+      
+      debugPrint('[SupabaseService] ✅ Found ${response.length} schemes');
+      return List<Map<String, dynamic>>.from(response as List);
+    } catch (e, stackTrace) {
+      debugPrint('[SupabaseService] ❌ Failed to fetch schemes: $e');
+      debugPrint('[SupabaseService] ❌ Stack trace: $stackTrace');
+      rethrow;
+    }
+  }
+  
+  /// Delete a product scheme
+  Future<void> deleteScheme(String schemeId) async {
+    debugPrint('[SupabaseService] 🗑️  Deleting scheme: $schemeId');
+    try {
+      await _client
+          .from('product_schemes')
+          .delete()
+          .eq('id', schemeId);
+      debugPrint('[SupabaseService] ✅ Scheme deleted successfully');
+    } catch (e, stackTrace) {
+      debugPrint('[SupabaseService] ❌ Failed to delete scheme: $e');
+      debugPrint('[SupabaseService] ❌ Stack trace: $stackTrace');
+      rethrow;
+    }
+  }
+  
+  /// Deactivate a product scheme (soft delete)
+  Future<void> deactivateScheme(String schemeId) async {
+    debugPrint('[SupabaseService] 🔄 Deactivating scheme: $schemeId');
+    try {
+      await _client
+          .from('product_schemes')
+          .update({
+            'is_active': false,
+            'updated_at': DateTime.now().toIso8601String(),
+          })
+          .eq('id', schemeId);
+      debugPrint('[SupabaseService] ✅ Scheme deactivated successfully');
+    } catch (e, stackTrace) {
+      debugPrint('[SupabaseService] ❌ Failed to deactivate scheme: $e');
+      debugPrint('[SupabaseService] ❌ Stack trace: $stackTrace');
+      rethrow;
+    }
+  }
+
   // ── Sales & Sale Items ────────────────────────────────────────────────────
   Future<void> upsertSale(Map<String, dynamic> sale) async {
     await _client.from('sales').upsert(sale);
