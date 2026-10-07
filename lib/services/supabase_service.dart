@@ -1,3 +1,4 @@
+import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../config/app_config.dart';
@@ -625,13 +626,13 @@ class SupabaseService {
           tenant:tenants!tenant_id(business_name),
           user:profiles!user_id(full_name, email),
           version:software_versions!version_id(version_number, platform)
-        ''')
-        .order('downloaded_at', ascending: false)
-        .limit(limit);
+        ''');
 
     if (tenantId != null) {
       query = query.eq('tenant_id', tenantId);
     }
+
+    query = query.order('downloaded_at', ascending: false).limit(limit);
 
     final response = await query;
     return List<Map<String, dynamic>>.from(response as List);
@@ -676,7 +677,7 @@ class SupabaseService {
     final path = 'software/$platform/$fileName';
     await _client.storage.from('software').uploadBinary(
           path,
-          fileBytes,
+          Uint8List.fromList(fileBytes),
           fileOptions: const FileOptions(
             cacheControl: '3600',
             upsert: false,

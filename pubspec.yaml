@@ -75,6 +75,9 @@ dependencies:
   
   # Image processing
   image: ^4.2.0
+  
+  # File picker for software uploads
+  file_picker: ^8.0.0+1
 
   # Connectivity detection for sync engine
   connectivity_plus: ^6.1.4
