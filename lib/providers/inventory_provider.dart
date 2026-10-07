@@ -729,15 +729,13 @@ class InventoryProvider extends ChangeNotifier {
     String tenantId,
     String branchId,
   ) {
-    return {
+    final batchData = {
       'id': batch.id,
       'product_id': productId,
       'tenant_id': tenantId,
       'branch_id': branchId,
       'batch_number': batch.batchNumber,
       'mfg_date': batch.mfgDate.toIso8601String(),
-      // expDate is the DateTime; batch.expiryDate is a display string (MM/YYYY)
-      // and would be rejected by a DATE column.
       'exp_date': batch.expDate.toIso8601String(),
       'purchase_price': batch.purchasePrice,
       'ptr_price': batch.ptrPrice,
@@ -745,10 +743,12 @@ class InventoryProvider extends ChangeNotifier {
       'selling_price': batch.mrp, // Default selling price to MRP
       'wholesale_price': batch.wholesalePrice,
       'stock_quantity': batch.stockCount,
-      'loose_units': batch.looseUnits, // ✅ FIXED: Added loose_units field
+      'loose_units': batch.looseUnits,
       'rack_location': batch.rackLocation,
-      'created_at': DateTime.now().toIso8601String(),
-      'updated_at': DateTime.now().toIso8601String(),
+      // Don't send created_at/updated_at - let database use DEFAULT values
     };
+    
+    debugPrint('[STOCK DEBUG] Batch payload: ${batchData.toString()}');
+    return batchData;
   }
 }
