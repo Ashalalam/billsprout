@@ -467,7 +467,7 @@ class _CustomerManagementViewState extends State<CustomerManagementView> {
                     ),
                     keyboardType: TextInputType.number,
                   ),
-                  // Show GST field for all customer types (optional for both), Drug License fields only for wholesale
+                  // Show GST field for all customer types (always visible)
                   const SizedBox(height: 12),
                   TextField(
                     controller: gstinCtrl,
@@ -478,8 +478,34 @@ class _CustomerManagementViewState extends State<CustomerManagementView> {
                     ),
                   ),
                   
+                  // Debug: Show which customer type is selected
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      'Selected Type: ${selectedType.name} (${selectedType.label})',
+                      style: const TextStyle(fontSize: 12, color: Colors.blue),
+                    ),
+                  ),
+                  
                   // Show Drug License fields ONLY for wholesale customers
                   if (selectedType == CustomerType.wholesale) ...[
+                    const SizedBox(height: 12),
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.green.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: const Text(
+                        'Wholesale customer - showing drug license fields',
+                        style: TextStyle(fontSize: 12, color: Colors.green),
+                      ),
+                    ),
                     const SizedBox(height: 12),
                     TextField(
                       controller: drugLicenseCtrl,
@@ -522,6 +548,19 @@ class _CustomerManagementViewState extends State<CustomerManagementView> {
                                 : Colors.grey.shade600,
                           ),
                         ),
+                      ),
+                    ),
+                  ] else ...[
+                    const SizedBox(height: 12),
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.orange.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: const Text(
+                        'Retail customer - no drug license fields needed',
+                        style: TextStyle(fontSize: 12, color: Colors.orange),
                       ),
                     ),
                   ],
