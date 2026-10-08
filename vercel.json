@@ -1,4 +1,5 @@
 {
+  "buildCommand": "echo 'Static deployment - no build required'",
   "outputDirectory": "web",
   "rewrites": [
     {
