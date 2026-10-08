@@ -1,7 +1,7 @@
 {
   "functions": {
-    "supabase/functions/**": {
-      "runtime": "nodejs18.x"
+    "supabase/functions/**/*.ts": {
+      "runtime": "@vercel/node@3.0.5"
     }
   },
   "buildCommand": "flutter build web --release",
