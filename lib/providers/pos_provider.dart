@@ -262,7 +262,7 @@ class PosProvider extends ChangeNotifier {
       final freeQty = scheme.calculateFreeQuantity(paidQty);
       
       if (freeQty > 0) {
-        debugPrint('[POS SCHEME] ${product.name}: Buy $paidQty Get $freeQty Free (${scheme.schemeUnit.toString()})');
+        debugPrint('[POS SCHEME] ${product.name}: Buy $paidQty Get $freeQty Free');
         
         // Add free quantity to the sale
         finalQuantity = SaleQuantity(

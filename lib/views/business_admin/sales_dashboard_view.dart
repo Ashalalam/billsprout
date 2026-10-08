@@ -179,11 +179,13 @@ class _SalesDashboardViewState extends State<SalesDashboardView> {
                               alignment: BarChartAlignment.spaceAround,
                               maxY: barData.isEmpty
                                   ? 1
-                                  : barData
+                                  : () {
+                                      final maxValue = barData
                                           .map((e) => e.toY)
-                                          .reduce((a, b) =>
-                                              a > b ? a : b) *
-                                      1.3,
+                                          .reduce((a, b) => a > b ? a : b);
+                                      // Avoid zero maxY - use minimum of 1
+                                      return maxValue > 0 ? maxValue * 1.3 : 1;
+                                    }(),
                               barGroups: barData
                                   .asMap()
                                   .entries
@@ -225,11 +227,13 @@ class _SalesDashboardViewState extends State<SalesDashboardView> {
                                     ),
                                     interval: barData.isEmpty
                                         ? 1
-                                        : barData
+                                        : () {
+                                            final maxValue = barData
                                                 .map((e) => e.toY)
-                                                .reduce((a, b) =>
-                                                    a > b ? a : b) /
-                                            4,
+                                                .reduce((a, b) => a > b ? a : b);
+                                            // Avoid interval = 0 when all values are zero
+                                            return maxValue > 0 ? maxValue / 4 : 1;
+                                          }(),
                                   ),
                                 ),
                                 topTitles: const AxisTitles(
