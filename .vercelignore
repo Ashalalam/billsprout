@@ -1,37 +1,65 @@
-# Vercel ignore file
-# Don't upload these to Vercel
+# Build artifacts that shouldn't be deployed when using GitHub Actions
+web/
+.github/
+supabase/
+android/
+ios/
+linux/
+macos/
+windows/
+test/
 
-# Flutter
+# Flutter/Dart files (GitHub Actions will build these)
+pubspec.yaml
+pubspec.lock
+analysis_options.yaml
 .dart_tool/
 .flutter-plugins
 .flutter-plugins-dependencies
 .packages
 .pub-cache/
 .pub/
+lib/
 
+# Version control
+.git/
+.gitignore
 
-# Development
-.env
-*.log
-*.swp
-.DS_Store
-
-# IDE
+# IDE files
 .idea/
 .vscode/
 *.iml
+*.swp
+*.swo
+*~
 
-# Windows
-windows/
-android/
-ios/
-linux/
-macos/
+# OS files
+.DS_Store
+Thumbs.db
 
-# Testing
-test/
+# Logs
+*.log
+
+# Environment files
+.env
+.env.local
+.env.production
+.env.development
+
+# SQL and database files
+*.sql
+
+# Markdown documentation (keep only essential ones)
+*.md
+!README.md
+
+# PowerShell scripts
+*.ps1
+
+# Temporary files
+*.tmp
+*.temp
 .test_coverage/
 
-# Git
-.git/
-.gitignore
+# Tool directory
+tool/

@@ -1,19 +1,30 @@
 {
-  "buildCommand": "echo 'Static deployment - no build required'",
-  "outputDirectory": "web",
+  "framework": "flutter",
+  "buildCommand": "flutter build web --release",
+  "outputDirectory": "build/web",
+  "installCommand": "flutter pub get",
   "rewrites": [
     {
-      "source": "/(.*)",
+      "source": "/((?!main\\.dart\\.js|flutter\\.js|flutter_service_worker\\.js|assets/.*|canvaskit/.*|icons/.*|favicon\\..*|manifest\\.json|env-config\\.js).*)",
       "destination": "/index.html"
     }
   ],
   "headers": [
     {
-      "source": "/(.*)",
+      "source": "/main.dart.js",
       "headers": [
         {
-          "key": "Cache-Control",
-          "value": "public, max-age=86400"
+          "key": "Content-Type",
+          "value": "application/javascript"
+        }
+      ]
+    },
+    {
+      "source": "/flutter.js",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "application/javascript"
         }
       ]
     },
@@ -21,8 +32,30 @@
       "source": "/flutter_service_worker.js",
       "headers": [
         {
+          "key": "Content-Type",
+          "value": "application/javascript"
+        },
+        {
           "key": "Cache-Control",
           "value": "no-cache"
+        }
+      ]
+    },
+    {
+      "source": "/assets/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    },
+    {
+      "source": "/canvaskit/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
         }
       ]
     }
