@@ -1,4 +1,7 @@
-!--
+<!DOCTYPE html>
+<html>
+<head>
+  <!--
     If you are serving your web app in a path other than the root, change the
     href value below to reflect the base path you are serving from.
 
@@ -8,36 +11,148 @@
     For more details:
     * https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
 
-    This is a placeholder for e href that will be replaced by the value of
-    th`--base-` argument provided to `flutter build`.
+    This is a placeholder for base href that will be replaced by the value of
+    the `--base-href` argument provided to `flutter build`.
   -->
-  <base href$FLUTTER_BASE_HREF
-yl/*Tisi sls eens */.laingdspafx;
-      juf-con:ctlg-itemscenterheht10vh-colorfofm'Robo',ssf8 80px;
-     margin-bottom: 16wghboldfntize2444-topo-te-top156px</sle><!--RazayWeCckt--><spsc="hts//checkuazopa.cm/1/chtjs">crip>
-  <!-- Loading screen --" id="ldgading-tex"BillSoudiv</div>
+  <base href="/">
 
-<!--Thisscritnlls ervice_workr.j to provid PWA fucontyo
-       For more information, see: hps://developers.google.cm/web/fundametas/primer/ervice-woks ->
-  <scrip>
-    varserveWorerVersn = ul;
-    vrcripLoadd  fale;
-   fuctiloadManDaJs() {if(scripde) {  retr;}    Loaded = true; var scriptTag = docunt.creEemen('scip');
-   scripTag.sc='ma.drt.js';  cripag.ype = 'applia/javascript';ocmnt.body.aendscriptTagi ('servceWrker' invigaoSevic workrsrespported.Usehm.
-     wnow.ddEvenListner('oad', function () {  // Wait fr rgistratio o finish efre roppg th <scipt>tag.// Otherwse,the brower will load he script mutipl times,//ptealdiffrntversos.
-        vr rviceWrkerUrl= fluttr_service_wrkr.js?v=+ vceWorkerVersionnvigator.servieWorer.reiste(serviceWrkerUrl).hn((reg) => {  functo waForActiation(serviceWorker) {    serviceWorker.adEventLtener('sttchange', () => {      i (srvceWokr.state == 'avated'){consol.log('Instlle nwrvice worker.');      laMinDartJs  } }}f (!re.aciv&& (rg.isalling || eg.waiting)) {  // No acve web wrkr adwe hv insalld or ar istalling//oneforthefr tim. Smy witort oativa.waitForActation(reg.inaling || rg.waiting);}elseif(!reg.active.scrptURL.ensWi(serviceWorkerVersion)){   //Whentheappupdateste serviceWorkerVrson chanes, sowe //needtosk the servie wore t pa.console.log('Newservicewk avlable.')reg.upt()wForAtivation(rg.isalling)}el{ //Existingservicewrkr s sillgo.onsle.og('Loading app frm seviceworker.')loadMDaJs()   }
-});
+  <meta charset="UTF-8">
+  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+  <meta name="description" content="BillSprout — Smart ERP &amp; Fast POS Billing System by LIFESPROUT Care">
 
-//Ifvceworkerdes' uccedn a reasonabe amn oftime,//fallbacktoplainscrpt tag.        setTimeout(()=>{
-if(!cripLoad) {
-            cono.wrn( 'Failedpp fmsevicewk.Falligbak tplan<si>t.',
-          )
-           laMnJs();
-          }     },4000);
-});
-}e {
-      //Srviwkstsuppd.Jst dph <scipt>t.
-   laMnDartJ();
+  <!-- iOS meta tags & icons -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-title" content="BillSprout">
+  <link rel="apple-touch-icon" href="icons/Icon-192.png">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="favicon.png"/>
+
+  <title>BillSprout — Smart ERP &amp; Billing | LIFESPROUT Care</title>
+  <link rel="manifest" href="manifest.json">
+
+  <style>
+    /* This is the splash screen styles */
+    .loading {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      background-color: #182B68;
+      color: white;
+      font-family: 'Roboto', sans-serif;
+      flex-direction: column;
     }
- </scrit
-dy</html>
+    .logo {
+      width: 80px;
+      height: 80px;
+      margin-bottom: 20px;
+      background: white;
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #182B68;
+      font-weight: bold;
+      font-size: 32px;
+    }
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 4px solid rgba(255,255,255,0.3);
+      border-radius: 50%;
+      border-top-color: white;
+      animation: spin 1s ease-in-out infinite;
+      margin-top: 20px;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    .loading-text {
+      margin-top: 15px;
+      font-size: 16px;
+      opacity: 0.8;
+    }
+  </style>
+
+  <!-- Razorpay Web Checkout -->
+  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+</head>
+<body>
+  <!-- Loading screen -->
+  <div class="loading" id="loading">
+    <div class="logo">BS</div>
+    <div class="loading-text">Loading BillSprout...</div>
+    <div class="spinner"></div>
+  </div>
+
+  <!-- This script installs service_worker.js to provide PWA functionality to
+       application. For more information, see:
+       https://developers.google.com/web/fundamentals/primers/service-workers -->
+  <script>
+    var serviceWorkerVersion = null;
+    var scriptLoaded = false;
+    function loadMainDartJs() {
+      if (scriptLoaded) {
+        return;
+      }
+      scriptLoaded = true;
+      var scriptTag = document.createElement('script');
+      scriptTag.src = 'main.dart.js';
+      scriptTag.type = 'application/javascript';
+      document.body.append(scriptTag);
+    }
+
+    if ('serviceWorker' in navigator) {
+      // Service workers are supported. Use them.
+      window.addEventListener('load', function () {
+        // Wait for registration to finish before dropping the <script> tag.
+        // Otherwise, the browser will load the script multiple times,
+        // potentially different versions.
+        var serviceWorkerUrl = 'flutter_service_worker.js?v=' + serviceWorkerVersion;
+        navigator.serviceWorker.register(serviceWorkerUrl)
+          .then((reg) => {
+            function waitForActivation(serviceWorker) {
+              serviceWorker.addEventListener('statechange', () => {
+                if (serviceWorker.state == 'activated') {
+                  console.log('Installed new service worker.');
+                  loadMainDartJs();
+                }
+              });
+            }
+            if (!reg.active && (reg.installing || reg.waiting)) {
+              // No active web worker and we have installed or are installing
+              // one for the first time. Simply wait for it to activate.
+              waitForActivation(reg.installing || reg.waiting);
+            } else if (!reg.active.scriptURL.endsWith(serviceWorkerVersion)) {
+              // When the app updates the serviceWorkerVersion changes, so we
+              // need to ask the service worker to update.
+              console.log('New service worker available.');
+              reg.update();
+              waitForActivation(reg.installing);
+            } else {
+              // Existing service worker is still good.
+              console.log('Loading app from service worker.');
+              loadMainDartJs();
+            }
+          });
+
+        // If service worker doesn't succeed in a reasonable amount of time,
+        // fallback to plain <script> tag.
+        setTimeout(() => {
+          if (!scriptLoaded) {
+            console.warn(
+              'Failed to load app from service worker. Falling back to plain <script> tag.',
+            );
+            loadMainDartJs();
+          }
+        }, 4000);
+      });
+    } else {
+      // Service workers not supported. Just drop the <script> tag.
+      loadMainDartJs();
+    }
+  </script>
+</body>
+</html>
