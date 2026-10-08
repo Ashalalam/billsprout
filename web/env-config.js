@@ -13,7 +13,7 @@ window.ENV_CONFIG = {
   PAYPAL_MERCHANT_ID: 'your-merchant-id-here',
   PAYPAL_ME_USERNAME: 'your-paypal-me-username',
   PAYPAL_SANDBOX_MODE: 'false',
-  
+
   // App Configuration
   APP_NAME: 'BillSprout',
   APP_VERSION: 'v1.3.0+1',
