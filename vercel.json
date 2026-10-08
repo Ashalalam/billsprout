@@ -1,7 +1,7 @@
 {
-  "buildCommand": "flutter build web --release --base-href /",
+  "buildCommand": "bash install_flutter.sh && flutter clean && flutter pub get && flutter build web --release --web-renderer html --base-href /",
   "outputDirectory": "build/web",
-  "installCommand": "flutter pub get",
+  "installCommand": "echo 'Flutter will be installed via buildCommand'",
   "rewrites": [
     {
       "source": "/((?!main\\.dart\\.js|flutter\\.js|flutter_service_worker\\.js|assets/.*|canvaskit/.*|icons/.*|favicon\\..*|manifest\\.json|env-config\\.js).*)",

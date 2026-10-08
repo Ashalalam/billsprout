@@ -1,26 +1,3 @@
-# Build artifacts that shouldn't be deployed when using GitHub Actions
-web/
-.github/
-supabase/
-android/
-ios/
-linux/
-macos/
-windows/
-test/
-
-# Flutter/Dart files (GitHub Actions will build these)
-pubspec.yaml
-pubspec.lock
-analysis_options.yaml
-.dart_tool/
-.flutter-plugins
-.flutter-plugins-dependencies
-.packages
-.pub-cache/
-.pub/
-lib/
-
 # Version control
 .git/
 .gitignore
@@ -61,5 +38,22 @@ Thumbs.db
 *.temp
 .test_coverage/
 
+# Platform specific directories (not needed for web)
+android/
+ios/
+linux/
+macos/
+windows/
+
+# Test files
+test/
+
+# Supabase functions (not needed for web deployment)
+supabase/functions/
+supabase/migrations/
+
 # Tool directory
 tool/
+
+# Node modules (will be reinstalled)
+node_modules/
