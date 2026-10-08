@@ -246,11 +246,34 @@ class ProductModel {
 
   // ── FEFO: first non-expired in-stock batch by earliest expiry ─────────────
   BatchModel? get fefoBatch {
-    final valid = batches
+    // CRITICAL FIX: First try to find batches with stock > 0 and not expired
+    var valid = batches
         .where((b) => b.stockCount > 0 && !b.isExpired)
         .toList()
       ..sort((a, b) => a.expDate.compareTo(b.expDate));
-    return valid.isEmpty ? null : valid.first;
+    
+    if (valid.isNotEmpty) {
+      return valid.first;
+    }
+    
+    // FALLBACK 1: If no in-stock batches, try any non-expired batch (might have stock count 0 but still sellable)
+    valid = batches
+        .where((b) => !b.isExpired)
+        .toList()
+      ..sort((a, b) => a.expDate.compareTo(b.expDate));
+    
+    if (valid.isNotEmpty) {
+      return valid.first;
+    }
+    
+    // FALLBACK 2: If all batches are expired, return the newest one (for price display)
+    if (batches.isNotEmpty) {
+      final sortedBatches = batches.toList()
+        ..sort((a, b) => b.expDate.compareTo(a.expDate)); // Newest first
+      return sortedBatches.first;
+    }
+    
+    return null;
   }
 
   // ── Near expiry batches (≤ 90 days) ──────────────────────────────────────

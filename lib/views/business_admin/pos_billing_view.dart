@@ -74,6 +74,18 @@ class _PosBillingViewState extends State<PosBillingView> with WidgetsBindingObse
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Auto-refresh inventory when POS view loads to ensure latest data
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final inventory = Provider.of<InventoryProvider>(context, listen: false);
+      if (inventory.products.isEmpty || !inventory.isSyncing) {
+        inventory.refreshFromDatabase();
+      }
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     final inventory = Provider.of<InventoryProvider>(context);
     final pos       = Provider.of<PosProvider>(context);
@@ -392,7 +404,14 @@ class _PosBillingViewState extends State<PosBillingView> with WidgetsBindingObse
           itemBuilder: (ctx, i) {
             final product = products[i];
             final batch = product.fefoBatch;
-            final outOfStock = batch == null || batch.stockCount <= 0;
+            // CRITICAL FIX: Only consider truly out of stock if no batches exist or all have 0 stock
+            final hasAnyStock = product.batches.any((b) => b.stockCount > 0);
+            final outOfStock = batch == null || !hasAnyStock;
+            
+            // CRITICAL FIX: Show selling price even if stock is 0 (for price visibility)
+            final displayPrice = batch?.sellingPrice ?? 
+                                 (product.batches.isNotEmpty ? product.batches.first.sellingPrice : null) ?? 
+                                 0.0;
             return Card(
               elevation: 2,
               shape: RoundedRectangleBorder(
@@ -467,32 +486,35 @@ class _PosBillingViewState extends State<PosBillingView> with WidgetsBindingObse
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text('₹${batch?.sellingPrice.toStringAsFixed(0) ?? '0'}',
+                              Text('₹${displayPrice.toStringAsFixed(0)}',
                                   style: const TextStyle(
                                       fontSize: 14,
                                       fontWeight: FontWeight.bold,
                                       color: AppTheme.primaryBlue)),
-                              Text('Stock: ${product.totalStock}',
+                              Text('Stock: ${hasAnyStock ? product.totalStock : '0 (No Stock)'}',
                                   style: TextStyle(
                                       fontSize: 10,
-                                      color: outOfStock
+                                      color: !hasAnyStock
                                           ? AppTheme.errorRed
-                                          : AppTheme.textMuted)),
+                                          : (product.totalStock < 10 ? AppTheme.warningAmber : AppTheme.textMuted))),
                             ],
                           ),
                         ),
                         ElevatedButton(
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: outOfStock
-                                ? Colors.grey
-                                : AppTheme.primaryBlue,
+                            backgroundColor: batch == null 
+                                ? Colors.grey 
+                                : (hasAnyStock ? AppTheme.primaryBlue : AppTheme.warningAmber),
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 8, vertical: 4),
                             minimumSize: const Size(36, 28),
                           ),
-                          onPressed:
-                              outOfStock ? null : () => _showQuantityDialog(context, product, pos),
-                          child: const Icon(Icons.add, size: 16),
+                          onPressed: batch == null ? null : () => _showQuantityDialog(context, product, pos),
+                          child: Icon(
+                            batch == null ? Icons.block : Icons.add, 
+                            size: 16,
+                            color: batch == null ? Colors.white70 : Colors.white,
+                          ),
                         ),
                       ],
                     ),

@@ -135,6 +135,9 @@ class InventoryProvider extends ChangeNotifier {
     await _saveToDisk();
     
     debugPrint('[Inventory] ✅ Product reloaded from database: ${product.name}');
+    
+    // CRITICAL FIX: Trigger UI notification that new products are available
+    notifyListeners();
   }
 
   /// Delete a product and all its batches
@@ -175,11 +178,16 @@ class InventoryProvider extends ChangeNotifier {
     }
     _products[index].batches.add(batch);
     await _saveToDisk();
-    notifyListeners();
     
     debugPrint('[STOCK DEBUG] Batch added locally, now syncing to Supabase...');
     // Sync batch to Supabase in background
     await _syncBatchToSupabase(productId, batch);
+    
+    // CRITICAL FIX: Reload from Supabase to ensure consistency and trigger UI update
+    await _syncFromSupabase();
+    
+    // Ensure UI is notified of the changes
+    notifyListeners();
   }
 
   /// Update stock quantity for an existing batch (e.g. stock-in).
