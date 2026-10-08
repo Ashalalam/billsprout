@@ -3,6 +3,9 @@ import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/ledger_entry_model.dart';
 import '../models/invoice_model.dart';
+import '../models/product_model.dart';
+import '../models/batch_model.dart';
+import '../models/selling_unit_model.dart';
 import '../services/supabase_service.dart';
 
 // ── Credit / Debit Note model ──────────────────────────────────────────────
@@ -40,17 +43,29 @@ class AccountingProvider extends ChangeNotifier {
 
   AccountingProvider() {
     _seedSampleLedger();
-    _loadSalesFromDatabase();
+    // Note: _loadSalesFromDatabase() will be called by setTenantContext() 
+    // when AccountingProvider is created via ChangeNotifierProxyProvider.
+    // Don't load here to avoid loading before tenant context is set.
   }
   
   /// Set tenant context for validation
   void setTenantContext(String? tenantId, String? branchId) {
+    debugPrint('[Accounting] Setting tenant context: tenant=$tenantId, branch=$branchId');
+    
     if (_tenantId != tenantId || _branchId != branchId) {
       _tenantId = tenantId;
       _branchId = branchId;
-      // Clear data when tenant context changes
+      
+      // Clear ALL data when tenant context changes
       _salesInvoices.clear();
+      _ledgerEntries.clear();
+      _cdNotes.clear();
+      
+      // Re-seed ledger and load fresh sales from database
+      _seedSampleLedger();
       _loadSalesFromDatabase();
+      
+      debugPrint('[Accounting] ✅ Tenant context updated, data cleared and reloaded');
     }
   }
 
@@ -58,40 +73,133 @@ class AccountingProvider extends ChangeNotifier {
   Future<void> _loadSalesFromDatabase() async {
     // Don't load if no tenant context
     if (_tenantId == null) {
-      debugPrint('⚠️ Cannot load sales: no tenant context');
+      debugPrint('⚠️ [Accounting] Cannot load sales: no tenant context');
       return;
     }
     
     try {
       final supabase = Supabase.instance.client;
       
+      debugPrint('🔄 [Accounting] Loading sales from database for tenant: $_tenantId');
+      
       // Load from 'sales' table with tenant filter
+      // Select ALL fields needed for proper dashboard display
       final response = await supabase
           .from('sales')
-          .select('id, invoice_number, invoice_date, customer_name, customer_phone, payment_mode, grand_total')
+          .select('''
+            id,
+            invoice_number,
+            invoice_date,
+            customer_name,
+            customer_phone,
+            customer_gstin,
+            billing_type,
+            doctor_name,
+            doctor_mci_no,
+            subtotal,
+            item_discount_total,
+            invoice_discount,
+            taxable_amount,
+            cgst_amount,
+            sgst_amount,
+            igst_amount,
+            total_gst,
+            round_off,
+            grand_total,
+            payment_mode,
+            payment_status,
+            is_synced,
+            created_at,
+            sale_items(
+              id,
+              product_name,
+              batch_number,
+              quantity,
+              free_quantity,
+              unit_price,
+              mrp,
+              line_discount,
+              gst_percent,
+              cgst_amount,
+              sgst_amount,
+              igst_amount,
+              line_total
+            )
+          ''')
           .eq('tenant_id', _tenantId!)
           .order('invoice_date', ascending: false)
           .limit(100);
       
-      // Convert to simple invoices for dashboard display
+      // Convert to full InvoiceModel objects with complete data
       final invoices = (response as List).map<InvoiceModel>((row) {
+        // Parse sale items
+        final saleItemsData = row['sale_items'] as List? ?? [];
+        final items = saleItemsData.map<InvoiceItem>((itemRow) {
+          // Create minimal product and batch for display
+          final product = ProductModel(
+            id: 'prod_loaded',
+            name: itemRow['product_name'] ?? 'Unknown Product',
+            genericSalt: '',
+            barcode: '',
+            hsnCode: '',
+            taxPercent: (itemRow['gst_percent'] as num?)?.toDouble() ?? 0.0,
+            manufacturer: '',
+            batches: [],
+          );
+          
+          final batch = BatchModel(
+            id: 'batch_loaded',
+            batchNumber: itemRow['batch_number'] ?? '',
+            mfgDate: DateTime.now().subtract(const Duration(days: 365)),
+            expDate: DateTime.now().add(const Duration(days: 365)),
+            mrp: (itemRow['mrp'] as num?)?.toDouble() ?? 0.0,
+            purchasePrice: 0.0,
+            wholesalePrice: 0.0,
+            ptrPrice: 0.0,
+            stockCount: 0,
+            rackLocation: '',
+          );
+          
+          return InvoiceItem(
+            product: product,
+            batch: batch,
+            quantity: (itemRow['quantity'] as int?) ?? 0,
+            freeQuantity: (itemRow['free_quantity'] as int?) ?? 0,
+            looseUnits: 0,
+            freeLooseUnits: 0,
+            unitPrice: (itemRow['unit_price'] as num?)?.toDouble() ?? 0.0,
+            lineDiscount: (itemRow['line_discount'] as num?)?.toDouble() ?? 0.0,
+            taxPercent: (itemRow['gst_percent'] as num?)?.toDouble() ?? 0.0,
+            sellingUnit: SellingUnit.pack,
+          );
+        }).toList();
+        
         return InvoiceModel(
           id: row['id'] ?? '',
           invoiceNumber: row['invoice_number'] ?? '',
           timestamp: DateTime.parse(row['invoice_date'] ?? DateTime.now().toIso8601String()),
-          items: [], // Empty - dashboard only needs totals
+          items: items,
           customerName: row['customer_name'] ?? 'Walk-in Customer',
           customerPhone: row['customer_phone'] ?? '',
+          customerGstin: row['customer_gstin'] as String?,
+          doctorName: row['doctor_name'] as String?,
+          doctorMciNo: row['doctor_mci_no'] as String?,
           paymentMode: _parsePaymentMode(row['payment_mode']),
-          discountAmount: 0.0, // Not in database, use default
+          isSynced: (row['is_synced'] as bool?) ?? true,
+          branch: 'Main Store', // Default branch
+          billingType: row['billing_type'] ?? 'retail',
+          discountAmount: (row['invoice_discount'] as num?)?.toDouble() ?? 0.0,
         );
       }).toList();
       
+      // CRITICAL FIX: Clear before adding to avoid duplicates
+      _salesInvoices.clear();
       _salesInvoices.addAll(invoices);
       notifyListeners();
-      debugPrint('✅ Loaded ${invoices.length} invoices from database for tenant $_tenantId');
-    } catch (e) {
-      debugPrint('⚠️ Error loading sales from database: $e');
+      debugPrint('✅ [Accounting] Loaded ${invoices.length} invoices with ${invoices.fold(0, (sum, inv) => sum + inv.items.length)} items from database');
+    } catch (e, stackTrace) {
+      debugPrint('❌ [Accounting] Error loading sales from database: $e');
+      debugPrint('Stack trace: $stackTrace');
       // Non-fatal - app can continue with empty dashboard
     }
   }
@@ -118,60 +226,36 @@ class AccountingProvider extends ChangeNotifier {
 
   // Method to manually add invoices from sync service
   void loadInvoicesFromCache(List<InvoiceModel> invoices) {
+    // CRITICAL FIX: Don't load cached invoices if we have tenant context
+    // because _loadSalesFromDatabase() will load fresh data from Supabase.
+    // Cached invoices often have empty items causing grandTotal to be 0.
+    if (_tenantId != null) {
+      debugPrint('[Accounting] ⚠️ Ignoring ${invoices.length} cached invoices - will load from database instead');
+      return;
+    }
+    
+    // Only load cached invoices in offline/demo mode (no tenant context)
     _salesInvoices.clear();
     _salesInvoices.addAll(invoices);
     notifyListeners();
-    debugPrint('Loaded ${_salesInvoices.length} invoices into accounting provider');
+    debugPrint('[Accounting] Loaded ${_salesInvoices.length} invoices from offline cache');
   }
 
   // Method to refresh data manually
   Future<void> refreshSalesData() async {
     // Don't refresh if no tenant context
     if (_tenantId == null) {
-      debugPrint('⚠️ Cannot refresh sales: no tenant context');
+      debugPrint('⚠️ [Accounting] Cannot refresh sales: no tenant context');
       return;
     }
     
-    // Don't clear existing invoices - just reload from database and merge
-    try {
-      final supabase = Supabase.instance.client;
-      
-      // Load from 'sales' table with tenant filter
-      final response = await supabase
-          .from('sales')
-          .select('id, invoice_number, invoice_date, customer_name, customer_phone, payment_mode, grand_total')
-          .eq('tenant_id', _tenantId!)
-          .order('invoice_date', ascending: false)
-          .limit(100);
-      
-      // Convert to invoices
-      final dbInvoices = (response as List).map<InvoiceModel>((row) {
-        return InvoiceModel(
-          id: row['id'] ?? '',
-          invoiceNumber: row['invoice_number'] ?? '',
-          timestamp: DateTime.parse(row['invoice_date'] ?? DateTime.now().toIso8601String()),
-          items: [],
-          customerName: row['customer_name'] ?? 'Walk-in Customer',
-          customerPhone: row['customer_phone'] ?? '',
-          paymentMode: _parsePaymentMode(row['payment_mode']),
-          discountAmount: 0.0,
-        );
-      }).toList();
-      
-      // Merge: Keep existing in-memory invoices, add database ones that aren't already there
-      final existingIds = _salesInvoices.map((inv) => inv.id).toSet();
-      for (final dbInv in dbInvoices) {
-        if (!existingIds.contains(dbInv.id)) {
-          _salesInvoices.add(dbInv);
-        }
-      }
-      
-      notifyListeners();
-      debugPrint('✅ Refreshed dashboard: ${_salesInvoices.length} total invoices (${dbInvoices.length} from database)');
-    } catch (e) {
-      debugPrint('⚠️ Error refreshing sales data: $e');
-      // Keep existing in-memory data even if database load fails
-    }
+    debugPrint('🔄 [Accounting] Refreshing sales data for tenant: $_tenantId');
+    
+    // Clear and reload from database for a fresh view
+    _salesInvoices.clear();
+    await _loadSalesFromDatabase();
+    
+    debugPrint('✅ [Accounting] Refresh complete: ${_salesInvoices.length} total invoices');
   }
 
   // ── Invoice sale ──────────────────────────────────────────────────────────
