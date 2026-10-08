@@ -12,7 +12,6 @@ enum PricingTier {
   retail,      // MRP
   ptr,         // Price to Retailer
   wholesale,   // Wholesale price
-  distributor, // 90% of wholesale
   loyalty,     // 95% of MRP (for loyalty customers)
 }
 
@@ -39,9 +38,6 @@ class PricingCalculator {
         return batch.ptrPrice > 0 ? batch.ptrPrice : batch.mrp;
       case PricingTier.wholesale:
         return batch.wholesalePrice > 0 ? batch.wholesalePrice : batch.ptrPrice;
-      case PricingTier.distributor:
-        final wholesale = batch.wholesalePrice > 0 ? batch.wholesalePrice : batch.ptrPrice;
-        return wholesale * 0.90; // 90% of wholesale
       case PricingTier.loyalty:
         return batch.mrp * 0.95; // 95% of MRP
     }
@@ -78,8 +74,6 @@ class PricingCalculator {
         return basePrice * 0.85; // 85% of retail
       case PricingTier.wholesale:
         return basePrice * 0.75; // 75% of retail
-      case PricingTier.distributor:
-        return basePrice * 0.68; // 68% of retail (90% of wholesale)
       case PricingTier.loyalty:
         return basePrice * 0.95; // 95% of retail
     }

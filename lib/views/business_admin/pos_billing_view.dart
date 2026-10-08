@@ -270,7 +270,7 @@ class _PosBillingViewState extends State<PosBillingView> with WidgetsBindingObse
           child: DropdownButton<String>(
             value: context.watch<PosProvider>().pricingTier,
             isDense: true,
-            items: ['Retail', 'PTR', 'Wholesale', 'Distributor', 'Loyalty']
+            items: ['Retail', 'PTR', 'Wholesale', 'Loyalty']
                 .map((t) => DropdownMenuItem(
                     value: t,
                     child: Text(t, style: const TextStyle(fontSize: 12))))
@@ -1593,8 +1593,6 @@ class _PosBillingViewState extends State<PosBillingView> with WidgetsBindingObse
         return Icons.shopping_cart;
       case CustomerType.wholesale:
         return Icons.business;
-      case CustomerType.distributor:
-        return Icons.local_shipping;
     }
   }
 
@@ -1605,8 +1603,6 @@ class _PosBillingViewState extends State<PosBillingView> with WidgetsBindingObse
         return AppTheme.successGreen;
       case CustomerType.wholesale:
         return AppTheme.accentOrange;
-      case CustomerType.distributor:
-        return AppTheme.primaryBlue;
     }
   }
 }

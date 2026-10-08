@@ -108,7 +108,7 @@ void main() async {
         'phone': '+91 98765 43218',
         'email': 'sales@pharmalink.com',
         'address': '90 Warehouse Complex, Noida, Uttar Pradesh 201301',
-        'customer_type': 'Distributor',
+        'customer_type': 'wholesale',
         'gst_number': '09AACCP1234H1Z7',
         'notes': 'Regional distributor, supplies to 50+ pharmacies',
       },
@@ -118,7 +118,7 @@ void main() async {
         'phone': '+91 98765 43219',
         'email': 'orders@medsupply.com',
         'address': '23 Logistics Hub, Surat, Gujarat 395001',
-        'customer_type': 'Distributor',
+        'customer_type': 'wholesale',
         'gst_number': '24AACCM9876K1Z2',
         'notes': 'Exclusive distributor for western region',
       },
@@ -199,7 +199,6 @@ void main() async {
     print('\n👥 Customer Types Summary:');
     print('   🛒 Retail: Individual/walk-in customers');
     print('   🏪 Wholesale: Pharmacies and medical stores');
-    print('   🚚 Distributor: Large-scale distributors');
     print('\n📱 Now refresh your app to see the new customers!\n');
 
   } catch (e) {

@@ -546,9 +546,6 @@ class PosProvider extends ChangeNotifier {
         return batch.ptrPrice > 0 ? batch.ptrPrice : batch.sellingPrice;
       case 'Wholesale':
         return batch.wholesalePrice > 0 ? batch.wholesalePrice : batch.sellingPrice;
-      case 'Distributor':
-        final ws = batch.wholesalePrice > 0 ? batch.wholesalePrice : batch.sellingPrice;
-        return ws * 0.90;
       case 'Loyalty':
         return batch.sellingPrice * 0.95;
       case 'Retail':
@@ -564,8 +561,6 @@ class PosProvider extends ChangeNotifier {
         return PricingTier.ptr;
       case 'Wholesale':
         return PricingTier.wholesale;
-      case 'Distributor':
-        return PricingTier.distributor;
       case 'Loyalty':
         return PricingTier.loyalty;
       case 'Retail':
