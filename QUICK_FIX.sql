@@ -187,3 +187,46 @@ ON CONFLICT (filename) DO UPDATE SET
 -- ============================================================================
 -- DONE! This should fix the 401/400 errors
 -- ============================================================================
+
+-- =====================================================
+-- FIX POS BILLING PRICING ISSUE
+-- =====================================================
+-- Problem: Some batches have selling_price = 0 or NULL, causing ₹0 display in POS
+-- Solution: Set selling_price = MRP for all batches where selling_price is missing/zero
+
+-- Update all batches where selling_price is NULL or 0 to use MRP as selling_price
+UPDATE batches 
+SET selling_price = mrp, 
+    updated_at = CURRENT_TIMESTAMP
+WHERE selling_price IS NULL 
+   OR selling_price = 0
+   OR selling_price < 0.01;
+
+-- Verify the fix
+SELECT 
+    b.batch_number,
+    p.name as product_name,
+    b.mrp,
+    b.selling_price,
+    b.stock_quantity
+FROM batches b
+JOIN products p ON b.product_id = p.id
+WHERE b.selling_price IS NULL 
+   OR b.selling_price = 0
+   OR b.selling_price < 0.01
+ORDER BY p.name;
+
+-- If the above query returns no rows, the fix is successful
+
+-- Optional: Set default selling_price for future batches
+-- This ensures new batches have selling_price = MRP by default
+ALTER TABLE batches 
+ALTER COLUMN selling_price SET DEFAULT 0;
+
+-- Add a check constraint to prevent selling_price from being negative
+ALTER TABLE batches 
+ADD CONSTRAINT check_selling_price_positive 
+CHECK (selling_price >= 0);
+
+-- Note: You may need to restart your Flutter app after running this script
+-- to reload the batch data with correct selling prices

@@ -7,6 +7,7 @@ class BatchModel {
   final double purchasePrice;
   final double wholesalePrice;
   final double ptrPrice;        // Price to Retailer
+  final double sellingPrice;    // Actual selling price (retail price)
   int stockCount;               // Number of complete packs (strips, bottles, etc.)
   int looseUnits;              // Loose units from opened packs (tablets, capsules, ml)
   final String rackLocation;
@@ -20,10 +21,11 @@ class BatchModel {
     required this.purchasePrice,
     required this.wholesalePrice,
     this.ptrPrice = 0.0,
+    double? sellingPrice,
     required this.stockCount,
     this.looseUnits = 0,
     required this.rackLocation,
-  });
+  }) : sellingPrice = sellingPrice ?? mrp;
 
   bool get isExpired => DateTime.now().isAfter(expDate);
   int  get daysUntilExpiry => expDate.difference(DateTime.now()).inDays;
@@ -76,6 +78,7 @@ class BatchModel {
         'purchasePrice': purchasePrice,
         'wholesalePrice': wholesalePrice,
         'ptrPrice': ptrPrice,
+        'sellingPrice': sellingPrice,
         'stockCount': stockCount,
         'looseUnits': looseUnits,
         'rackLocation': rackLocation,
@@ -90,6 +93,7 @@ class BatchModel {
         purchasePrice: (json['purchasePrice'] as num).toDouble(),
         wholesalePrice: (json['wholesalePrice'] as num).toDouble(),
         ptrPrice: (json['ptrPrice'] as num? ?? 0).toDouble(),
+        sellingPrice: (json['sellingPrice'] as num?)?.toDouble(),
         stockCount: json['stockCount'],
         looseUnits: json['looseUnits'] ?? 0,
         rackLocation: json['rackLocation'],

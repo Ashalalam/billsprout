@@ -415,6 +415,7 @@ class InventoryProvider extends ChangeNotifier {
             mrp: 120.0,
             purchasePrice: 75.0,
             wholesalePrice: 95.0,
+            sellingPrice: 100.0, // Set retail selling price
             stockCount: 150,
             rackLocation: 'Rack A-2',
           ),
@@ -426,6 +427,7 @@ class InventoryProvider extends ChangeNotifier {
             mrp: 120.0,
             purchasePrice: 75.0,
             wholesalePrice: 95.0,
+            sellingPrice: 100.0, // Set retail selling price
             stockCount: 45,
             rackLocation: 'Rack A-2',
           ),
@@ -449,6 +451,7 @@ class InventoryProvider extends ChangeNotifier {
             mrp: 32.50,
             purchasePrice: 18.0,
             wholesalePrice: 24.0,
+            sellingPrice: 30.0, // Set retail selling price
             stockCount: 500,
             rackLocation: 'Rack B-1',
           ),
@@ -473,6 +476,7 @@ class InventoryProvider extends ChangeNotifier {
             mrp: 85.0,
             purchasePrice: 40.0,
             wholesalePrice: 60.0,
+            sellingPrice: 75.0, // Set retail selling price
             stockCount: 80,
             rackLocation: 'Vault Lock Box 3',
           ),
@@ -496,6 +500,7 @@ class InventoryProvider extends ChangeNotifier {
             mrp: 65.0,
             purchasePrice: 32.0,
             wholesalePrice: 45.0,
+            sellingPrice: 58.0, // Set retail selling price
             stockCount: 320,
             rackLocation: 'Rack C-4',
           ),
@@ -519,6 +524,7 @@ class InventoryProvider extends ChangeNotifier {
             mrp: 1850.0,
             purchasePrice: 1100.0,
             wholesalePrice: 1400.0,
+            sellingPrice: 1650.0, // Set retail selling price
             stockCount: 25,
             rackLocation: 'Showcase Shelf 1',
           ),
@@ -779,6 +785,7 @@ class InventoryProvider extends ChangeNotifier {
       purchasePrice: (row['purchase_price'] as num).toDouble(),
       wholesalePrice: (row['wholesale_price'] as num?)?.toDouble() ?? 0.0,
       ptrPrice: (row['ptr_price'] as num?)?.toDouble() ?? 0.0,
+      sellingPrice: (row['selling_price'] as num?)?.toDouble(), // Map selling_price from DB
       stockCount: stockQty,
       looseUnits: row['loose_units'] as int? ?? 0,
       rackLocation: row['rack_location'] as String? ?? '',
@@ -837,7 +844,7 @@ class InventoryProvider extends ChangeNotifier {
       'purchase_price': batch.purchasePrice,
       'ptr_price': batch.ptrPrice,
       'mrp': batch.mrp,
-      'selling_price': batch.mrp, // Default selling price to MRP
+      'selling_price': batch.sellingPrice, // Use actual selling price
       'wholesale_price': batch.wholesalePrice,
       'stock_quantity': batch.stockCount,
       'loose_units': batch.looseUnits,

@@ -543,17 +543,17 @@ class PosProvider extends ChangeNotifier {
   double _resolvePriceTier(ProductModel product, BatchModel batch) {
     switch (_pricingTier) {
       case 'PTR':
-        return batch.ptrPrice > 0 ? batch.ptrPrice : batch.mrp;
+        return batch.ptrPrice > 0 ? batch.ptrPrice : batch.sellingPrice;
       case 'Wholesale':
-        return batch.wholesalePrice > 0 ? batch.wholesalePrice : batch.mrp;
+        return batch.wholesalePrice > 0 ? batch.wholesalePrice : batch.sellingPrice;
       case 'Distributor':
-        final ws = batch.wholesalePrice > 0 ? batch.wholesalePrice : batch.mrp;
+        final ws = batch.wholesalePrice > 0 ? batch.wholesalePrice : batch.sellingPrice;
         return ws * 0.90;
       case 'Loyalty':
-        return batch.mrp * 0.95;
+        return batch.sellingPrice * 0.95;
       case 'Retail':
       default:
-        return batch.mrp;
+        return batch.sellingPrice; // Use selling_price instead of MRP for retail
     }
   }
   

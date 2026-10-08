@@ -467,7 +467,7 @@ class _PosBillingViewState extends State<PosBillingView> with WidgetsBindingObse
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text('?${batch?.mrp.toStringAsFixed(0) ?? '0'}',
+                              Text('₹${batch?.sellingPrice.toStringAsFixed(0) ?? '0'}',
                                   style: const TextStyle(
                                       fontSize: 14,
                                       fontWeight: FontWeight.bold,
