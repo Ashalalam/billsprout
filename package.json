@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "BillSprout - Multi-tenant Pharmacy ERP System",
   "scripts": {
-    "build": "flutter build web --release --web-renderer canvaskit"
+    "build": "echo 'Static deployment - no build required'"
   },
   "repository": {
     "type": "git",
