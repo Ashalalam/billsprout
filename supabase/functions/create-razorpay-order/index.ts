@@ -21,6 +21,12 @@ serve(async (req) => {
   }
 
   try {
+    // Debug: Log environment variables (without revealing secrets)
+    console.log('RAZORPAY_KEY_ID present:', !!RAZORPAY_KEY_ID)
+    console.log('RAZORPAY_KEY_SECRET present:', !!RAZORPAY_KEY_SECRET)
+    console.log('RAZORPAY_KEY_ID length:', RAZORPAY_KEY_ID.length)
+    console.log('Authorization header present:', !!req.headers.get('Authorization'))
+
     // Verify authentication
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
@@ -32,9 +38,19 @@ serve(async (req) => {
       data: { user },
     } = await supabaseClient.auth.getUser()
 
+    console.log('User authenticated:', !!user)
+    console.log('User ID:', user?.id)
+
     if (!user) {
       return new Response(
-        JSON.stringify({ error: 'Unauthorized' }),
+        JSON.stringify({ 
+          error: 'Unauthorized - Please login to BillSprout app first',
+          debug: {
+            auth_header_present: !!req.headers.get('Authorization'),
+            supabase_url_present: !!Deno.env.get('SUPABASE_URL'),
+            supabase_anon_key_present: !!Deno.env.get('SUPABASE_ANON_KEY')
+          }
+        }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
