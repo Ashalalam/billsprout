@@ -245,6 +245,18 @@ class _CustomerManagementViewState extends State<CustomerManagementView> {
                                         color: AppTheme.primaryBlue,
                                       ),
                                     ),
+                                  if (customer.drugLicenseNo != null)
+                                    Text(
+                                      'DL: ${customer.drugLicenseNo}${customer.drugLicenseExpiry != null ? ' (Exp: ${customer.drugLicenseExpiry!.day}/${customer.drugLicenseExpiry!.month}/${customer.drugLicenseExpiry!.year})' : ''}',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: customer.isDrugLicenseExpired 
+                                            ? AppTheme.errorRed
+                                            : customer.isDrugLicenseExpiringSoon
+                                                ? AppTheme.accentOrange
+                                                : AppTheme.textMuted,
+                                      ),
+                                    ),
                                 ],
                               ),
                               trailing: Row(
@@ -325,8 +337,6 @@ class _CustomerManagementViewState extends State<CustomerManagementView> {
         return Icons.shopping_cart;
       case CustomerType.wholesale:
         return Icons.business;
-      case CustomerType.distributor:
-        return Icons.local_shipping;
     }
   }
 
@@ -336,8 +346,6 @@ class _CustomerManagementViewState extends State<CustomerManagementView> {
         return AppTheme.successGreen;
       case CustomerType.wholesale:
         return AppTheme.accentOrange;
-      case CustomerType.distributor:
-        return AppTheme.primaryBlue;
     }
   }
 
@@ -359,6 +367,7 @@ class _CustomerManagementViewState extends State<CustomerManagementView> {
     final pincodeCtrl = TextEditingController(text: customer?.pincode ?? '');
     final gstinCtrl = TextEditingController(text: customer?.gstin ?? '');
     final drugLicenseCtrl = TextEditingController(text: customer?.drugLicenseNo ?? '');
+    DateTime? selectedDrugLicenseExpiry = customer?.drugLicenseExpiry;
     CustomerType selectedType = customer?.customerType ?? CustomerType.retail;
 
     showDialog(
@@ -458,33 +467,68 @@ class _CustomerManagementViewState extends State<CustomerManagementView> {
                     ),
                     keyboardType: TextInputType.number,
                   ),
-                  // Show GST and DL fields for ALL customer types
+                  // Show GST field for all customer types, Drug License fields only for wholesale
                   const SizedBox(height: 12),
                   TextField(
                     controller: gstinCtrl,
                     decoration: InputDecoration(
-                      labelText: selectedType == CustomerType.retail 
-                          ? 'GST Number (Optional)' 
-                          : 'GST Number *',
+                      labelText: selectedType == CustomerType.wholesale 
+                          ? 'GST Number *' 
+                          : 'GST Number (Optional)',
                       border: const OutlineInputBorder(),
-                      helperText: selectedType == CustomerType.retail
-                          ? 'Optional for retail customers'
-                          : 'Required for wholesale/distributor',
+                      helperText: selectedType == CustomerType.wholesale
+                          ? 'Required for wholesale customers'
+                          : 'Optional for retail customers',
                     ),
                   ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: drugLicenseCtrl,
-                    decoration: InputDecoration(
-                      labelText: selectedType == CustomerType.retail
-                          ? 'Drug Licence / DL Number (Optional)'
-                          : 'Drug Licence / DL Number *',
-                      border: const OutlineInputBorder(),
-                      helperText: selectedType == CustomerType.retail
-                          ? 'Optional for retail customers'
-                          : 'Required for wholesale/distributor',
+                  
+                  // Show Drug License fields ONLY for wholesale customers
+                  if (selectedType == CustomerType.wholesale) ...[
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: drugLicenseCtrl,
+                      decoration: const InputDecoration(
+                        labelText: 'Drug License Number *',
+                        border: OutlineInputBorder(),
+                        helperText: 'Required for wholesale customers',
+                      ),
                     ),
-                  ),
+                    const SizedBox(height: 12),
+                    InkWell(
+                      onTap: () async {
+                        final date = await showDatePicker(
+                          context: context,
+                          initialDate: selectedDrugLicenseExpiry ?? DateTime.now().add(const Duration(days: 365)),
+                          firstDate: DateTime.now(),
+                          lastDate: DateTime.now().add(const Duration(days: 3650)), // 10 years
+                          helpText: 'Select Drug License Expiry Date',
+                        );
+                        if (date != null) {
+                          setState(() {
+                            selectedDrugLicenseExpiry = date;
+                          });
+                        }
+                      },
+                      child: InputDecorator(
+                        decoration: const InputDecoration(
+                          labelText: 'Drug License Expiry Date *',
+                          border: OutlineInputBorder(),
+                          helperText: 'Required for wholesale customers',
+                          suffixIcon: Icon(Icons.calendar_today),
+                        ),
+                        child: Text(
+                          selectedDrugLicenseExpiry != null
+                              ? '${selectedDrugLicenseExpiry!.day}/${selectedDrugLicenseExpiry!.month}/${selectedDrugLicenseExpiry!.year}'
+                              : 'Select expiry date',
+                          style: TextStyle(
+                            color: selectedDrugLicenseExpiry != null
+                                ? Colors.black87
+                                : Colors.grey.shade600,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -509,17 +553,35 @@ class _CustomerManagementViewState extends State<CustomerManagementView> {
                   return;
                 }
                 
-                // Check GST requirement for wholesale/distributor
-                if ((selectedType == CustomerType.wholesale || 
-                     selectedType == CustomerType.distributor) && 
-                    gstinCtrl.text.isEmpty) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('GST Number is required for wholesale/distributor customers'),
-                      backgroundColor: AppTheme.errorRed,
-                    ),
-                  );
-                  return;
+                // Check wholesale customer requirements
+                if (selectedType == CustomerType.wholesale) {
+                  if (gstinCtrl.text.isEmpty) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('GST Number is required for wholesale customers'),
+                        backgroundColor: AppTheme.errorRed,
+                      ),
+                    );
+                    return;
+                  }
+                  if (drugLicenseCtrl.text.isEmpty) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Drug License Number is required for wholesale customers'),
+                        backgroundColor: AppTheme.errorRed,
+                      ),
+                    );
+                    return;
+                  }
+                  if (selectedDrugLicenseExpiry == null) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Drug License Expiry Date is required for wholesale customers'),
+                        backgroundColor: AppTheme.errorRed,
+                      ),
+                    );
+                    return;
+                  }
                 }
 
                 final auth = context.read<AuthProvider>();
@@ -528,9 +590,14 @@ class _CustomerManagementViewState extends State<CustomerManagementView> {
                 // Generate a valid tenant ID if missing (for demo mode)
                 final tenantId = auth.currentUser?.tenantId ?? const Uuid().v4();
 
-                // Save GST and DL for all customer types (was restricted to retail only)
+                // Save GST for all types, Drug License fields only for wholesale
                 final gstinValue = gstinCtrl.text.isNotEmpty ? gstinCtrl.text : null;
-                final drugLicenseValue = drugLicenseCtrl.text.isNotEmpty ? drugLicenseCtrl.text : null;
+                final drugLicenseValue = selectedType == CustomerType.wholesale && drugLicenseCtrl.text.isNotEmpty
+                    ? drugLicenseCtrl.text
+                    : null;
+                final drugLicenseExpiryValue = selectedType == CustomerType.wholesale 
+                    ? selectedDrugLicenseExpiry 
+                    : null;
 
                 final newCustomer = CustomerModel(
                   id: customer?.id ?? const Uuid().v4(),
@@ -544,6 +611,7 @@ class _CustomerManagementViewState extends State<CustomerManagementView> {
                   pincode: pincodeCtrl.text,
                   gstin: gstinValue,
                   drugLicenseNo: drugLicenseValue,
+                  drugLicenseExpiry: drugLicenseExpiryValue,
                   customerType: selectedType,
                   createdAt: customer?.createdAt ?? DateTime.now(),
                   updatedAt: DateTime.now(),
@@ -609,6 +677,9 @@ class _CustomerManagementViewState extends State<CustomerManagementView> {
               if (customer.gstin != null) _detailRow('GSTIN', customer.gstin!),
               if (customer.drugLicenseNo != null)
                 _detailRow('Drug License', customer.drugLicenseNo!),
+              if (customer.drugLicenseExpiry != null)
+                _detailRow('DL Expiry', 
+                  '${customer.drugLicenseExpiry!.day}/${customer.drugLicenseExpiry!.month}/${customer.drugLicenseExpiry!.year}${customer.isDrugLicenseExpired ? ' (EXPIRED)' : customer.isDrugLicenseExpiringSoon ? ' (Expires Soon)' : ''}'),
               const Divider(),
               _detailRow('Credit Limit',
                   '₹${customer.creditLimit.toStringAsFixed(2)}'),

@@ -73,7 +73,6 @@ class ChronicRefillItem {
 enum CustomerType {
   retail,
   wholesale,
-  distributor,
 }
 
 extension CustomerTypeX on CustomerType {
@@ -83,8 +82,6 @@ extension CustomerTypeX on CustomerType {
         return 'Retail Customer';
       case CustomerType.wholesale:
         return 'Wholesale Customer';
-      case CustomerType.distributor:
-        return 'Distributor';
     }
   }
 }
@@ -101,6 +98,7 @@ class CustomerModel {
   final String pincode;
   final String? gstin; // For wholesale customers
   final String? drugLicenseNo; // For wholesale customers
+  final DateTime? drugLicenseExpiry; // For wholesale customers - NEW FIELD
   final CustomerType customerType;
   final double creditLimit;
   final double outstandingAmount;
@@ -121,6 +119,7 @@ class CustomerModel {
     this.pincode = '',
     this.gstin,
     this.drugLicenseNo,
+    this.drugLicenseExpiry,
     this.customerType = CustomerType.retail,
     this.creditLimit = 0.0,
     this.outstandingAmount = 0.0,
@@ -130,13 +129,19 @@ class CustomerModel {
     required this.updatedAt,
   });
 
-  bool get isWholesale =>
-      customerType == CustomerType.wholesale ||
-      customerType == CustomerType.distributor;
+  bool get isWholesale => customerType == CustomerType.wholesale;
 
   bool get hasOutstanding => outstandingAmount > 0;
 
   double get availableCredit => creditLimit - outstandingAmount;
+  
+  bool get isDrugLicenseExpired => 
+      drugLicenseExpiry != null && DateTime.now().isAfter(drugLicenseExpiry!);
+  
+  bool get isDrugLicenseExpiringSoon =>
+      drugLicenseExpiry != null && 
+      !isDrugLicenseExpired &&
+      drugLicenseExpiry!.difference(DateTime.now()).inDays <= 30;
 
   String get fullAddress {
     if (address.isEmpty) return '';
@@ -158,6 +163,7 @@ class CustomerModel {
         'pincode': pincode,
         'gstin': gstin,
         'drug_license_no': drugLicenseNo,
+        'drug_license_expiry': drugLicenseExpiry?.toIso8601String(),
         'customer_type': customerType.name,
         'credit_limit': creditLimit,
         'outstanding_amount': outstandingAmount,
@@ -177,6 +183,9 @@ class CustomerModel {
         pincode: json['pincode'] ?? '',
         gstin: json['gstin'],
         drugLicenseNo: json['drug_license_no'],
+        drugLicenseExpiry: json['drug_license_expiry'] != null
+            ? DateTime.parse(json['drug_license_expiry'])
+            : null,
         customerType: CustomerType.values.firstWhere(
           (e) => e.name == (json['customer_type'] ?? 'retail'),
           orElse: () => CustomerType.retail,
@@ -206,6 +215,7 @@ class CustomerModel {
     String? pincode,
     String? gstin,
     String? drugLicenseNo,
+    DateTime? drugLicenseExpiry,
     CustomerType? customerType,
     double? creditLimit,
     double? outstandingAmount,
@@ -226,6 +236,7 @@ class CustomerModel {
         pincode: pincode ?? this.pincode,
         gstin: gstin ?? this.gstin,
         drugLicenseNo: drugLicenseNo ?? this.drugLicenseNo,
+        drugLicenseExpiry: drugLicenseExpiry ?? this.drugLicenseExpiry,
         customerType: customerType ?? this.customerType,
         creditLimit: creditLimit ?? this.creditLimit,
         outstandingAmount: outstandingAmount ?? this.outstandingAmount,
