@@ -1319,6 +1319,7 @@ class _InventoryViewState extends State<InventoryView> with SingleTickerProvider
                   purchasePrice: double.tryParse(ppCtrl.text) ?? 0,
                   wholesalePrice: double.tryParse(wsCtrl.text) ?? 0,
                   ptrPrice: double.tryParse(ptrCtrl.text) ?? 0,
+                  sellingPrice: double.tryParse(mrpCtrl.text) ?? 0, // ✅ FIXED: Use MRP as retail selling price for new products
                   stockCount: finalStockCount,      // ✅ FIXED: Converted stock count
                   looseUnits: finalLooseUnits,       // ✅ FIXED: Loose units from conversion
                   rackLocation: rackCtrl.text.trim().isEmpty
@@ -1770,6 +1771,7 @@ class _InventoryViewState extends State<InventoryView> with SingleTickerProvider
                       mrp: double.tryParse(mrpCtrl.text) ?? 0,
                       purchasePrice: double.tryParse(ppCtrl.text) ?? 0,
                       wholesalePrice: double.tryParse(wsCtrl.text) ?? 0,
+                      sellingPrice: double.tryParse(mrpCtrl.text) ?? 0, // ✅ FIXED: Use MRP as retail selling price for new batches
                       stockCount: int.tryParse(stockCtrl.text) ?? 0,
                       rackLocation: rackCtrl.text.trim().isEmpty
                           ? 'General Shelf'

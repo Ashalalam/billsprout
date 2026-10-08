@@ -156,6 +156,7 @@ class AccountingProvider extends ChangeNotifier {
             purchasePrice: 0.0,
             wholesalePrice: 0.0,
             ptrPrice: 0.0,
+            sellingPrice: (itemRow['mrp'] as num?)?.toDouble() ?? 0.0, // ✅ FIXED: Add sellingPrice for loaded batch
             stockCount: 0,
             rackLocation: '',
           );

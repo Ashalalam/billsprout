@@ -194,7 +194,23 @@ ON CONFLICT (filename) DO UPDATE SET
 -- Problem: Some batches have selling_price = 0 or NULL, causing ₹0 display in POS
 -- Solution: Set selling_price = MRP for all batches where selling_price is missing/zero
 
--- Update all batches where selling_price is NULL or 0 to use MRP as selling_price
+-- STEP 1: Check current data
+SELECT 
+    p.name as product_name,
+    b.batch_number,
+    b.mrp,
+    b.selling_price,
+    CASE 
+        WHEN b.selling_price IS NULL THEN 'NULL'
+        WHEN b.selling_price = 0 THEN 'ZERO'
+        WHEN b.selling_price < 0.01 THEN 'TOO_LOW'
+        ELSE 'OK'
+    END as status
+FROM batches b
+JOIN products p ON b.product_id = p.id
+ORDER BY p.name;
+
+-- STEP 2: Update all batches where selling_price is NULL or 0 to use MRP as selling_price
 UPDATE batches 
 SET selling_price = mrp, 
     updated_at = CURRENT_TIMESTAMP
@@ -202,31 +218,90 @@ WHERE selling_price IS NULL
    OR selling_price = 0
    OR selling_price < 0.01;
 
--- Verify the fix
+-- STEP 3: Add some realistic sample data for missing products
+-- Insert sample products if they don't exist (for demo purposes)
+INSERT INTO products (id, tenant_id, name, generic_salt, hsn_code, gst_percent, manufacturer, dosage_form, packaging_type)
+VALUES 
+  ('demo-paracetmol-id', (SELECT id FROM tenants LIMIT 1), 'Paracetamol 650mg Tablets', 'Paracetamol', '30049060', 12.0, 'Generic Pharma', 'tablet', 'strip'),
+  ('demo-headacetablet-id', (SELECT id FROM tenants LIMIT 1), 'Headacetablet Pain Relief', 'Paracetamol + Caffeine', '30049060', 12.0, 'Relief Pharma', 'tablet', 'strip')
+ON CONFLICT (id) DO NOTHING;
+
+-- Insert sample batches for these products
+INSERT INTO batches (
+  id, product_id, tenant_id, branch_id, batch_number, mfg_date, exp_date, 
+  purchase_price, ptr_price, mrp, selling_price, wholesale_price, 
+  stock_quantity, free_quantity, rack_location
+)
+VALUES 
+  (
+    'demo-paracetmol-batch-1', 
+    'demo-paracetmol-id',
+    (SELECT id FROM tenants LIMIT 1),
+    (SELECT id FROM branches LIMIT 1),
+    'PCM-2024-001',
+    '2024-01-01'::date,
+    '2026-12-31'::date,
+    18.0,
+    24.0,
+    35.0,
+    30.0,  -- selling_price set properly
+    28.0,
+    85,    -- stock quantity
+    0,
+    'A-1-2'
+  ),
+  (
+    'demo-headacetablet-batch-1', 
+    'demo-headacetablet-id',
+    (SELECT id FROM tenants LIMIT 1),
+    (SELECT id FROM branches LIMIT 1),
+    'HEAD-2024-001',
+    '2024-01-01'::date,
+    '2026-12-31'::date,
+    25.0,
+    35.0,
+    50.0,
+    45.0,  -- selling_price set properly
+    40.0,
+    900,   -- stock quantity
+    0,
+    'B-2-1'
+  )
+ON CONFLICT (id) DO UPDATE SET
+  selling_price = EXCLUDED.selling_price,
+  stock_quantity = EXCLUDED.stock_quantity,
+  updated_at = CURRENT_TIMESTAMP;
+
+-- STEP 4: Verify the fix worked
 SELECT 
-    b.batch_number,
     p.name as product_name,
+    b.batch_number,
     b.mrp,
     b.selling_price,
-    b.stock_quantity
+    b.stock_quantity,
+    CASE 
+        WHEN b.selling_price IS NULL THEN '❌ NULL'
+        WHEN b.selling_price = 0 THEN '❌ ZERO'
+        WHEN b.selling_price < 0.01 THEN '❌ TOO_LOW'
+        ELSE '✅ OK'
+    END as status
 FROM batches b
 JOIN products p ON b.product_id = p.id
-WHERE b.selling_price IS NULL 
-   OR b.selling_price = 0
-   OR b.selling_price < 0.01
 ORDER BY p.name;
 
--- If the above query returns no rows, the fix is successful
-
--- Optional: Set default selling_price for future batches
--- This ensures new batches have selling_price = MRP by default
+-- STEP 5: Set default for future batches
 ALTER TABLE batches 
 ALTER COLUMN selling_price SET DEFAULT 0;
 
--- Add a check constraint to prevent selling_price from being negative
-ALTER TABLE batches 
-ADD CONSTRAINT check_selling_price_positive 
-CHECK (selling_price >= 0);
-
--- Note: You may need to restart your Flutter app after running this script
--- to reload the batch data with correct selling prices
+-- Add constraint to prevent negative selling prices
+DO $$ 
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.table_constraints 
+        WHERE constraint_name = 'check_selling_price_positive'
+    ) THEN
+        ALTER TABLE batches 
+        ADD CONSTRAINT check_selling_price_positive 
+        CHECK (selling_price >= 0);
+    END IF;
+END $$;

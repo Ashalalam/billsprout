@@ -163,6 +163,7 @@ class RazorpayWebService {
       }
 
       Logger.info('Opening Razorpay Web Checkout with order: $orderId');
+      Logger.info('Using Razorpay Key: ${razorpayKeyId.substring(0, 8)}...');
 
       // Convert amount to paise
       final amountInPaise = (amount * 100).toInt();
@@ -185,16 +186,28 @@ class RazorpayWebService {
         },
         'handler': js.allowInterop((response) {
           try {
+            Logger.info('Razorpay handler called with response: ${response.toString()}');
+            
             // Safely extract response data with null checks
             final paymentId = response['razorpay_payment_id'];
             final signature = response['razorpay_signature'];
             final responseOrderId = response['razorpay_order_id'];
 
+            Logger.info('Payment ID: $paymentId');
+            Logger.info('Order ID: $responseOrderId');
+            Logger.info('Signature present: ${signature != null}');
+
             if (paymentId == null || signature == null || responseOrderId == null) {
               Logger.error('Razorpay success handler: Missing required fields in response');
               onError({
                 'code': 'INVALID_RESPONSE',
-                'description': 'Payment response is missing required fields',
+                'description': 'Payment response is missing required fields. This might be due to test environment configuration.',
+                'debug_info': {
+                  'payment_id_present': paymentId != null,
+                  'signature_present': signature != null,
+                  'order_id_present': responseOrderId != null,
+                  'full_response': response.toString(),
+                }
               });
               return;
             }
@@ -206,43 +219,82 @@ class RazorpayWebService {
               'razorpay_order_id': responseOrderId.toString(),
               'razorpay_signature': signature.toString(),
             });
-          } catch (e) {
+          } catch (e, stackTrace) {
             Logger.error('Razorpay success handler error: $e');
+            Logger.error('Stack trace: $stackTrace');
             onError({
               'code': 'SUCCESS_HANDLER_ERROR',
-              'description': 'Error processing payment success: ${e.toString()}',
+              'description': 'Error processing payment success: ${e.toString().replaceAll('Instance of \'', '').replaceAll('\'', '')}',
+              'debug_info': {
+                'original_error': e.toString(),
+                'stack_trace': stackTrace.toString(),
+              }
             });
           }
         }),
         'modal': {
           'ondismiss': js.allowInterop(() {
-            Logger.info('Razorpay checkout dismissed');
+            Logger.info('Razorpay checkout dismissed by user');
             onError({
               'code': 'USER_CANCELLED',
               'description': 'Payment cancelled by user',
             });
-          })
+          }),
+          'onhidden': js.allowInterop(() {
+            Logger.info('Razorpay checkout modal hidden');
+          }),
         }
       });
 
       // Verify Razorpay is available in global context
       if (js.context['Razorpay'] == null) {
-        throw Exception('Razorpay SDK not loaded. Please check internet connection and refresh the page.');
+        Logger.error('Razorpay SDK not found in global context');
+        throw Exception('Razorpay SDK not loaded. Please check:\n1. Internet connection\n2. Refresh the page\n3. Verify web/index.html has Razorpay script');
       }
 
-      // Create and open Razorpay instance with error handling
+      Logger.info('Razorpay SDK found, creating checkout instance...');
+
+      // Create and open Razorpay instance with enhanced error handling
       try {
         final razorpay = js.JsObject(js.context['Razorpay'], [options]);
+        Logger.info('Razorpay instance created successfully');
         razorpay.callMethod('open', []);
+        Logger.info('Razorpay checkout opened');
       } catch (jsError) {
-        Logger.error('Razorpay JavaScript error: $jsError');
-        throw Exception('Failed to initialize Razorpay checkout: ${jsError.toString()}');
+        Logger.error('Razorpay JavaScript error details: $jsError');
+        Logger.error('Error type: ${jsError.runtimeType}');
+        
+        // Extract meaningful error message
+        String errorMessage = jsError.toString();
+        if (errorMessage.contains('Instance of')) {
+          errorMessage = 'Razorpay initialization failed. This is commonly caused by:\n'
+                        '• Test/Live key mismatch\n'
+                        '• Invalid Razorpay key format\n'
+                        '• Network connectivity issues\n'
+                        '• Browser security restrictions';
+        }
+        
+        throw Exception('Failed to initialize Razorpay checkout: $errorMessage');
       }
-    } catch (e) {
-      Logger.error('Error opening Razorpay checkout', error: e);
+    } catch (e, stackTrace) {
+      Logger.error('Error opening Razorpay checkout: $e');
+      Logger.error('Stack trace: $stackTrace');
+      
+      // Clean up error message for user display
+      String cleanError = e.toString()
+          .replaceAll('Instance of \'', '')
+          .replaceAll('\'', '')
+          .replaceAll('Exception: ', '');
+      
       onError({
         'code': 'CHECKOUT_ERROR',
-        'description': e.toString().replaceAll('Instance of \'', '').replaceAll('\'', ''),
+        'description': cleanError,
+        'debug_info': {
+          'original_error': e.toString(),
+          'stack_trace': stackTrace.toString(),
+          'razorpay_key_configured': dotenv.env['RAZORPAY_KEY_ID'] != null,
+          'razorpay_key_length': dotenv.env['RAZORPAY_KEY_ID']?.length ?? 0,
+        }
       });
     }
   }

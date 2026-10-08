@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Razorpay Test Utility</title>
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            max-width: 800px; 
+            margin: 50px auto; 
+            padding: 20px; 
+        }
+        .test-section { 
+            background: #f5f5f5; 
+            padding: 15px; 
+            margin: 10px 0; 
+            border-radius: 5px; 
+        }
+        button { 
+            background: #182B68; 
+            color: white; 
+            padding: 10px 20px; 
+            border: none; 
+            border-radius: 5px; 
+            cursor: pointer; 
+            margin: 5px; 
+        }
+        .result { 
+            background: #e8f5e8; 
+            padding: 10px; 
+            margin: 10px 0; 
+            border-radius: 5px; 
+        }
+        .error { 
+            background: #ffe8e8; 
+            padding: 10px; 
+            margin: 10px 0; 
+            border-radius: 5px; 
+        }
+        input { 
+            width: 300px; 
+            padding: 8px; 
+            margin: 5px; 
+        }
+    </style>
+</head>
+<body>
+    <h1>🔧 Razorpay Test Utility</h1>
+    
+    <div class="test-section">
+        <h2>1. SDK Loading Test</h2>
+        <button onclick="testSDKLoading()">Test Razorpay SDK</button>
+        <div id="sdk-result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>2. Key Configuration Test</h2>
+        <input type="text" id="test-key" placeholder="Enter your test key (rzp_test_...)" />
+        <br>
+        <button onclick="testKeyFormat()">Validate Key Format</button>
+        <div id="key-result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>3. Payment Test (₹1.00)</h2>
+        <input type="text" id="payment-key" placeholder="Razorpay key" />
+        <br>
+        <input type="text" id="customer-name" placeholder="Customer name" value="Test User" />
+        <input type="text" id="customer-email" placeholder="Email" value="test@example.com" />
+        <input type="text" id="customer-phone" placeholder="Phone" value="9999999999" />
+        <br>
+        <button onclick="testPayment()">Test ₹1 Payment</button>
+        <div id="payment-result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>4. Browser Environment</h2>
+        <button onclick="testEnvironment()">Check Environment</button>
+        <div id="env-result"></div>
+    </div>
+
+    <script>
+        function testSDKLoading() {
+            const resultDiv = document.getElementById('sdk-result');
+            
+            if (typeof Razorpay === 'undefined') {
+                resultDiv.innerHTML = '<div class="error">❌ Razorpay SDK not loaded</div>';
+            } else {
+                resultDiv.innerHTML = `
+                    <div class="result">
+                        ✅ Razorpay SDK loaded successfully<br>
+                        Version: ${Razorpay.version || 'Unknown'}<br>
+                        Type: ${typeof Razorpay}
+                    </div>
+                `;
+            }
+        }
+
+        function testKeyFormat() {
+            const testKey = document.getElementById('test-key').value;
+            const resultDiv = document.getElementById('key-result');
+            
+            if (!testKey) {
+                resultDiv.innerHTML = '<div class="error">❌ Please enter a test key</div>';
+                return;
+            }
+
+            let result = '<div class="result">';
+            result += `<strong>Key Analysis:</strong><br>`;
+            result += `Length: ${testKey.length} characters<br>`;
+            result += `Starts with rzp_test_: ${testKey.startsWith('rzp_test_') ? '✅' : '❌'}<br>`;
+            result += `Contains spaces: ${testKey.includes(' ') ? '❌ Yes (Remove spaces)' : '✅ No'}<br>`;
+            result += `Format valid: ${testKey.startsWith('rzp_test_') && testKey.length >= 20 && !testKey.includes(' ') ? '✅' : '❌'}<br>`;
+            result += '</div>';
+            
+            resultDiv.innerHTML = result;
+        }
+
+        function testPayment() {
+            const key = document.getElementById('payment-key').value;
+            const name = document.getElementById('customer-name').value;
+            const email = document.getElementById('customer-email').value;
+            const phone = document.getElementById('customer-phone').value;
+            const resultDiv = document.getElementById('payment-result');
+
+            if (!key || typeof Razorpay === 'undefined') {
+                resultDiv.innerHTML = '<div class="error">❌ Please enter key and ensure SDK is loaded</div>';
+                return;
+            }
+
+            try {
+                const options = {
+                    key: key,
+                    amount: 100, // ₹1.00 in paise
+                    currency: 'INR',
+                    name: 'Test Payment',
+                    description: 'Razorpay Integration Test',
+                    prefill: {
+                        name: name,
+                        email: email,
+                        contact: phone
+                    },
+                    theme: {
+                        color: '#182B68'
+                    },
+                    handler: function(response) {
+                        resultDiv.innerHTML = `
+                            <div class="result">
+                                ✅ Payment Successful!<br>
+                                Payment ID: ${response.razorpay_payment_id}<br>
+                                Order ID: ${response.razorpay_order_id || 'N/A'}<br>
+                                Signature: ${response.razorpay_signature ? 'Present' : 'Missing'}
+                            </div>
+                        `;
+                    },
+                    modal: {
+                        ondismiss: function() {
+                            resultDiv.innerHTML = '<div class="error">❌ Payment cancelled by user</div>';
+                        }
+                    }
+                };
+
+                const rzp = new Razorpay(options);
+                rzp.open();
+
+                resultDiv.innerHTML = '<div class="result">🔄 Razorpay modal opened... Complete the payment</div>';
+
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        ❌ Error opening Razorpay:<br>
+                        ${error.message}<br>
+                        <small>This is the "instance of minified" error you're seeing</small>
+                    </div>
+                `;
+                console.error('Razorpay error:', error);
+            }
+        }
+
+        function testEnvironment() {
+            const resultDiv = document.getElementById('env-result');
+            
+            let result = '<div class="result">';
+            result += `<strong>Environment Information:</strong><br>`;
+            result += `URL: ${window.location.href}<br>`;
+            result += `Protocol: ${window.location.protocol} ${window.location.protocol === 'https:' ? '✅' : '⚠️'}<br>`;
+            result += `Host: ${window.location.host}<br>`;
+            result += `User Agent: ${navigator.userAgent}<br>`;
+            result += `Local Storage Available: ${typeof localStorage !== 'undefined' ? '✅' : '❌'}<br>`;
+            result += `Cookies Enabled: ${navigator.cookieEnabled ? '✅' : '❌'}<br>`;
+            result += '</div>';
+            
+            resultDiv.innerHTML = result;
+        }
+
+        // Auto-test SDK on page load
+        window.onload = function() {
+            testSDKLoading();
+            testEnvironment();
+        };
+    </script>
+</body>
+</html>
