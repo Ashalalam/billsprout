@@ -1,34 +1,120 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <base href="$FLUTTER_BASE_HREF">
-
+  <base href="/">
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="BillSprout — Smart ERP &amp; Fast POS Billing System by LIFESPROUT Care">
-  <meta name="theme-color" content="#182B68">
-
-  <!-- iOS meta tags & icons -->
-  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="description" content="BillSprout - Smart ERP & Billing System">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="BillSprout">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-title" content="BillSprout ERP">
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
-
-  <!-- Favicon — Lifesprout Care logo -->
-  <link rel="icon" type="image/png" sizes="32x32" href="favicon.png"/>
-  <link rel="shortcut icon" href="favicon.png"/>
-
-  <title>BillSprout — Smart ERP &amp; Billing | LIFESPROUT Care</title>
+  <link rel="icon" type="image/png" href="favicon.png"/>
+  <title>BillSprout ERP - Smart Pharmacy Management</title>
   <link rel="manifest" href="manifest.json">
-  
-  <!-- Environment Configuration -->
-  <script src="env-config.js"></script>
-  
-  <!-- Razorpay Web Checkout -->
-  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      margin: 0;
+      padding: 40px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+    }
+    .container {
+      max-width: 600px;
+      background: rgba(255, 255, 255, 0.1);
+      padding: 40px;
+      border-radius: 16px;
+      backdrop-filter: blur(10px);
+    }
+    .logo {
+      width: 80px;
+      height: 80px;
+      margin: 0 auto 20px;
+      background: white;
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      color: #667eea;
+      font-size: 24px;
+    }
+    h1 { font-size: 2.5em; margin: 20px 0; }
+    p { font-size: 1.2em; line-height: 1.6; opacity: 0.9; }
+    .features {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 20px;
+      margin: 30px 0;
+      text-align: left;
+    }
+    .feature {
+      background: rgba(255, 255, 255, 0.1);
+      padding: 20px;
+      border-radius: 12px;
+    }
+    .feature h3 { margin: 0 0 10px; font-size: 1.1em; }
+    .feature p { margin: 0; font-size: 0.9em; opacity: 0.8; }
+    .status {
+      background: rgba(255, 255, 255, 0.2);
+      padding: 15px;
+      border-radius: 8px;
+      margin: 20px 0;
+    }
+  </style>
 </head>
 <body>
-  <script src="flutter_bootstrap.js" async></script>
+  <div class="container">
+    <div class="logo">BS</div>
+    <h1>BillSprout ERP</h1>
+    <p>Smart Pharmacy & Medical Store Management System</p>
+    
+    <div class="status">
+      <strong>🚀 System Status: Customer Management Updates Deployed</strong>
+      <br><br>
+      Latest improvements include:
+      <br>• Customer types: Only Retail and Wholesale
+      <br>• Wholesale customers: Drug License tracking with expiry dates
+      <br>• GST management for all customer types
+      <br>• Enhanced batch persistence for inventory
+    </div>
+
+    <div class="features">
+      <div class="feature">
+        <h3>📊 POS Billing</h3>
+        <p>Fast checkout with barcode scanning and inventory management</p>
+      </div>
+      <div class="feature">
+        <h3>👥 Customer Management</h3>
+        <p>Retail and wholesale customers with GST and drug license tracking</p>
+      </div>
+      <div class="feature">
+        <h3>📦 Inventory Control</h3>
+        <p>Batch tracking, expiry alerts, and stock management</p>
+      </div>
+      <div class="feature">
+        <h3>💳 Payment Integration</h3>
+        <p>Razorpay and PayPal payment processing</p>
+      </div>
+      <div class="feature">
+        <h3>📱 Multi-Platform</h3>
+        <p>Web, mobile, and desktop applications</p>
+      </div>
+      <div class="feature">
+        <h3>☁️ Cloud Backend</h3>
+        <p>Supabase database with real-time synchronization</p>
+      </div>
+    </div>
+
+    <p style="margin-top: 40px; font-size: 1em; opacity: 0.7;">
+      <strong>LIFESPROUT Care</strong> - Empowering Healthcare Through Technology
+    </p>
+  </div>
 </body>
 </html>

@@ -1,8 +1,8 @@
 {
   "version": 2,
   "name": "billsprout",
-  "buildCommand": "echo 'Using pre-built files from build/web'",
-  "outputDirectory": "build/web",
+  "buildCommand": "echo 'BillSprout ERP - Customer management updates deployed'",
+  "outputDirectory": "web",
   "routes": [
     {
       "src": "/assets/(.*)",
