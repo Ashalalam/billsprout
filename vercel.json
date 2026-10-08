@@ -1,9 +1,4 @@
 {
-  "functions": {
-    "supabase/functions/**/*.ts": {
-      "runtime": "@vercel/node@3.0.5"
-    }
-  },
   "buildCommand": "flutter build web --release",
   "outputDirectory": "build/web",
   "installCommand": "flutter pub get",
