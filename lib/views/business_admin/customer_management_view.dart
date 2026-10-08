@@ -467,18 +467,14 @@ class _CustomerManagementViewState extends State<CustomerManagementView> {
                     ),
                     keyboardType: TextInputType.number,
                   ),
-                  // Show GST field for all customer types, Drug License fields only for wholesale
+                  // Show GST field for all customer types (optional for both), Drug License fields only for wholesale
                   const SizedBox(height: 12),
                   TextField(
                     controller: gstinCtrl,
-                    decoration: InputDecoration(
-                      labelText: selectedType == CustomerType.wholesale 
-                          ? 'GST Number *' 
-                          : 'GST Number (Optional)',
-                      border: const OutlineInputBorder(),
-                      helperText: selectedType == CustomerType.wholesale
-                          ? 'Required for wholesale customers'
-                          : 'Optional for retail customers',
+                    decoration: const InputDecoration(
+                      labelText: 'GST Number (Optional)',
+                      border: OutlineInputBorder(),
+                      helperText: 'Optional for all customer types',
                     ),
                   ),
                   
@@ -555,15 +551,6 @@ class _CustomerManagementViewState extends State<CustomerManagementView> {
                 
                 // Check wholesale customer requirements
                 if (selectedType == CustomerType.wholesale) {
-                  if (gstinCtrl.text.isEmpty) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('GST Number is required for wholesale customers'),
-                        backgroundColor: AppTheme.errorRed,
-                      ),
-                    );
-                    return;
-                  }
                   if (drugLicenseCtrl.text.isEmpty) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(

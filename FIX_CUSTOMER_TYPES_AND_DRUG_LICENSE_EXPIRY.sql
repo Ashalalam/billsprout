@@ -117,7 +117,7 @@ ORDER BY drug_license_expiry ASC NULLS LAST;
 SELECT 
     'CONSTRAINTS' as info,
     conname as constraint_name,
-    consrc as constraint_definition
+    pg_get_constraintdef(oid) as constraint_definition
 FROM pg_constraint 
 WHERE conrelid = 'customers'::regclass 
 AND conname LIKE '%customer_type%';
