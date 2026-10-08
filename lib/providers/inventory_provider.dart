@@ -174,20 +174,32 @@ class InventoryProvider extends ChangeNotifier {
     final index = _products.indexWhere((p) => p.id == productId);
     if (index < 0) {
       debugPrint('[STOCK DEBUG] ERROR: Product $productId not found!');
-      return;
+      throw Exception('Product not found: $productId');
     }
+    
+    // CRITICAL FIX: Sync batch to Supabase FIRST before adding to local state
+    debugPrint('[STOCK DEBUG] Syncing batch to Supabase first...');
+    try {
+      await _syncBatchToSupabase(productId, batch);
+      debugPrint('[STOCK DEBUG] ✅ Batch successfully saved to database');
+    } catch (e) {
+      debugPrint('[STOCK DEBUG] ❌ FAILED to save batch to database: $e');
+      rethrow; // Show error in UI instead of silent failure
+    }
+    
+    // Add to local state only after successful database save
     _products[index].batches.add(batch);
     await _saveToDisk();
     
-    debugPrint('[STOCK DEBUG] Batch added locally, now syncing to Supabase...');
-    // Sync batch to Supabase in background
-    await _syncBatchToSupabase(productId, batch);
+    debugPrint('[STOCK DEBUG] Batch added locally, now reloading from Supabase...');
     
     // CRITICAL FIX: Reload from Supabase to ensure consistency and trigger UI update
     await _syncFromSupabase();
     
     // Ensure UI is notified of the changes
     notifyListeners();
+    
+    debugPrint('[STOCK DEBUG] ✅ Batch operation complete: ${batch.batchNumber}');
   }
 
   /// Update stock quantity for an existing batch (e.g. stock-in).

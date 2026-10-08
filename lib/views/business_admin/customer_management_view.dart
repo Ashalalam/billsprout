@@ -458,27 +458,33 @@ class _CustomerManagementViewState extends State<CustomerManagementView> {
                     ),
                     keyboardType: TextInputType.number,
                   ),
-                  // Show GST and DL fields ONLY for Retail Customer
-                  if (selectedType == CustomerType.retail) ...[
-                    const SizedBox(height: 12),
-                    TextField(
-                      controller: gstinCtrl,
-                      decoration: const InputDecoration(
-                        labelText: 'GST Number (Optional)',
-                        border: OutlineInputBorder(),
-                        helperText: 'Optional for retail customers',
-                      ),
+                  // Show GST and DL fields for ALL customer types
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: gstinCtrl,
+                    decoration: InputDecoration(
+                      labelText: selectedType == CustomerType.retail 
+                          ? 'GST Number (Optional)' 
+                          : 'GST Number *',
+                      border: const OutlineInputBorder(),
+                      helperText: selectedType == CustomerType.retail
+                          ? 'Optional for retail customers'
+                          : 'Required for wholesale/distributor',
                     ),
-                    const SizedBox(height: 12),
-                    TextField(
-                      controller: drugLicenseCtrl,
-                      decoration: const InputDecoration(
-                        labelText: 'Drug Licence / DL Number (Optional)',
-                        border: OutlineInputBorder(),
-                        helperText: 'Optional for retail customers',
-                      ),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: drugLicenseCtrl,
+                    decoration: InputDecoration(
+                      labelText: selectedType == CustomerType.retail
+                          ? 'Drug Licence / DL Number (Optional)'
+                          : 'Drug Licence / DL Number *',
+                      border: const OutlineInputBorder(),
+                      helperText: selectedType == CustomerType.retail
+                          ? 'Optional for retail customers'
+                          : 'Required for wholesale/distributor',
                     ),
-                  ],
+                  ),
                 ],
               ),
             ),
@@ -490,12 +496,26 @@ class _CustomerManagementViewState extends State<CustomerManagementView> {
             ),
             ElevatedButton(
               onPressed: () async {
+                // Validate required fields based on customer type
                 if (nameCtrl.text.isEmpty ||
                     phoneCtrl.text.isEmpty ||
                     emailCtrl.text.isEmpty) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
                       content: Text('Please fill all required fields'),
+                      backgroundColor: AppTheme.errorRed,
+                    ),
+                  );
+                  return;
+                }
+                
+                // Check GST requirement for wholesale/distributor
+                if ((selectedType == CustomerType.wholesale || 
+                     selectedType == CustomerType.distributor) && 
+                    gstinCtrl.text.isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('GST Number is required for wholesale/distributor customers'),
                       backgroundColor: AppTheme.errorRed,
                     ),
                   );
@@ -508,13 +528,9 @@ class _CustomerManagementViewState extends State<CustomerManagementView> {
                 // Generate a valid tenant ID if missing (for demo mode)
                 final tenantId = auth.currentUser?.tenantId ?? const Uuid().v4();
 
-                // Only save GST and DL if customer type is retail
-                final gstinValue = selectedType == CustomerType.retail && gstinCtrl.text.isNotEmpty
-                    ? gstinCtrl.text
-                    : null;
-                final drugLicenseValue = selectedType == CustomerType.retail && drugLicenseCtrl.text.isNotEmpty
-                    ? drugLicenseCtrl.text
-                    : null;
+                // Save GST and DL for all customer types (was restricted to retail only)
+                final gstinValue = gstinCtrl.text.isNotEmpty ? gstinCtrl.text : null;
+                final drugLicenseValue = drugLicenseCtrl.text.isNotEmpty ? drugLicenseCtrl.text : null;
 
                 final newCustomer = CustomerModel(
                   id: customer?.id ?? const Uuid().v4(),

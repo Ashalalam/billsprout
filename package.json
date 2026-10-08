@@ -11,5 +11,10 @@
   },
   "author": "LifeSprout Care",
   "license": "PROPRIETARY",
-  "devDependencies": {}
+  "dependencies": {
+    "@supabase/supabase-js": "^2.117.3",
+    "dotenv": "^18.0.6",
+    "pg": "^8.23.1",
+    "uuid": "^14.0.2"
+  }
 }

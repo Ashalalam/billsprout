@@ -20,6 +20,7 @@ BatchModel _batch({
       purchasePrice: 70,
       wholesalePrice: wholesale,
       ptrPrice: ptr,
+      sellingPrice: mrp, // ✅ FIXED: Add sellingPrice for test batch
       stockCount: stock,
       rackLocation: 'A1',
     );

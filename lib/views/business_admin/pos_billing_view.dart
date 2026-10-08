@@ -404,14 +404,28 @@ class _PosBillingViewState extends State<PosBillingView> with WidgetsBindingObse
           itemBuilder: (ctx, i) {
             final product = products[i];
             final batch = product.fefoBatch;
-            // CRITICAL FIX: Only consider truly out of stock if no batches exist or all have 0 stock
-            final hasAnyStock = product.batches.any((b) => b.stockCount > 0);
-            final outOfStock = batch == null || !hasAnyStock;
             
-            // CRITICAL FIX: Show selling price even if stock is 0 (for price visibility)
-            final displayPrice = batch?.sellingPrice ?? 
-                                 (product.batches.isNotEmpty ? product.batches.first.sellingPrice : null) ?? 
-                                 0.0;
+            // ENHANCED FIX: More robust stock and pricing logic
+            final hasAnyStock = product.batches.any((b) => b.stockCount > 0);
+            final hasAnyBatch = product.batches.isNotEmpty;
+            
+            // Allow adding products if they have any batch (even with 0 stock for now)
+            final canAddToCart = hasAnyBatch;
+            
+            // ENHANCED PRICE DISPLAY: Show price even without stock
+            double displayPrice = 0.0;
+            if (batch != null && batch.sellingPrice > 0) {
+              displayPrice = batch.sellingPrice;
+            } else if (product.batches.isNotEmpty) {
+              // Find any batch with a valid selling price
+              final batchWithPrice = product.batches.firstWhere(
+                (b) => b.sellingPrice > 0,
+                orElse: () => product.batches.first,
+              );
+              displayPrice = batchWithPrice.sellingPrice > 0 ? batchWithPrice.sellingPrice : batchWithPrice.mrp;
+            }
+            
+            final outOfStock = !hasAnyStock;
             return Card(
               elevation: 2,
               shape: RoundedRectangleBorder(
@@ -494,7 +508,7 @@ class _PosBillingViewState extends State<PosBillingView> with WidgetsBindingObse
                               Text('Stock: ${hasAnyStock ? product.totalStock : '0 (No Stock)'}',
                                   style: TextStyle(
                                       fontSize: 10,
-                                      color: !hasAnyStock
+                                      color: outOfStock
                                           ? AppTheme.errorRed
                                           : (product.totalStock < 10 ? AppTheme.warningAmber : AppTheme.textMuted))),
                             ],
@@ -502,18 +516,18 @@ class _PosBillingViewState extends State<PosBillingView> with WidgetsBindingObse
                         ),
                         ElevatedButton(
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: batch == null 
+                            backgroundColor: !canAddToCart 
                                 ? Colors.grey 
                                 : (hasAnyStock ? AppTheme.primaryBlue : AppTheme.warningAmber),
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 8, vertical: 4),
                             minimumSize: const Size(36, 28),
                           ),
-                          onPressed: batch == null ? null : () => _showQuantityDialog(context, product, pos),
+                          onPressed: !canAddToCart ? null : () => _showQuantityDialog(context, product, pos),
                           child: Icon(
-                            batch == null ? Icons.block : Icons.add, 
+                            !canAddToCart ? Icons.block : Icons.add, 
                             size: 16,
-                            color: batch == null ? Colors.white70 : Colors.white,
+                            color: !canAddToCart ? Colors.white70 : Colors.white,
                           ),
                         ),
                       ],
