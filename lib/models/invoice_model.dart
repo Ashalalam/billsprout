@@ -98,7 +98,7 @@ class InvoiceItem {
     );
   }
 
-  /// Calculate gross line total
+  /// Calculate gross line total (before any discounts)
   double get grossLineTotal {
     double packTotal = quantity * unitPrice;
     double looseTotal = 0.0;
@@ -110,11 +110,21 @@ class InvoiceItem {
     return packTotal + looseTotal;
   }
   
-  double get lineTotal       => grossLineTotal - lineDiscount;
-  double get taxAmount       => lineTotal * (taxPercent / (100 + taxPercent));
-  double get taxableValue    => lineTotal - taxAmount;
-  double get cgst            => taxAmount / 2;
-  double get sgst            => taxAmount / 2;
+  /// Net line total after item-level discounts (before tax calculation)
+  double get lineTotal => grossLineTotal - lineDiscount;
+  
+  /// Tax amount - GST is typically inclusive in Indian pharmacy pricing
+  /// Formula: Tax = LineTotal * (TaxPercent / (100 + TaxPercent))
+  double get taxAmount => lineTotal * (taxPercent / (100 + taxPercent));
+  
+  /// Taxable value (line total excluding tax)
+  double get taxableValue => lineTotal - taxAmount;
+  
+  /// CGST amount (half of total tax for intra-state transactions)
+  double get cgst => taxAmount / 2;
+  
+  /// SGST amount (half of total tax for intra-state transactions) 
+  double get sgst => taxAmount / 2;
 
   /// Display string for quantity
   /// Examples:
@@ -235,6 +245,10 @@ class InvoiceModel {
   final DateTime timestamp;
   final String customerName;
   final String customerPhone;
+  final String? customerEmail;     // Added customer email
+  final String? customerAddress;   // Added customer address
+  final String? customerGstin;     // Added customer GSTIN
+  final String? customerDlNo;      // Added customer Drug License
   final String? doctorName;
   final String? doctorMciNo;
   final List<InvoiceItem> items;
@@ -244,7 +258,6 @@ class InvoiceModel {
   final String? pharmacistPinApprovedBy;
   final String branch;           // Dispensing branch name
   final String billingType;      // 'retail' | 'wholesale'
-  final String? customerGstin;   // Required for wholesale trade invoices
 
   /// pharmacists.id of the authoriser for Schedule H / H1 / narcotic sales.
   /// Separate from [pharmacistPinApprovedBy], which is the display label.
@@ -266,6 +279,10 @@ class InvoiceModel {
     required this.timestamp,
     required this.customerName,
     required this.customerPhone,
+    this.customerEmail,
+    this.customerAddress,
+    this.customerGstin,
+    this.customerDlNo,
     this.doctorName,
     this.doctorMciNo,
     required this.items,
@@ -275,7 +292,6 @@ class InvoiceModel {
     this.pharmacistPinApprovedBy,
     this.branch = 'Main Store',
     this.billingType = 'retail',
-    this.customerGstin,
     this.authorizedPharmacistId,
     // New optional fields with defaults
     this.dueDate,
@@ -382,6 +398,10 @@ class InvoiceModel {
         'timestamp': timestamp.toIso8601String(),
         'customerName': customerName,
         'customerPhone': customerPhone,
+        'customerEmail': customerEmail,
+        'customerAddress': customerAddress,
+        'customerGstin': customerGstin,
+        'customerDlNo': customerDlNo,
         'doctorName': doctorName,
         'doctorMciNo': doctorMciNo,
         'items': items.map((i) => i.toJson()).toList(),
@@ -391,7 +411,6 @@ class InvoiceModel {
         'pharmacistPinApprovedBy': pharmacistPinApprovedBy,
         'branch': branch,
         'billingType': billingType,
-        'customerGstin': customerGstin,
         'authorizedPharmacistId': authorizedPharmacistId,
         'dueDate': dueDate?.toIso8601String(),
         'lrNumber': lrNumber,
@@ -409,6 +428,10 @@ class InvoiceModel {
         timestamp: DateTime.parse(json['timestamp']),
         customerName: json['customerName'],
         customerPhone: json['customerPhone'],
+        customerEmail: json['customerEmail'],
+        customerAddress: json['customerAddress'],
+        customerGstin: json['customerGstin'],
+        customerDlNo: json['customerDlNo'],
         doctorName: json['doctorName'],
         doctorMciNo: json['doctorMciNo'],
         items: (json['items'] as List)
@@ -423,7 +446,6 @@ class InvoiceModel {
         pharmacistPinApprovedBy: json['pharmacistPinApprovedBy'],
         branch: json['branch'] ?? 'Main Store',
         billingType: json['billingType'] ?? 'retail',
-        customerGstin: json['customerGstin'],
         authorizedPharmacistId: json['authorizedPharmacistId'],
         dueDate: json['dueDate'] != null ? DateTime.parse(json['dueDate']) : null,
         lrNumber: json['lrNumber'],

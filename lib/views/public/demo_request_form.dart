@@ -217,10 +217,10 @@ class _DemoRequestFormState extends State<DemoRequestForm> {
                   margin: const EdgeInsets.only(bottom: 16),
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: AppTheme.errorRed.withValues(alpha: 0.07),
+                    color: AppTheme.errorRed.withOpacity(0.07),
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(
-                        color: AppTheme.errorRed.withValues(alpha: 0.3)),
+                        color: AppTheme.errorRed.withOpacity(0.3)),
                   ),
                   child: Row(
                     children: [
@@ -264,7 +264,7 @@ class _DemoRequestFormState extends State<DemoRequestForm> {
               Row(children: [
                 Expanded(
                   child: DropdownButtonFormField<String>(
-                    initialValue: _businessType,
+                    value: _businessType,
                     decoration: const InputDecoration(
                         labelText: 'Business Type',
                         border: OutlineInputBorder(),
@@ -280,7 +280,7 @@ class _DemoRequestFormState extends State<DemoRequestForm> {
                 const SizedBox(width: 12),
                 Expanded(
                   child: DropdownButtonFormField<int>(
-                    initialValue: _numBranches,
+                    value: _numBranches,
                     decoration: const InputDecoration(
                         labelText: 'Branches',
                         border: OutlineInputBorder(),

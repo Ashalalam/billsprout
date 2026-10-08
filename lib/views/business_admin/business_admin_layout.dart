@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../config/app_config.dart';
 import '../../config/app_theme.dart';
@@ -80,7 +80,7 @@ class _BusinessAdminLayoutState extends State<BusinessAdminLayout> {
     );
   }
 
-  // â”€â”€ AppBar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── AppBar ────────────────────────────────────────────────────────────────
   PreferredSizeWidget _appBar(AuthProvider auth, OtaService ota, bool isMobile) {
     return AppBar(
       backgroundColor: Colors.white,
@@ -100,7 +100,7 @@ class _BusinessAdminLayoutState extends State<BusinessAdminLayout> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  isMobile ? AppConfig.appName : '${AppConfig.appName} – Store Operations',
+                  isMobile ? AppConfig.appName : '${AppConfig.appName} � Store Operations',
                   style: TextStyle(
                     fontSize: isMobile ? 14 : 16,
                     fontWeight: FontWeight.bold,
@@ -160,7 +160,7 @@ class _BusinessAdminLayoutState extends State<BusinessAdminLayout> {
     );
   }
 
-  // â”€â”€ Mobile Drawer (all 7 nav items) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Mobile Drawer (all 7 nav items) ──────────────────────────────────────
   Widget _drawer(BuildContext context, AuthProvider auth) {
     return Drawer(
       child: SafeArea(
@@ -204,7 +204,7 @@ class _BusinessAdminLayoutState extends State<BusinessAdminLayout> {
                     final color = e.key == 3 ? AppTheme.errorRed : AppTheme.primaryBlue;
                     return ListTile(
                       selected: isSelected,
-                      selectedTileColor: AppTheme.primaryBlue.withValues(alpha: 0.08),
+                      selectedTileColor: AppTheme.primaryBlue.withOpacity(0.08),
                       leading: Icon(
                         e.value.icon,
                         color: isSelected ? color : AppTheme.textMuted,
@@ -254,7 +254,7 @@ class _BusinessAdminLayoutState extends State<BusinessAdminLayout> {
     );
   }
 
-  // â”€â”€ Mobile Bottom Nav (first 4 items) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Mobile Bottom Nav (first 4 items) ─────────────────────────────────────
   Widget _bottomNav() {
     return BottomNavigationBar(
       currentIndex: _selectedIndex < _bottomNavCount ? _selectedIndex : 0,
@@ -274,7 +274,7 @@ class _BusinessAdminLayoutState extends State<BusinessAdminLayout> {
     );
   }
 
-  // â”€â”€ Desktop body with NavigationRail â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Desktop body with NavigationRail ──────────────────────────────────────
   Widget _desktopBody() {
     return Row(
       children: [
@@ -311,7 +311,7 @@ class _BusinessAdminLayoutState extends State<BusinessAdminLayout> {
     );
   }
 
-  // â”€â”€ Dialogs â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Dialogs ───────────────────────────────────────────────────────────────
   void _showOtaModal(OtaService ota) {
     showDialog(
       context: context,

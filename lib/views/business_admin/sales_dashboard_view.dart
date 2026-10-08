@@ -1,4 +1,4 @@
-﻿import 'package:fl_chart/fl_chart.dart';
+import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../config/app_theme.dart';
@@ -36,20 +36,20 @@ class _SalesDashboardViewState extends State<SalesDashboardView> {
 
     final invoices = _filteredInvoices(accounting.salesInvoices);
 
-    // ── Computed KPIs ────────────────────────────────────────────────────────
+    // -- Computed KPIs --------------------------------------------------------
     final totalRevenue  = invoices.fold<double>(0, (s, i) => s + i.grandTotal);
     final totalGst      = invoices.fold<double>(0, (s, i) => s + i.totalTax);
     final totalInvoices = invoices.length;
     final avgOrderValue = totalInvoices > 0 ? totalRevenue / totalInvoices : 0.0;
 
-    // ── Payment mode breakdown ───────────────────────────────────────────────
+    // -- Payment mode breakdown -----------------------------------------------
     final Map<String, double> paymentBreakdown = {};
     for (final inv in invoices) {
       final key = inv.paymentMode.name.toUpperCase();
       paymentBreakdown[key] = (paymentBreakdown[key] ?? 0) + inv.grandTotal;
     }
 
-    // ── Top selling products ──────────────────────────────────────────────────
+    // -- Top selling products --------------------------------------------------
     final Map<String, double> productSales = {};
     for (final inv in invoices) {
       for (final item in inv.items) {
@@ -62,7 +62,7 @@ class _SalesDashboardViewState extends State<SalesDashboardView> {
       ..sort((a, b) => b.value.compareTo(a.value));
     final top5 = topProducts.take(5).toList();
 
-    // ── Hourly/daily bar chart data ───────────────────────────────────────────
+    // -- Hourly/daily bar chart data -------------------------------------------
     final barData = _buildBarData(invoices);
 
     return Scaffold(
@@ -72,11 +72,11 @@ class _SalesDashboardViewState extends State<SalesDashboardView> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ── Subscription Status ─────────────────────────────────────────
+            // -- Subscription Status -----------------------------------------
             const SubscriptionStatusWidget(),
             const SizedBox(height: 16),
             
-            // ── Header ──────────────────────────────────────────────────────
+            // -- Header ------------------------------------------------------
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -117,7 +117,7 @@ class _SalesDashboardViewState extends State<SalesDashboardView> {
             ),
             const SizedBox(height: 20),
 
-            // ── KPI Cards ────────────────────────────────────────────────────
+            // -- KPI Cards ----------------------------------------------------
             LayoutBuilder(builder: (ctx, cons) {
               final cols = cons.maxWidth < 500 ? 2 : 4;
               return GridView.count(
@@ -130,7 +130,7 @@ class _SalesDashboardViewState extends State<SalesDashboardView> {
                 children: [
                   _KpiCard(
                     label: 'Total Revenue',
-                    value: '₹${_fmt(totalRevenue)}',
+                    value: '?${_fmt(totalRevenue)}',
                     icon: Icons.currency_rupee,
                     color: AppTheme.primaryBlue,
                     sub: _period,
@@ -144,14 +144,14 @@ class _SalesDashboardViewState extends State<SalesDashboardView> {
                   ),
                   _KpiCard(
                     label: 'GST Collected',
-                    value: '₹${_fmt(totalGst)}',
+                    value: '?${_fmt(totalGst)}',
                     icon: Icons.account_balance,
                     color: AppTheme.accentOrange,
                     sub: 'Output tax',
                   ),
                   _KpiCard(
                     label: 'Avg. Order Value',
-                    value: '₹${_fmt(avgOrderValue)}',
+                    value: '?${_fmt(avgOrderValue)}',
                     icon: Icons.trending_up,
                     color: const Color(0xFF7C3AED),
                     sub: 'Per invoice',
@@ -161,11 +161,11 @@ class _SalesDashboardViewState extends State<SalesDashboardView> {
             }),
             const SizedBox(height: 20),
 
-            // ── Charts row ───────────────────────────────────────────────────
+            // -- Charts row ---------------------------------------------------
             LayoutBuilder(builder: (ctx, cons) {
               final isNarrow = cons.maxWidth < Bp.mobile;
               final charts = [
-                // Bar chart — revenue over time
+                // Bar chart � revenue over time
                 Expanded(
                   flex: 3,
                   child: _SectionCard(
@@ -220,7 +220,7 @@ class _SalesDashboardViewState extends State<SalesDashboardView> {
                                     showTitles: true,
                                     reservedSize: 44,
                                     getTitlesWidget: (v, _) => Text(
-                                      '₹${v.toInt()}',
+                                      '?${v.toInt()}',
                                       style: tt.labelSmall,
                                     ),
                                     interval: barData.isEmpty
@@ -252,7 +252,7 @@ class _SalesDashboardViewState extends State<SalesDashboardView> {
                                 touchTooltipData: BarTouchTooltipData(
                                   getTooltipItem: (g, gi, rod, ri) =>
                                       BarTooltipItem(
-                                    '₹${rod.toY.toStringAsFixed(0)}',
+                                    '?${rod.toY.toStringAsFixed(0)}',
                                     TextStyle(
                                       color: Colors.white,
                                       fontWeight: FontWeight.bold,
@@ -269,7 +269,7 @@ class _SalesDashboardViewState extends State<SalesDashboardView> {
 
                 SizedBox(width: isNarrow ? 0 : 12, height: isNarrow ? 12 : 0),
 
-                // Pie chart — payment breakdown
+                // Pie chart � payment breakdown
                 Expanded(
                   flex: 2,
                   child: _SectionCard(
@@ -293,7 +293,7 @@ class _SalesDashboardViewState extends State<SalesDashboardView> {
             }),
             const SizedBox(height: 20),
 
-            // ── Bottom row: Top products + Recent invoices ────────────────────
+            // -- Bottom row: Top products + Recent invoices --------------------
             LayoutBuilder(builder: (ctx, cons) {
               final isNarrow = cons.maxWidth < Bp.mobile;
               final widgets = [
@@ -331,9 +331,9 @@ class _SalesDashboardViewState extends State<SalesDashboardView> {
                                       decoration: BoxDecoration(
                                         color: rank == 1
                                             ? AppTheme.accentOrange
-                                                .withValues(alpha: 0.15)
+                                                .withOpacity(0.15)
                                             : AppTheme.primaryBlue
-                                                .withValues(alpha: 0.08),
+                                                .withOpacity(0.08),
                                         shape: BoxShape.circle,
                                       ),
                                       child: Center(
@@ -373,7 +373,7 @@ class _SalesDashboardViewState extends State<SalesDashboardView> {
                                       ),
                                     ),
                                     const SizedBox(width: 10),
-                                    Text('₹${_fmt(rev)}',
+                                    Text('?${_fmt(rev)}',
                                         style: tt.labelMedium?.copyWith(
                                             color: AppTheme.primaryBlue,
                                             fontWeight: FontWeight.w800)),
@@ -437,9 +437,9 @@ class _SalesDashboardViewState extends State<SalesDashboardView> {
                                 leading: CircleAvatar(
                                   radius: 18,
                                   backgroundColor: inv.containsRestrictedDrugs
-                                      ? AppTheme.errorRed.withValues(alpha: 0.1)
+                                      ? AppTheme.errorRed.withOpacity(0.1)
                                       : AppTheme.primaryBlue
-                                          .withValues(alpha: 0.08),
+                                          .withOpacity(0.08),
                                   child: Icon(
                                     inv.containsRestrictedDrugs
                                         ? Icons.security
@@ -451,15 +451,15 @@ class _SalesDashboardViewState extends State<SalesDashboardView> {
                                   ),
                                 ),
                                 title: Text(
-                                  '${inv.invoiceNumber}  •  ${inv.customerName}',
+                                  '${inv.invoiceNumber}  �  ${inv.customerName}',
                                   style: tt.labelMedium?.copyWith(
                                       fontWeight: FontWeight.w700),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                 ),
                                 subtitle: Text(
-                                  '${_timeAgo(inv.timestamp)}  •  '
-                                  '${inv.paymentMode.name.toUpperCase()}  •  '
+                                  '${_timeAgo(inv.timestamp)}  �  '
+                                  '${inv.paymentMode.name.toUpperCase()}  �  '
                                   '${inv.items.length} item${inv.items.length == 1 ? '' : 's'}',
                                   style: tt.labelSmall,
                                 ),
@@ -468,7 +468,7 @@ class _SalesDashboardViewState extends State<SalesDashboardView> {
                                   crossAxisAlignment: CrossAxisAlignment.end,
                                   children: [
                                     Text(
-                                      '₹${inv.grandTotal.toStringAsFixed(2)}',
+                                      '?${inv.grandTotal.toStringAsFixed(2)}',
                                       style: tt.labelLarge?.copyWith(
                                         color: AppTheme.primaryBlue,
                                         fontWeight: FontWeight.w800,
@@ -480,14 +480,14 @@ class _SalesDashboardViewState extends State<SalesDashboardView> {
                                       decoration: BoxDecoration(
                                         color: inv.isSynced
                                             ? AppTheme.successGreen
-                                                .withValues(alpha: 0.1)
+                                                .withOpacity(0.1)
                                             : AppTheme.warningAmber
-                                                .withValues(alpha: 0.1),
+                                                .withOpacity(0.1),
                                         borderRadius:
                                             BorderRadius.circular(4),
                                       ),
                                       child: Text(
-                                        inv.isSynced ? '☁ Synced' : '⏳ Local',
+                                        inv.isSynced ? '? Synced' : '? Local',
                                         style: tt.labelSmall?.copyWith(
                                           color: inv.isSynced
                                               ? AppTheme.successGreen
@@ -513,14 +513,14 @@ class _SalesDashboardViewState extends State<SalesDashboardView> {
             }),
             const SizedBox(height: 20),
 
-            // ── Low stock alert ───────────────────────────────────────────────
+            // -- Low stock alert -----------------------------------------------
             Builder(builder: (ctx) {
               final lowStock = inventory.products
                   .where((p) => p.totalStock < 20)
                   .toList();
               if (lowStock.isEmpty) return const SizedBox.shrink();
               return _SectionCard(
-                title: '⚠ Low Stock Alert',
+                title: '? Low Stock Alert',
                 subtitle: '${lowStock.length} product(s) below 20 units',
                 child: Wrap(
                   spacing: 8,
@@ -533,17 +533,17 @@ class _SalesDashboardViewState extends State<SalesDashboardView> {
                                     ? AppTheme.errorRed
                                     : AppTheme.warningAmber),
                             label: Text(
-                              '${p.name} — ${p.totalStock} left',
+                              '${p.name} � ${p.totalStock} left',
                               style: tt.labelSmall?.copyWith(
                                   fontWeight: FontWeight.w700),
                             ),
                             backgroundColor: p.totalStock == 0
-                                ? AppTheme.errorRed.withValues(alpha: 0.08)
-                                : AppTheme.warningAmber.withValues(alpha: 0.08),
+                                ? AppTheme.errorRed.withOpacity(0.08)
+                                : AppTheme.warningAmber.withOpacity(0.08),
                             side: BorderSide(
                               color: p.totalStock == 0
-                                  ? AppTheme.errorRed.withValues(alpha: 0.4)
-                                  : AppTheme.warningAmber.withValues(alpha: 0.4),
+                                  ? AppTheme.errorRed.withOpacity(0.4)
+                                  : AppTheme.warningAmber.withOpacity(0.4),
                             ),
                           ))
                       .toList(),
@@ -556,7 +556,7 @@ class _SalesDashboardViewState extends State<SalesDashboardView> {
     );
   }
 
-  // ── Helpers ────────────────────────────────────────────────────────────────
+  // -- Helpers ----------------------------------------------------------------
   List<InvoiceModel> _filteredInvoices(List<InvoiceModel> all) {
     final now = DateTime.now();
     return all.where((inv) {
@@ -640,9 +640,9 @@ class _SalesDashboardViewState extends State<SalesDashboardView> {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 // Payment Pie Chart
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 class _PaymentPieChart extends StatelessWidget {
   final Map<String, double> breakdown;
   const _PaymentPieChart({required this.breakdown});
@@ -708,7 +708,7 @@ class _PaymentPieChart extends StatelessWidget {
                       Text(e.value.key,
                           style: tt.labelSmall
                               ?.copyWith(fontWeight: FontWeight.w700)),
-                      Text('₹${e.value.value.toStringAsFixed(0)}',
+                      Text('?${e.value.value.toStringAsFixed(0)}',
                           style: tt.labelSmall
                               ?.copyWith(color: AppTheme.textMuted)),
                     ],
@@ -723,9 +723,9 @@ class _PaymentPieChart extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 // Shared small widgets
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 class _KpiCard extends StatelessWidget {
   final String label;
   final String value;
@@ -752,7 +752,7 @@ class _KpiCard extends StatelessWidget {
         border: Border.all(color: AppTheme.dividerColor),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
+            color: Colors.black.withOpacity(0.04),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -771,7 +771,7 @@ class _KpiCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(6),
                 decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.1),
+                  color: color.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Icon(icon, color: color, size: 16),
@@ -813,7 +813,7 @@ class _SectionCard extends StatelessWidget {
         border: Border.all(color: AppTheme.dividerColor),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
+            color: Colors.black.withOpacity(0.04),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),

@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../config/app_theme.dart';
@@ -6,10 +6,12 @@ import '../../config/responsive_layout.dart';
 import '../../models/invoice_model.dart';
 import '../../models/product_model.dart';
 import '../../models/selling_unit_model.dart';
+import '../../models/customer_model.dart';
 import '../../providers/inventory_provider.dart';
 import '../../providers/pos_provider.dart';
 import '../../providers/accounting_provider.dart';
 import '../../providers/company_profile_provider.dart';
+import '../../providers/customer_provider.dart';
 import '../../services/sync_service.dart';
 import '../../services/razorpay_web_service.dart';
 import 'inventory_view.dart';
@@ -26,26 +28,49 @@ class PosBillingView extends StatefulWidget {
   State<PosBillingView> createState() => _PosBillingViewState();
 }
 
-class _PosBillingViewState extends State<PosBillingView> {
+class _PosBillingViewState extends State<PosBillingView> with WidgetsBindingObserver {
   final _searchCtrl   = TextEditingController();
   final _discountCtrl = TextEditingController();
   final _custNameCtrl  = TextEditingController(text: 'Walk-in Customer');
   final _custPhoneCtrl = TextEditingController(text: '+447747571513');
+  final _custEmailCtrl = TextEditingController();
+  final _custAddressCtrl = TextEditingController();
+  final _custDlCtrl = TextEditingController();
   final _custGstinCtrl = TextEditingController();
   final _docNameCtrl   = TextEditingController(text: 'Dr. A. Smith');
   final _docMciCtrl    = TextEditingController(text: 'MCI-88492');
   String _searchQuery  = '';
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _searchCtrl.dispose();
     _discountCtrl.dispose();
     _custNameCtrl.dispose();
     _custPhoneCtrl.dispose();
+    _custEmailCtrl.dispose();
+    _custAddressCtrl.dispose();
+    _custDlCtrl.dispose();
     _custGstinCtrl.dispose();
     _docNameCtrl.dispose();
     _docMciCtrl.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    // Refresh inventory when app resumes (helps with new medicines availability)
+    if (state == AppLifecycleState.resumed) {
+      final inventory = Provider.of<InventoryProvider>(context, listen: false);
+      inventory.refreshFromDatabase();
+    }
   }
 
   @override
@@ -64,7 +89,7 @@ class _PosBillingViewState extends State<PosBillingView> {
     );
   }
 
-  // â”€â”€ Desktop: catalog | cart side-by-side â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Desktop: catalog | cart side-by-side ─────────────────────────────────
   Widget _desktopLayout(BuildContext ctx, InventoryProvider inv,
       PosProvider pos, List products) {
     return Row(
@@ -96,7 +121,7 @@ class _PosBillingViewState extends State<PosBillingView> {
     );
   }
 
-  // â”€â”€ Mobile: catalog â†’ cart bottom sheet â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Mobile: catalog → cart bottom sheet ──────────────────────────────────
   Widget _mobilLayout(BuildContext ctx, InventoryProvider inv,
       PosProvider pos, List products) {
     return Column(
@@ -155,7 +180,7 @@ class _PosBillingViewState extends State<PosBillingView> {
     );
   }
 
-  // â”€â”€ Search bar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Search bar ────────────────────────────────────────────────────────────
   Widget _searchBar(BuildContext context, InventoryProvider inv) {
     return Row(
       children: [
@@ -175,7 +200,7 @@ class _PosBillingViewState extends State<PosBillingView> {
             if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text('✅ Inventory refreshed: ${inv.products.length} products loaded'),
+                  content: Text('? Inventory refreshed: ${inv.products.length} products loaded'),
                   duration: const Duration(seconds: 2),
                 ),
               );
@@ -268,14 +293,28 @@ class _PosBillingViewState extends State<PosBillingView> {
             InventoryView.pendingBarcode = barcode;
             Navigator.of(context).push(
               MaterialPageRoute<void>(builder: (_) => const InventoryView()),
-            );
+            ).then((_) {
+              // Auto-refresh inventory when returning from Add Medicine
+              final inventory = Provider.of<InventoryProvider>(context, listen: false);
+              inventory.refreshFromDatabase().then((_) {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('🔄 Inventory refreshed: ${inventory.products.length} medicines available'),
+                      duration: const Duration(seconds: 2),
+                      backgroundColor: AppTheme.successGreen,
+                    ),
+                  );
+                }
+              });
+            });
           },
         ),
       ),
     );
   }
 
-  // ── Retail / wholesale mode switch ─────────────────────────────────────────
+  // -- Retail / wholesale mode switch -----------------------------------------
   Widget _billingModeBar(BuildContext context, PosProvider pos) {
     final profile = context.watch<CompanyProfileProvider>().profile;
     // A retail-only pharmacy has no use for the wholesale switch.
@@ -329,7 +368,7 @@ class _PosBillingViewState extends State<PosBillingView> {
     );
   }
 
-  // â”€â”€ Product grid – adaptive columns â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Product grid � adaptive columns ───────────────────────────────────────
   Widget _productGrid(
       BuildContext context, List products, PosProvider pos) {
     if (products.isEmpty) {
@@ -360,7 +399,7 @@ class _PosBillingViewState extends State<PosBillingView> {
                 borderRadius: BorderRadius.circular(10),
                 side: BorderSide(
                   color: product.requiresPharmacistPin
-                      ? AppTheme.errorRed.withValues(alpha: 0.4)
+                      ? AppTheme.errorRed.withOpacity(0.4)
                       : Colors.grey.shade300,
                 ),
               ),
@@ -385,7 +424,7 @@ class _PosBillingViewState extends State<PosBillingView> {
                                 horizontal: 5, vertical: 2),
                             decoration: BoxDecoration(
                               color:
-                                  AppTheme.errorRed.withValues(alpha: 0.1),
+                                  AppTheme.errorRed.withOpacity(0.1),
                               borderRadius: BorderRadius.circular(4),
                             ),
                             child: Text(
@@ -403,6 +442,15 @@ class _PosBillingViewState extends State<PosBillingView> {
                             fontSize: 10, color: AppTheme.textMuted),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis),
+                    // Manufacturer/Brand display
+                    if (product.manufacturer.isNotEmpty)
+                      Text('Mfg: ${product.manufacturer}',
+                          style: const TextStyle(
+                              fontSize: 9, 
+                              color: AppTheme.primaryBlue,
+                              fontWeight: FontWeight.w600),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis),
                     if (batch != null)
                       Text(
                         'FEFO: ${batch.batchNumber}  '
@@ -419,7 +467,7 @@ class _PosBillingViewState extends State<PosBillingView> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text('₹${batch?.mrp.toStringAsFixed(0) ?? '0'}',
+                              Text('?${batch?.mrp.toStringAsFixed(0) ?? '0'}',
                                   style: const TextStyle(
                                       fontSize: 14,
                                       fontWeight: FontWeight.bold,
@@ -499,24 +547,83 @@ class _PosBillingViewState extends State<PosBillingView> {
           ],
         ),
         const Divider(height: 12),
+        
+        // Customer Selection Section
+        Row(
+          children: [
+            const Icon(Icons.person, size: 16, color: AppTheme.primaryBlue),
+            const SizedBox(width: 6),
+            const Text('Customer:', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+            const Spacer(),
+            if (pos.selectedCustomer != null)
+              TextButton.icon(
+                onPressed: () => _showCustomerSelector(context, pos),
+                icon: const Icon(Icons.edit, size: 14),
+                label: const Text('Change', style: TextStyle(fontSize: 11)),
+              )
+            else
+              TextButton.icon(
+                onPressed: () => _showCustomerSelector(context, pos),
+                icon: const Icon(Icons.person_search, size: 14),
+                label: const Text('Select Customer', style: TextStyle(fontSize: 11)),
+              ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        
+        // Customer Details Input
         Row(children: [
           Expanded(child: TextField(controller: _custNameCtrl,
               decoration: const InputDecoration(labelText: 'Customer Name', isDense: true),
-              onChanged: (v) => pos.setCustomerDetails(v, _custPhoneCtrl.text))),
+              onChanged: (v) => pos.setCustomerDetails(v, _custPhoneCtrl.text,
+                email: _custEmailCtrl.text, address: _custAddressCtrl.text, dlNo: _custDlCtrl.text))),
           const SizedBox(width: 8),
           Expanded(child: TextField(controller: _custPhoneCtrl,
               decoration: const InputDecoration(labelText: 'Phone', isDense: true),
-              onChanged: (v) => pos.setCustomerDetails(_custNameCtrl.text, v))),
+              onChanged: (v) => pos.setCustomerDetails(_custNameCtrl.text, v,
+                email: _custEmailCtrl.text, address: _custAddressCtrl.text, dlNo: _custDlCtrl.text))),
         ]),
         const SizedBox(height: 8),
+        
+        // Enhanced Customer Details (Email & Address)
+        Row(children: [
+          Expanded(child: TextField(controller: _custEmailCtrl,
+              decoration: const InputDecoration(labelText: 'Email (Optional)', isDense: true),
+              onChanged: (v) => pos.setCustomerDetails(_custNameCtrl.text, _custPhoneCtrl.text,
+                email: v, address: _custAddressCtrl.text, dlNo: _custDlCtrl.text))),
+          const SizedBox(width: 8),
+          Expanded(child: TextField(controller: _custAddressCtrl,
+              decoration: const InputDecoration(labelText: 'Address (Optional)', isDense: true),
+              onChanged: (v) => pos.setCustomerDetails(_custNameCtrl.text, _custPhoneCtrl.text,
+                email: _custEmailCtrl.text, address: v, dlNo: _custDlCtrl.text))),
+        ]),
+        const SizedBox(height: 8),
+        
+        // DL Number (Optional for retail customers)
+        TextField(controller: _custDlCtrl,
+            decoration: const InputDecoration(
+              labelText: 'Drug License (Optional for Retail)', 
+              isDense: true,
+              helperText: 'Required only for wholesale customers',
+              helperStyle: TextStyle(fontSize: 10, color: AppTheme.textMuted),
+            ),
+            onChanged: (v) => pos.setCustomerDetails(_custNameCtrl.text, _custPhoneCtrl.text,
+              email: _custEmailCtrl.text, address: _custAddressCtrl.text, dlNo: v)),
+        const SizedBox(height: 8),
+        
+        // Doctor Information
         Row(children: [
           Expanded(child: TextField(controller: _docNameCtrl,
               decoration: const InputDecoration(labelText: 'Doctor Name', isDense: true),
-              onChanged: (v) => pos.setCustomerDetails(_custNameCtrl.text, _custPhoneCtrl.text, docName: v, docMci: _docMciCtrl.text))),
+              onChanged: (v) => pos.setCustomerDetails(_custNameCtrl.text, _custPhoneCtrl.text, 
+                docName: v, docMci: _docMciCtrl.text,
+                email: _custEmailCtrl.text, address: _custAddressCtrl.text, dlNo: _custDlCtrl.text))),
           const SizedBox(width: 8),
           Expanded(child: TextField(controller: _docMciCtrl,
               decoration: const InputDecoration(labelText: 'MCI No', isDense: true),
-              onChanged: (v) => pos.setCustomerDetails(_custNameCtrl.text, _custPhoneCtrl.text, docName: _docNameCtrl.text, docMci: v))),
+              onChanged: (v) => pos.setCustomerDetails(_custNameCtrl.text, _custPhoneCtrl.text, 
+                docName: _docNameCtrl.text, docMci: v,
+                email: _custEmailCtrl.text, address: _custAddressCtrl.text, dlNo: _custDlCtrl.text))),
         ]),
         const SizedBox(height: 12),
         // Cart items with free qty + item discount
@@ -547,14 +654,14 @@ class _PosBillingViewState extends State<PosBillingView> {
                           maxLines: 1, overflow: TextOverflow.ellipsis)),
                       if (item.product.requiresPharmacistPin)
                         Container(padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-                          decoration: BoxDecoration(color: AppTheme.errorRed.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(3)),
+                          decoration: BoxDecoration(color: AppTheme.errorRed.withOpacity(0.1), borderRadius: BorderRadius.circular(3)),
                           child: const Text('PIN', style: TextStyle(fontSize: 9, color: AppTheme.errorRed, fontWeight: FontWeight.bold))),
                       if (allowsLoose)
                         Container(
                           margin: const EdgeInsets.only(left: 4),
                           padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
                           decoration: BoxDecoration(
-                            color: AppTheme.successGreen.withValues(alpha: 0.1),
+                            color: AppTheme.successGreen.withOpacity(0.1),
                             borderRadius: BorderRadius.circular(3),
                           ),
                           child: const Text('LOOSE', 
@@ -562,7 +669,7 @@ class _PosBillingViewState extends State<PosBillingView> {
                         ),
                     ]),
                     subtitle: Text(
-                      'HSN: ${item.product.hsnCode}  |  Batch: ${item.batch.batchNumber}  |  '
+                      'Mfg: ${item.product.manufacturer ?? 'N/A'}  |  HSN: ${item.product.hsnCode}  |  Batch: ${item.batch.batchNumber}  |  '
                       'GST: ${item.taxPercent.toStringAsFixed(0)}%  |  ${item.product.packagingLabel}',
                       style: const TextStyle(fontSize: 10)),
                     trailing: Row(mainAxisSize: MainAxisSize.min, children: [
@@ -653,7 +760,7 @@ class _PosBillingViewState extends State<PosBillingView> {
                       Padding(
                         padding: const EdgeInsets.only(bottom: 4),
                         child: Text(
-                          '  📦 ${item.quantity} ${item.sellingUnit?.label ?? 'pack'}${item.quantity != 1 ? 's' : ''} + ${item.looseUnits} loose ${item.product.baseUnit?.label ?? 'units'}',
+                          '  ?? ${item.quantity} ${item.sellingUnit?.label ?? 'pack'}${item.quantity != 1 ? 's' : ''} + ${item.looseUnits} loose ${item.product.baseUnit?.label ?? 'units'}',
                           style: const TextStyle(fontSize: 10, color: AppTheme.successGreen, fontStyle: FontStyle.italic),
                         ),
                       ),
@@ -735,20 +842,42 @@ class _PosBillingViewState extends State<PosBillingView> {
             ),
           ),
         const SizedBox(height: 8),
-        // Grand total
+        
+        // Round-off display (only if there's a difference)
+        if (pos.roundOff != 0) 
+          _totalRow('Round Off:', 'Rs.${pos.roundOff.toStringAsFixed(2)}', 
+              bold: false, valueColor: pos.roundOff > 0 ? AppTheme.successGreen : AppTheme.errorRed),
+        
+        // Grand total and payable amount
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
           decoration: BoxDecoration(
-            color: AppTheme.primaryBlue.withValues(alpha: 0.06),
+            color: AppTheme.primaryBlue.withOpacity(0.06),
             borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: AppTheme.primaryBlue.withValues(alpha: 0.2)),
+            border: Border.all(color: AppTheme.primaryBlue.withOpacity(0.2)),
           ),
-          child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-            const Text('GRAND TOTAL',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppTheme.primaryBlue)),
-            Text('Rs.${pos.grandTotal.toStringAsFixed(2)}',
-                style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppTheme.primaryBlue)),
-          ]),
+          child: Column(
+            children: [
+              // Grand Total (exact calculation)
+              Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                const Text('GRAND TOTAL',
+                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppTheme.primaryBlue)),
+                Text('Rs.${pos.grandTotal.toStringAsFixed(2)}',
+                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppTheme.primaryBlue)),
+              ]),
+              
+              // Payable Amount (rounded for cash transactions)
+              if (pos.roundOff != 0) ...[
+                const Divider(height: 8, color: AppTheme.primaryBlue),
+                Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                  const Text('PAYABLE AMOUNT',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppTheme.primaryBlue)),
+                  Text('Rs.${pos.payableTotal.toStringAsFixed(0)}',
+                      style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppTheme.primaryBlue)),
+                ]),
+              ],
+            ],
+          ),
         ),
         const SizedBox(height: 10),
         // Payment chips - Cash and Razorpay
@@ -802,9 +931,9 @@ class _PosBillingViewState extends State<PosBillingView> {
             padding: const EdgeInsets.all(10),
             margin: const EdgeInsets.only(bottom: 10),
             decoration: BoxDecoration(
-              color: AppTheme.errorRed.withValues(alpha: 0.07),
+              color: AppTheme.errorRed.withOpacity(0.07),
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: AppTheme.errorRed.withValues(alpha: 0.4)),
+              border: Border.all(color: AppTheme.errorRed.withOpacity(0.4)),
             ),
             child: Row(children: const [
               Icon(Icons.security, color: AppTheme.errorRed, size: 16),
@@ -859,7 +988,7 @@ class _PosBillingViewState extends State<PosBillingView> {
     );
   }
 
-  // â”€â”€ Checkout logic â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Checkout logic ────────────────────────────────────────────────────────
   Future<void> _handleCheckout(
       BuildContext context, PosProvider pos) async {
     final sync       = Provider.of<SyncService>(context, listen: false);
@@ -942,8 +1071,8 @@ class _PosBillingViewState extends State<PosBillingView> {
           children: [
             Text('Invoice: ${invoice.invoiceNumber}',
                 style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
-            Text('${invoice.customerName} – ${invoice.customerPhone}'),
-            Text('Total: ₹${invoice.grandTotal.toStringAsFixed(2)}'),
+            Text('${invoice.customerName} � ${invoice.customerPhone}'),
+            Text('Total: ?${invoice.grandTotal.toStringAsFixed(2)}'),
             const SizedBox(height: 14),
             const Text('Distribute receipt:',
                 style: TextStyle(fontWeight: FontWeight.w600)),
@@ -984,7 +1113,20 @@ class _PosBillingViewState extends State<PosBillingView> {
       if (!mounted) return false;
       
       final razorpayService = RazorpayWebService();
-      final amount = pos.grandTotal; // Amount in rupees
+      final amount = pos.payableTotal; // Amount in rupees (rounded for payment)
+      
+      // Validate amount
+      if (amount <= 0) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Invalid payment amount'),
+              backgroundColor: AppTheme.errorRed,
+            ),
+          );
+        }
+        return false;
+      }
       
       // Show loading dialog
       if (!mounted) return false;
@@ -1014,8 +1156,9 @@ class _PosBillingViewState extends State<PosBillingView> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Payment error: $error'),
+              content: Text('Payment setup failed: $error'),
               backgroundColor: AppTheme.errorRed,
+              duration: const Duration(seconds: 5),
             ),
           );
         }
@@ -1029,79 +1172,84 @@ class _PosBillingViewState extends State<PosBillingView> {
       bool paymentSuccess = false;
       String? paymentId;
       String? signature;
+      String? lastError;
       
       await razorpayService.openCheckout(
         orderId: orderId,
         amount: amount,
         currency: 'INR',
-        customerName: pos.customerName,
+        customerName: pos.customerName.isEmpty ? 'Customer' : pos.customerName,
         customerEmail: 'customer@pharmacy.com', // Generic email for POS
         customerPhone: pos.customerPhone.isEmpty ? '9999999999' : pos.customerPhone,
-        description: 'Pharmacy POS Payment',
+        description: 'Pharmacy POS Payment - Invoice Total: ₹${amount.toStringAsFixed(2)}',
         onSuccess: (response) async {
-          paymentId = response['razorpay_payment_id'] as String;
-          signature = response['razorpay_signature'] as String;
-          Logger.info('POS: Razorpay payment success - $paymentId');
-          
-          // Step 3: Verify payment signature (CRITICAL - Server-side verification)
-          final verifyResult = await razorpayService.verifyPayment(
-            orderId: orderId,
-            paymentId: paymentId!,
-            signature: signature!,
-          );
-          
-          if (verifyResult['verified'] == true) {
-            Logger.info('POS: Payment signature verified successfully');
-            paymentSuccess = true;
-          } else {
-            Logger.error('POS: Payment signature verification FAILED - PAYMENT NOT AUTHORIZED');
-            paymentSuccess = false;
+          try {
+            paymentId = response['razorpay_payment_id'] as String?;
+            signature = response['razorpay_signature'] as String?;
+            Logger.info('POS: Razorpay payment success - $paymentId');
             
-            if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Payment verification failed. Transaction not authorized.'),
-                  backgroundColor: AppTheme.errorRed,
-                  duration: Duration(seconds: 5),
-                ),
-              );
+            if (paymentId == null || signature == null) {
+              lastError = 'Payment response missing required fields';
+              paymentSuccess = false;
+              return;
             }
+            
+            // Step 3: Verify payment signature (CRITICAL - Server-side verification)
+            final verifyResult = await razorpayService.verifyPayment(
+              orderId: orderId,
+              paymentId: paymentId!,
+              signature: signature!,
+            );
+            
+            if (verifyResult['verified'] == true) {
+              Logger.info('POS: Payment signature verified successfully');
+              paymentSuccess = true;
+            } else {
+              Logger.error('POS: Payment signature verification FAILED - PAYMENT NOT AUTHORIZED');
+              lastError = 'Payment verification failed. Transaction not authorized.';
+              paymentSuccess = false;
+            }
+          } catch (e) {
+            Logger.error('POS: Error in payment success handler: $e');
+            lastError = 'Error processing payment success: $e';
+            paymentSuccess = false;
           }
         },
         onError: (error) {
           final errorCode = error['code'] ?? 'UNKNOWN';
           final errorDesc = error['description'] ?? 'Payment failed';
-          Logger.error('POS: Razorpay payment error', error: '$errorCode - $errorDesc');
+          lastError = '$errorCode: $errorDesc';
+          Logger.error('POS: Razorpay payment error', error: lastError);
           paymentSuccess = false;
-          
-          if (mounted && errorCode != 'USER_CANCELLED') {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('Payment failed: $errorDesc'),
-                backgroundColor: AppTheme.errorRed,
-              ),
-            );
-          }
         },
       );
       
       // Wait briefly for async handlers to complete
-      await Future.delayed(const Duration(milliseconds: 500));
+      await Future.delayed(const Duration(milliseconds: 1000));
       
       if (paymentSuccess) {
         Logger.info('POS: Payment verified - proceeding with sale');
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Payment successful!'),
+            SnackBar(
+              content: Text('Payment successful! Payment ID: ${paymentId?.substring(0, 12)}...'),
               backgroundColor: AppTheme.successGreen,
-              duration: Duration(seconds: 2),
+              duration: const Duration(seconds: 3),
             ),
           );
         }
         return true;
       } else {
-        Logger.info('POS: Payment not completed or verification failed');
+        Logger.info('POS: Payment not completed or verification failed: $lastError');
+        if (mounted && lastError != null && !lastError!.contains('USER_CANCELLED')) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Payment failed: $lastError'),
+              backgroundColor: AppTheme.errorRed,
+              duration: const Duration(seconds: 5),
+            ),
+          );
+        }
         return false;
       }
       
@@ -1110,8 +1258,9 @@ class _PosBillingViewState extends State<PosBillingView> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Payment error: $e'),
+            content: Text('Payment system error: ${e.toString().replaceAll('Instance of \'', '').replaceAll('\'', '')}'),
             backgroundColor: AppTheme.errorRed,
+            duration: const Duration(seconds: 5),
           ),
         );
       }
@@ -1126,7 +1275,7 @@ class _PosBillingViewState extends State<PosBillingView> {
     
     // Get pack configuration
     final baseUnitsPerPack = product.baseUnitsPerPack ?? 10;
-    final packLabel = product.packagingConfig?.label ?? '1×$baseUnitsPerPack';
+    final packLabel = product.packagingConfig?.label ?? '1�$baseUnitsPerPack';
     final batch = product.fefoBatch;
     
     if (batch == null) {
@@ -1183,8 +1332,8 @@ class _PosBillingViewState extends State<PosBillingView> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text('Pack: $packLabel', style: const TextStyle(fontWeight: FontWeight.bold)),
-                          Text('Strip MRP: ₹${stripPrice.toStringAsFixed(2)}'),
-                          Text('Per Tablet: ₹${tabletPrice.toStringAsFixed(2)}'),
+                          Text('Strip MRP: ?${stripPrice.toStringAsFixed(2)}'),
+                          Text('Per Tablet: ?${tabletPrice.toStringAsFixed(2)}'),
                           Text('Available: $availableTablets tablets', 
                             style: TextStyle(
                               color: isStockSufficient ? Colors.green : Colors.red,
@@ -1249,12 +1398,12 @@ class _PosBillingViewState extends State<PosBillingView> {
                           ),
                           const Divider(),
                           if (normalizedStrips > 0)
-                            Text('$normalizedStrips Strips × ₹${stripPrice.toStringAsFixed(2)} = ₹${stripAmount.toStringAsFixed(2)}'),
+                            Text('$normalizedStrips Strips � ?${stripPrice.toStringAsFixed(2)} = ?${stripAmount.toStringAsFixed(2)}'),
                           if (normalizedLoose > 0)
-                            Text('$normalizedLoose Tablets × ₹${tabletPrice.toStringAsFixed(2)} = ₹${looseAmount.toStringAsFixed(2)}'),
+                            Text('$normalizedLoose Tablets � ?${tabletPrice.toStringAsFixed(2)} = ?${looseAmount.toStringAsFixed(2)}'),
                           const Divider(),
                           Text(
-                            'Amount: ₹${totalAmount.toStringAsFixed(2)}',
+                            'Amount: ?${totalAmount.toStringAsFixed(2)}',
                             style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: AppTheme.primaryBlue),
                           ),
                           if (!isStockSufficient)
@@ -1296,11 +1445,139 @@ class _PosBillingViewState extends State<PosBillingView> {
       },
     );
   }
+
+  /// Show customer selector dialog
+  void _showCustomerSelector(BuildContext context, PosProvider pos) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Select Customer'),
+        content: SizedBox(
+          width: 500,
+          height: 400,
+          child: Consumer<CustomerProvider>(
+            builder: (context, customerProvider, child) {
+              if (customerProvider.isLoading) {
+                return const Center(child: CircularProgressIndicator());
+              }
+              
+              final customers = customerProvider.allCustomers;
+              
+              return Column(
+                children: [
+                  // Walk-in Customer Option
+                  ListTile(
+                    leading: const Icon(Icons.person_outline),
+                    title: const Text('Walk-in Customer'),
+                    subtitle: const Text('No customer details required'),
+                    selected: pos.selectedCustomer == null,
+                    onTap: () {
+                      pos.setSelectedCustomer(null);
+                      _updateCustomerFields(pos);
+                      Navigator.pop(ctx);
+                    },
+                  ),
+                  const Divider(),
+                  
+                  // Existing Customers List
+                  Expanded(
+                    child: customers.isEmpty
+                        ? const Center(
+                            child: Text('No customers found. Add customers in Customer Management.'),
+                          )
+                        : ListView.builder(
+                            itemCount: customers.length,
+                            itemBuilder: (context, index) {
+                              final customer = customers[index];
+                              return ListTile(
+                                leading: CircleAvatar(
+                                  backgroundColor: _getCustomerTypeColor(customer.customerType).withOpacity(0.1),
+                                  child: Icon(
+                                    _getCustomerTypeIcon(customer.customerType),
+                                    color: _getCustomerTypeColor(customer.customerType),
+                                  ),
+                                ),
+                                title: Text(customer.name),
+                                subtitle: Text(
+                                  '${customer.phone} • ${customer.email}\n${customer.customerType.label}',
+                                ),
+                                isThreeLine: true,
+                                selected: pos.selectedCustomer?.id == customer.id,
+                                onTap: () {
+                                  pos.setSelectedCustomer(customer);
+                                  _updateCustomerFields(pos);
+                                  Navigator.pop(ctx);
+                                },
+                              );
+                            },
+                          ),
+                  ),
+                ],
+              );
+            },
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Update customer input fields based on selected customer
+  void _updateCustomerFields(PosProvider pos) {
+    if (pos.selectedCustomer != null) {
+      final customer = pos.selectedCustomer!;
+      _custNameCtrl.text = customer.name;
+      _custPhoneCtrl.text = customer.phone;
+      _custEmailCtrl.text = customer.email;
+      _custAddressCtrl.text = customer.fullAddress;
+      _custDlCtrl.text = customer.drugLicenseNo ?? '';
+      if (customer.gstin != null) {
+        _custGstinCtrl.text = customer.gstin!;
+      }
+    } else {
+      // Reset to walk-in customer
+      _custNameCtrl.text = 'Walk-in Customer';
+      _custPhoneCtrl.text = '';
+      _custEmailCtrl.text = '';
+      _custAddressCtrl.text = '';
+      _custDlCtrl.text = '';
+      _custGstinCtrl.text = '';
+    }
+  }
+
+  /// Get customer type icon
+  IconData _getCustomerTypeIcon(CustomerType type) {
+    switch (type) {
+      case CustomerType.retail:
+        return Icons.shopping_cart;
+      case CustomerType.wholesale:
+        return Icons.business;
+      case CustomerType.distributor:
+        return Icons.local_shipping;
+    }
+  }
+
+  /// Get customer type color
+  Color _getCustomerTypeColor(CustomerType type) {
+    switch (type) {
+      case CustomerType.retail:
+        return AppTheme.successGreen;
+      case CustomerType.wholesale:
+        return AppTheme.accentOrange;
+      case CustomerType.distributor:
+        return AppTheme.primaryBlue;
+    }
+  }
 }
 
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─────────────────────────────────────────────────────────────────────────────
 // Mobile cart bottom bar
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─────────────────────────────────────────────────────────────────────────────
 class _MobileCartBar extends StatelessWidget {
   final PosProvider posProvider;
   final VoidCallback onTap;
@@ -1350,9 +1627,9 @@ class _MobileCartBar extends StatelessWidget {
               Expanded(
                 child: Text(
                   count == 0
-                      ? 'Cart is empty – tap to open'
-                      : '$count item${count == 1 ? '' : 's'}  •  '
-                          '₹${posProvider.grandTotal.toStringAsFixed(2)}',
+                      ? 'Cart is empty � tap to open'
+                      : '$count item${count == 1 ? '' : 's'}  �  '
+                          '?${posProvider.payableTotal.toStringAsFixed(0)}',
                   style: const TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,

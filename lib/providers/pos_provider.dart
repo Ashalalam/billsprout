@@ -5,12 +5,17 @@ import '../models/product_model.dart';
 import '../models/batch_model.dart';
 import '../models/invoice_model.dart';
 import '../models/selling_unit_model.dart';
+import '../models/customer_model.dart';
 import '../services/pricing_calculator.dart';
 
 class PosProvider extends ChangeNotifier {
   final List<InvoiceItem> _cartItems = [];
   String _customerName  = 'Walk-in Customer';
   String _customerPhone = '';
+  String _customerEmail = '';      // Added customer email
+  String _customerAddress = '';    // Added customer address
+  String _customerDlNo = '';       // Added customer drug license
+  CustomerModel? _selectedCustomer;  // Added selected customer
   String? _doctorName;
   String? _doctorMciNo;
   double _discountAmount = 0.0;
@@ -33,6 +38,10 @@ class PosProvider extends ChangeNotifier {
   List<InvoiceItem> get cartItems   => List.unmodifiable(_cartItems);
   String get customerName           => _customerName;
   String get customerPhone          => _customerPhone;
+  String get customerEmail          => _customerEmail;
+  String get customerAddress        => _customerAddress;  
+  String get customerDlNo           => _customerDlNo;
+  CustomerModel? get selectedCustomer => _selectedCustomer;
   String? get doctorName            => _doctorName;
   String? get doctorMciNo           => _doctorMciNo;
   double get discountAmount         => _discountAmount;
@@ -48,12 +57,23 @@ class PosProvider extends ChangeNotifier {
 
   double get subtotal    => _cartItems.fold(0.0, (s, i) => s + i.lineTotal);
   double get totalTax    => _cartItems.fold(0.0, (s, i) => s + i.taxAmount);
+  double get totalLineDiscounts => _cartItems.fold(0.0, (s, i) => s + i.lineDiscount);
 
   /// Discount never exceeds the subtotal, so the payable cannot go negative.
   double get effectiveDiscount =>
       _discountAmount > subtotal ? subtotal : _discountAmount;
 
+  /// Grand total including all taxes - matches InvoiceModel calculation
   double get grandTotal  => subtotal - effectiveDiscount;
+  
+  /// Payable total after rounding to nearest rupee (for Indian cash transactions)
+  double get payableTotal => grandTotal.roundToDouble();
+  
+  /// Round off amount (difference between exact total and rounded total)
+  double get roundOff {
+    final rounded = grandTotal.roundToDouble();
+    return double.parse((rounded - grandTotal).toStringAsFixed(2));
+  }
 
   bool get requiresPharmacistPin =>
       _cartItems.any((item) => item.product.requiresPharmacistPin);
@@ -83,11 +103,48 @@ class PosProvider extends ChangeNotifier {
   }
 
   void setCustomerDetails(String name, String phone,
-      {String? docName, String? docMci}) {
+      {String? docName, String? docMci, String? email, String? address, String? dlNo}) {
     _customerName  = name.isEmpty ? 'Walk-in Customer' : name;
     _customerPhone = phone;
+    _customerEmail = email ?? '';
+    _customerAddress = address ?? '';
+    _customerDlNo = dlNo ?? '';
     _doctorName    = docName;
     _doctorMciNo   = docMci;
+    notifyListeners();
+  }
+
+  /// Set customer from selected CustomerModel (enhanced customer details)
+  void setSelectedCustomer(CustomerModel? customer) {
+    _selectedCustomer = customer;
+    
+    if (customer != null) {
+      _customerName = customer.name;
+      _customerPhone = customer.phone;
+      _customerEmail = customer.email;
+      _customerAddress = customer.fullAddress;
+      _customerDlNo = customer.drugLicenseNo ?? '';
+      
+      // Set GSTIN for wholesale customers
+      if (customer.isWholesale && customer.gstin != null) {
+        _customerGstin = customer.gstin;
+      }
+      
+      // Automatically switch to wholesale billing for wholesale customers
+      if (customer.isWholesale) {
+        setBillingType('wholesale');
+      }
+    } else {
+      // Reset to walk-in customer
+      _customerName = 'Walk-in Customer';
+      _customerPhone = '';
+      _customerEmail = '';
+      _customerAddress = '';
+      _customerDlNo = '';
+      _customerGstin = null;
+      setBillingType('retail');
+    }
+    
     notifyListeners();
   }
 
@@ -205,7 +262,7 @@ class PosProvider extends ChangeNotifier {
       final freeQty = scheme.calculateFreeQuantity(paidQty);
       
       if (freeQty > 0) {
-        debugPrint('[POS SCHEME] ${product.name}: Buy $paidQty Get $freeQty Free (${scheme.schemeUnit.label})');
+        debugPrint('[POS SCHEME] ${product.name}: Buy $paidQty Get $freeQty Free (${scheme.schemeUnit.toString()})');
         
         // Add free quantity to the sale
         finalQuantity = SaleQuantity(
@@ -398,6 +455,10 @@ class PosProvider extends ChangeNotifier {
     _discountAmount  = 0.0;
     _customerName    = 'Walk-in Customer';
     _customerPhone   = '';
+    _customerEmail   = '';
+    _customerAddress = '';
+    _customerDlNo    = '';
+    _selectedCustomer = null;
     _doctorName      = null;
     _doctorMciNo     = null;
     _customerGstin   = null;
@@ -419,6 +480,10 @@ class PosProvider extends ChangeNotifier {
       timestamp: DateTime.now(),
       customerName: _customerName,
       customerPhone: _customerPhone,
+      customerEmail: _customerEmail.isNotEmpty ? _customerEmail : null,
+      customerAddress: _customerAddress.isNotEmpty ? _customerAddress : null,
+      customerGstin: _customerGstin,
+      customerDlNo: _customerDlNo.isNotEmpty ? _customerDlNo : null,
       doctorName: _doctorName,
       doctorMciNo: _doctorMciNo,
       items: List.from(_cartItems),
@@ -428,7 +493,6 @@ class PosProvider extends ChangeNotifier {
       pharmacistPinApprovedBy: pinApprovedBy,
       branch: _branch,
       billingType: _billingType,
-      customerGstin: _customerGstin,
       authorizedPharmacistId: authorizedPharmacistId,
     );
 

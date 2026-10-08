@@ -13,6 +13,7 @@ class CompanyProfile {
   final String pinCode;
   final String gstin;
   final String drugLicenseNo;       // e.g. DL-KA-2024-0001
+  final String fssaiLicenseNo;      // FSSAI License for food supplement sales
   final String phone;
   final String altPhone;
   final String email;
@@ -39,6 +40,7 @@ class CompanyProfile {
     this.pinCode         = '',
     this.gstin           = '',
     this.drugLicenseNo   = '',
+    this.fssaiLicenseNo  = '',
     this.phone           = '',
     this.altPhone        = '',
     this.email           = '',
@@ -76,6 +78,7 @@ class CompanyProfile {
     String? pinCode,
     String? gstin,
     String? drugLicenseNo,
+    String? fssaiLicenseNo,
     String? phone,
     String? altPhone,
     String? email,
@@ -100,6 +103,7 @@ class CompanyProfile {
         pinCode:       pinCode       ?? this.pinCode,
         gstin:         gstin         ?? this.gstin,
         drugLicenseNo: drugLicenseNo ?? this.drugLicenseNo,
+        fssaiLicenseNo: fssaiLicenseNo ?? this.fssaiLicenseNo,
         phone:         phone         ?? this.phone,
         altPhone:      altPhone      ?? this.altPhone,
         email:         email         ?? this.email,
@@ -125,6 +129,7 @@ class CompanyProfile {
         'pinCode':       pinCode,
         'gstin':         gstin,
         'drugLicenseNo': drugLicenseNo,
+        'fssaiLicenseNo': fssaiLicenseNo,
         'phone':         phone,
         'altPhone':      altPhone,
         'email':         email,
@@ -150,6 +155,7 @@ class CompanyProfile {
         pinCode:       j['pinCode']       ?? '',
         gstin:         j['gstin']         ?? '',
         drugLicenseNo: j['drugLicenseNo'] ?? '',
+        fssaiLicenseNo: j['fssaiLicenseNo'] ?? '',
         phone:         j['phone']         ?? '',
         altPhone:      j['altPhone']      ?? '',
         email:         j['email']         ?? '',

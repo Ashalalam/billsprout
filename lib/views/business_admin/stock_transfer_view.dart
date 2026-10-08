@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../config/app_theme.dart';
 import '../../config/responsive_layout.dart';
@@ -20,7 +20,7 @@ class _StockTransferViewState extends State<StockTransferView> {
           id: 'st_001',
           transferNumber: 'TRF-2026-0091',
           sourceBranch: 'LIFESPROUT Main Branch',
-          destinationBranch: 'Apex Healthcare – Zone B',
+          destinationBranch: 'Apex Healthcare � Zone B',
           productName: 'Amoxicillin 500mg Capsules',
           batchNumber: 'AMX-2024-09',
           quantity: 50,
@@ -31,7 +31,7 @@ class _StockTransferViewState extends State<StockTransferView> {
           id: 'st_002',
           transferNumber: 'TRF-2026-0092',
           sourceBranch: 'LIFESPROUT Main Branch',
-          destinationBranch: 'Sprout Retail – Mall Branch',
+          destinationBranch: 'Sprout Retail � Mall Branch',
           productName: 'Paracetamol 650mg Tablets',
           batchNumber: 'PCM-650-A',
           quantity: 200,
@@ -41,7 +41,7 @@ class _StockTransferViewState extends State<StockTransferView> {
         StockTransferModel(
           id: 'st_003',
           transferNumber: 'TRF-2026-0093',
-          sourceBranch: 'Apex Healthcare – Zone B',
+          sourceBranch: 'Apex Healthcare � Zone B',
           destinationBranch: 'LIFESPROUT Main Branch',
           productName: 'Digital Blood Pressure Monitor',
           batchNumber: 'BPM-2024-X',
@@ -77,7 +77,7 @@ class _StockTransferViewState extends State<StockTransferView> {
                       ),
                     ),
                     Text(
-                      'Move inventory between stores · Real-time transfer tracking',
+                      'Move inventory between stores � Real-time transfer tracking',
                       style: TextStyle(
                           color: AppTheme.textMuted, fontSize: 13),
                     ),
@@ -95,7 +95,7 @@ class _StockTransferViewState extends State<StockTransferView> {
             ),
             const SizedBox(height: 16),
 
-            // KPI row — responsive
+            // KPI row � responsive
             KpiRow(kpis: [
                 _kpiWidget('Total Transfers', '${_transfers.length}',
                     Icons.compare_arrows, AppTheme.primaryBlue),
@@ -215,7 +215,7 @@ class _StockTransferViewState extends State<StockTransferView> {
                   ]),
                   const SizedBox(height: 12),
                   DropdownButtonFormField<String>(
-                    initialValue: selectedProductId,
+                    value: selectedProductId,
                     decoration: const InputDecoration(
                         labelText: 'Select Product *'),
                     items: inventory.products
@@ -240,7 +240,7 @@ class _StockTransferViewState extends State<StockTransferView> {
                   const SizedBox(height: 12),
                   if (selectedProductId != null)
                     DropdownButtonFormField<String>(
-                      initialValue: selectedBatchNumber,
+                      value: selectedBatchNumber,
                       decoration: const InputDecoration(
                           labelText: 'Batch Number'),
                       items: inventory.products
@@ -250,7 +250,7 @@ class _StockTransferViewState extends State<StockTransferView> {
                           .map((b) => DropdownMenuItem(
                               value: b.batchNumber,
                               child: Text(
-                                  '${b.batchNumber} – Stock: ${b.stockCount}',
+                                  '${b.batchNumber} � Stock: ${b.stockCount}',
                                   style:
                                       const TextStyle(fontSize: 13))))
                           .toList(),
@@ -323,7 +323,7 @@ class _StockTransferViewState extends State<StockTransferView> {
             children: [
               CircleAvatar(
                 radius: 20,
-                backgroundColor: color.withValues(alpha: 0.12),
+                backgroundColor: color.withOpacity(0.12),
                 child: Icon(icon, color: color, size: 20),
               ),
               const SizedBox(width: 10),
@@ -377,16 +377,16 @@ class _TransferTile extends StatelessWidget {
 
     return ListTile(
       leading: CircleAvatar(
-        backgroundColor: statusColor.withValues(alpha: 0.12),
+        backgroundColor: statusColor.withOpacity(0.12),
         child: Icon(statusIcon, color: statusColor),
       ),
       title: Text(
-        '${transfer.transferNumber} – ${transfer.productName}',
+        '${transfer.transferNumber} � ${transfer.productName}',
         style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
       ),
       subtitle: Text(
-        '${transfer.sourceBranch}  â†’  ${transfer.destinationBranch}\n'
-        'Batch: ${transfer.batchNumber}  •  Qty: ${transfer.quantity}  •  '
+        '${transfer.sourceBranch}  →  ${transfer.destinationBranch}\n'
+        'Batch: ${transfer.batchNumber}  �  Qty: ${transfer.quantity}  �  '
         '${transfer.timestamp.day}/${transfer.timestamp.month}/${transfer.timestamp.year}',
         style: const TextStyle(fontSize: 12, height: 1.4),
       ),
@@ -401,8 +401,8 @@ class _TransferTile extends StatelessWidget {
                   fontSize: 11,
                   fontWeight: FontWeight.bold),
             ),
-            backgroundColor: statusColor.withValues(alpha: 0.1),
-            side: BorderSide(color: statusColor.withValues(alpha: 0.4)),
+            backgroundColor: statusColor.withOpacity(0.1),
+            side: BorderSide(color: statusColor.withOpacity(0.4)),
           ),
           const SizedBox(width: 8),
           if (transfer.status == 'Pending')

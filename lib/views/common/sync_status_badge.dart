@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../services/sync_service.dart';
 import '../../config/app_theme.dart';
@@ -38,7 +38,7 @@ class SyncStatusBadge extends StatelessWidget {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-              color: badgeColor.withValues(alpha: 0.15),
+              color: badgeColor.withOpacity(0.15),
               borderRadius: BorderRadius.circular(20),
               border: Border.all(color: badgeColor, width: 1.2),
             ),

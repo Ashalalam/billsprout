@@ -1,4 +1,4 @@
-﻿import 'package:flutter/foundation.dart';
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/customer_model.dart';
@@ -102,6 +102,11 @@ class CustomerProvider extends ChangeNotifier {
       _isLoading = false;
       notifyListeners();
     }
+  }
+
+  /// Convenience method to load purchase history without loading customer data
+  Future<void> loadCustomerPurchaseHistory() async {
+    return load(); // Uses the same logic for now
   }
 
   /// Derives refill reminders from real purchases of chronic medicines.
@@ -219,9 +224,9 @@ class CustomerProvider extends ChangeNotifier {
             .from('customers')
             .upsert(customer.toJson())
             .eq('id', customer.id);
-        debugPrint('[Customer] ✅ Saved to Supabase: ${customer.name}');
+        debugPrint('[Customer] ? Saved to Supabase: ${customer.name}');
       } else {
-        debugPrint('[Customer] ℹ️  Saved locally only (no tenant context): ${customer.name}');
+        debugPrint('[Customer] ??  Saved locally only (no tenant context): ${customer.name}');
       }
 
       // Update local list

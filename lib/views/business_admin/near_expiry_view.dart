@@ -36,8 +36,8 @@ class _NearExpiryViewState extends State<NearExpiryView> {
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [
-                  AppTheme.warningAmber.withValues(alpha: 0.2),
-                  AppTheme.errorRed.withValues(alpha: 0.1),
+                  AppTheme.warningAmber.withOpacity(0.2),
+                  AppTheme.errorRed.withOpacity(0.1),
                 ],
               ),
               borderRadius: BorderRadius.circular(12),
@@ -214,7 +214,7 @@ class _NearExpiryViewState extends State<NearExpiryView> {
       margin: const EdgeInsets.only(bottom: 12),
       child: ExpansionTile(
         leading: CircleAvatar(
-          backgroundColor: statusColor.withValues(alpha: 0.2),
+          backgroundColor: statusColor.withOpacity(0.2),
           child: Icon(Icons.medical_services, color: statusColor),
         ),
         title: Text(
@@ -236,7 +236,7 @@ class _NearExpiryViewState extends State<NearExpiryView> {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                   decoration: BoxDecoration(
-                    color: statusColor.withValues(alpha: 0.15),
+                    color: statusColor.withOpacity(0.15),
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: Text(

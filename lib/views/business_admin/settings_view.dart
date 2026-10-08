@@ -144,10 +144,10 @@ class _PharmacistPinTabState extends State<_PharmacistPinTab> {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: AppTheme.primaryBlue.withValues(alpha: 0.05),
+              color: AppTheme.primaryBlue.withOpacity(0.05),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                  color: AppTheme.primaryBlue.withValues(alpha: 0.2)),
+                  color: AppTheme.primaryBlue.withOpacity(0.2)),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -177,7 +177,7 @@ class _PharmacistPinTabState extends State<_PharmacistPinTab> {
                   padding: const EdgeInsets.symmetric(
                       horizontal: 12, vertical: 8),
                   decoration: BoxDecoration(
-                    color: AppTheme.accentOrange.withValues(alpha: 0.1),
+                    color: AppTheme.accentOrange.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Row(
@@ -296,10 +296,10 @@ class _PharmacistPinTabState extends State<_PharmacistPinTab> {
                   Container(
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: AppTheme.errorRed.withValues(alpha: 0.08),
+                      color: AppTheme.errorRed.withOpacity(0.08),
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(
-                          color: AppTheme.errorRed.withValues(alpha: 0.4)),
+                          color: AppTheme.errorRed.withOpacity(0.4)),
                     ),
                     child: Row(
                       children: [
@@ -320,11 +320,11 @@ class _PharmacistPinTabState extends State<_PharmacistPinTab> {
                   Container(
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: AppTheme.successGreen.withValues(alpha: 0.08),
+                      color: AppTheme.successGreen.withOpacity(0.08),
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(
                           color:
-                              AppTheme.successGreen.withValues(alpha: 0.4)),
+                              AppTheme.successGreen.withOpacity(0.4)),
                     ),
                     child: Row(
                       children: [
@@ -441,7 +441,7 @@ class _BranchManagementTabState extends State<_BranchManagementTab> {
                     leading: CircleAvatar(
                       backgroundColor: isActive
                           ? AppTheme.primaryBlue
-                          : AppTheme.primaryBlue.withValues(alpha: 0.1),
+                          : AppTheme.primaryBlue.withOpacity(0.1),
                       child: Icon(Icons.store,
                           color:
                               isActive ? Colors.white : AppTheme.primaryBlue,
@@ -457,7 +457,7 @@ class _BranchManagementTabState extends State<_BranchManagementTab> {
                         ? Chip(
                             label: const Text('Active'),
                             backgroundColor: AppTheme.successGreen
-                                .withValues(alpha: 0.1),
+                                .withOpacity(0.1),
                             labelStyle: const TextStyle(
                                 color: AppTheme.successGreen,
                                 fontSize: 11,
@@ -507,10 +507,10 @@ class _SubscriptionManagementTab extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: AppTheme.primaryBlue.withValues(alpha: 0.05),
+              color: AppTheme.primaryBlue.withOpacity(0.05),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                  color: AppTheme.primaryBlue.withValues(alpha: 0.2)),
+                  color: AppTheme.primaryBlue.withOpacity(0.2)),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,

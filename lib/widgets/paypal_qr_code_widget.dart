@@ -30,7 +30,7 @@ class PayPalQrCodeWidget extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
+            color: Colors.black.withOpacity(0.1),
             blurRadius: 10,
             spreadRadius: 2,
           ),
@@ -75,10 +75,10 @@ class PayPalQrCodeWidget extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
             decoration: BoxDecoration(
-              color: AppTheme.primaryBlue.withValues(alpha: 0.1),
+              color: AppTheme.primaryBlue.withOpacity(0.1),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: AppTheme.primaryBlue.withValues(alpha: 0.3),
+                color: AppTheme.primaryBlue.withOpacity(0.3),
               ),
             ),
             child: Column(

@@ -51,6 +51,9 @@ class ChronicRefillItem {
   bool get isDueSoon =>
       nextRefillDueDate.difference(DateTime.now()).inDays <= 5;
 
+  int get daysUntilRefill =>
+      nextRefillDueDate.difference(DateTime.now()).inDays;
+
   Map<String, dynamic> toJson() => {
         'medicine_name': medicineName,
         'refill_interval_days': refillIntervalDays,

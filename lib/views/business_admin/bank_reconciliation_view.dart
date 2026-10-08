@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../config/app_theme.dart';
 import '../../config/responsive_layout.dart';
@@ -37,13 +37,13 @@ class _BankReconciliationViewState extends State<BankReconciliationView> {
 
   static List<BankStatementEntry> _seedBankEntries() => [
         BankStatementEntry(id: 'be_001', date: DateTime.now().subtract(const Duration(days: 2)),
-            description: 'NEFT Credit – Pharmacy Sales', amount: 4500.00, isCredit: true),
+            description: 'NEFT Credit � Pharmacy Sales', amount: 4500.00, isCredit: true),
         BankStatementEntry(id: 'be_002', date: DateTime.now().subtract(const Duration(days: 2)),
-            description: 'UPI Debit – LIFESPROUT Pharma Labs', amount: 11250.00, isCredit: false),
+            description: 'UPI Debit � LIFESPROUT Pharma Labs', amount: 11250.00, isCredit: false),
         BankStatementEntry(id: 'be_003', date: DateTime.now().subtract(const Duration(days: 1)),
-            description: 'IMPS Credit – Wholesale Customer', amount: 28600.00, isCredit: true),
+            description: 'IMPS Credit � Wholesale Customer', amount: 28600.00, isCredit: true),
         BankStatementEntry(id: 'be_004', date: DateTime.now(),
-            description: 'UPI Credit – POS Terminal', amount: 1850.00, isCredit: true),
+            description: 'UPI Credit � POS Terminal', amount: 1850.00, isCredit: true),
       ];
 
   @override
@@ -63,7 +63,7 @@ class _BankReconciliationViewState extends State<BankReconciliationView> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // â”€â”€ Header â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+            // ── Header ──────────────────────────────────────────────────
             PageHeader(
               title: 'Bank Statement Reconciliation',
               subtitle: 'Match bank transactions against your General Ledger',
@@ -76,17 +76,17 @@ class _BankReconciliationViewState extends State<BankReconciliationView> {
             ),
             const SizedBox(height: 16),
 
-            // â”€â”€ KPI row – wraps to 2×3 on mobile â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+            // ── KPI row � wraps to 2�3 on mobile ─────────────────────
             KpiRow(kpis: [
-              _kpiCard('Bank Credits',  '₹${credits.toStringAsFixed(2)}', Icons.arrow_downward, AppTheme.successGreen),
-              _kpiCard('Bank Debits',   '₹${debits.toStringAsFixed(2)}',  Icons.arrow_upward,   AppTheme.errorRed),
-              _kpiCard('Net Balance',   '₹${net.toStringAsFixed(2)}',     Icons.account_balance, AppTheme.primaryBlue),
+              _kpiCard('Bank Credits',  '?${credits.toStringAsFixed(2)}', Icons.arrow_downward, AppTheme.successGreen),
+              _kpiCard('Bank Debits',   '?${debits.toStringAsFixed(2)}',  Icons.arrow_upward,   AppTheme.errorRed),
+              _kpiCard('Net Balance',   '?${net.toStringAsFixed(2)}',     Icons.account_balance, AppTheme.primaryBlue),
               _kpiCard('Matched',       '$matched / ${_bankEntries.length}', Icons.check_circle, AppTheme.successGreen),
               _kpiCard('Unmatched',     '$unmatched',                     Icons.warning_amber,  AppTheme.warningAmber),
             ]),
             const SizedBox(height: 16),
 
-            // â”€â”€ Split view – stacks on mobile â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+            // ── Split view � stacks on mobile ─────────────────────────
             Expanded(
               child: LayoutBuilder(
                 builder: (context, constraints) {
@@ -99,15 +99,15 @@ class _BankReconciliationViewState extends State<BankReconciliationView> {
               ),
             ),
 
-            // â”€â”€ Unmatched warning â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+            // ── Unmatched warning ─────────────────────────────────────
             if (unmatched > 0) ...[
               const SizedBox(height: 12),
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: AppTheme.warningAmber.withValues(alpha: 0.08),
+                  color: AppTheme.warningAmber.withOpacity(0.08),
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: AppTheme.warningAmber.withValues(alpha: 0.4)),
+                  border: Border.all(color: AppTheme.warningAmber.withOpacity(0.4)),
                 ),
                 child: Row(
                   children: [
@@ -129,7 +129,7 @@ class _BankReconciliationViewState extends State<BankReconciliationView> {
     );
   }
 
-  // â”€â”€ Desktop: side-by-side â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Desktop: side-by-side ─────────────────────────────────────────────────
   Widget _buildDesktopSplit(BuildContext context, List<LedgerEntryModel> ledger) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -141,7 +141,7 @@ class _BankReconciliationViewState extends State<BankReconciliationView> {
     );
   }
 
-  // â”€â”€ Mobile: tabbed â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Mobile: tabbed ────────────────────────────────────────────────────────
   Widget _buildMobileSplit(BuildContext context, List<LedgerEntryModel> ledger) {
     return DefaultTabController(
       length: 2,
@@ -169,7 +169,7 @@ class _BankReconciliationViewState extends State<BankReconciliationView> {
     );
   }
 
-  // â”€â”€ Bank statement panel â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Bank statement panel ──────────────────────────────────────────────────
   Widget _bankPanel(BuildContext context, List<LedgerEntryModel> ledger) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -189,7 +189,7 @@ class _BankReconciliationViewState extends State<BankReconciliationView> {
                 return ListTile(
                   leading: CircleAvatar(
                     backgroundColor: entry.isMatched
-                        ? AppTheme.successGreen.withValues(alpha: 0.12)
+                        ? AppTheme.successGreen.withOpacity(0.12)
                         : entry.isCredit ? const Color(0xFFE8F5E9) : const Color(0xFFFFEBEE),
                     child: Icon(
                       entry.isMatched ? Icons.check_circle
@@ -209,7 +209,7 @@ class _BankReconciliationViewState extends State<BankReconciliationView> {
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
                       Text(
-                        '${entry.isCredit ? '+' : '-'}₹${entry.amount.toStringAsFixed(2)}',
+                        '${entry.isCredit ? '+' : '-'}?${entry.amount.toStringAsFixed(2)}',
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 13,
@@ -217,7 +217,7 @@ class _BankReconciliationViewState extends State<BankReconciliationView> {
                         ),
                       ),
                       if (entry.isMatched)
-                        const Text('âœ“ Matched',
+                        const Text('✓ Matched',
                             style: TextStyle(fontSize: 10, color: AppTheme.successGreen))
                       else
                         TextButton(
@@ -236,7 +236,7 @@ class _BankReconciliationViewState extends State<BankReconciliationView> {
     );
   }
 
-  // â”€â”€ Ledger panel â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Ledger panel ──────────────────────────────────────────────────────────
   Widget _ledgerPanel(List<LedgerEntryModel> ledger) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -261,7 +261,7 @@ class _BankReconciliationViewState extends State<BankReconciliationView> {
                       return ListTile(
                         leading: CircleAvatar(
                           backgroundColor: alreadyMatched
-                              ? AppTheme.successGreen.withValues(alpha: 0.12)
+                              ? AppTheme.successGreen.withOpacity(0.12)
                               : isCredit ? const Color(0xFFE8F5E9) : const Color(0xFFFFEBEE),
                           child: Icon(
                             alreadyMatched ? Icons.link
@@ -278,7 +278,7 @@ class _BankReconciliationViewState extends State<BankReconciliationView> {
                           style: TextStyle(fontSize: 11),
                         ),
                         trailing: Text(
-                          '${isCredit ? '+' : '-'}₹${entry.amount.toStringAsFixed(2)}',
+                          '${isCredit ? '+' : '-'}?${entry.amount.toStringAsFixed(2)}',
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 12,
@@ -294,7 +294,7 @@ class _BankReconciliationViewState extends State<BankReconciliationView> {
     );
   }
 
-  // â”€â”€ Dialogs â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Dialogs ───────────────────────────────────────────────────────────────
   void _showMatchDialog(BuildContext context, BankStatementEntry bankEntry,
       List<LedgerEntryModel> ledger) {
     showDialog(
@@ -311,12 +311,12 @@ class _BankReconciliationViewState extends State<BankReconciliationView> {
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: AppTheme.primaryBlue.withValues(alpha: 0.06),
+                  color: AppTheme.primaryBlue.withOpacity(0.06),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
-                  'Bank: ${bankEntry.description}  •  '
-                  '${bankEntry.isCredit ? '+' : '-'}₹${bankEntry.amount.toStringAsFixed(2)}',
+                  'Bank: ${bankEntry.description}  �  '
+                  '${bankEntry.isCredit ? '+' : '-'}?${bankEntry.amount.toStringAsFixed(2)}',
                   style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
                 ),
               ),
@@ -337,7 +337,7 @@ class _BankReconciliationViewState extends State<BankReconciliationView> {
                       title: Text(entry.accountName,
                           style: TextStyle(fontSize: 12)),
                       subtitle: Text(
-                          '${entry.type.name}  •  ₹${entry.amount.toStringAsFixed(2)}',
+                          '${entry.type.name}  �  ?${entry.amount.toStringAsFixed(2)}',
                           style: TextStyle(fontSize: 11)),
                       trailing: alreadyLinked
                           ? const Text('Matched',
@@ -352,7 +352,7 @@ class _BankReconciliationViewState extends State<BankReconciliationView> {
                               });
                               Navigator.pop(ctx);
                               ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('Entries matched âœ“'),
+                                const SnackBar(content: Text('Entries matched ✓'),
                                     backgroundColor: AppTheme.successGreen),
                               );
                             },
@@ -395,7 +395,7 @@ class _BankReconciliationViewState extends State<BankReconciliationView> {
               Navigator.pop(ctx);
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
-                  content: Text('Bank statement imported – 4 entries loaded.'),
+                  content: Text('Bank statement imported � 4 entries loaded.'),
                   backgroundColor: AppTheme.successGreen,
                 ),
               );
@@ -416,7 +416,7 @@ class _BankReconciliationViewState extends State<BankReconciliationView> {
           children: [
             CircleAvatar(
               radius: 18,
-              backgroundColor: color.withValues(alpha: 0.12),
+              backgroundColor: color.withOpacity(0.12),
               child: Icon(icon, color: color, size: 16),
             ),
             const SizedBox(width: 8),

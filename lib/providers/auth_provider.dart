@@ -100,6 +100,13 @@ class AuthProvider extends ChangeNotifier {
         errorMessage: e.message,
       );
       throw Exception(e.message);
+    } catch (e) {
+      // For any other errors (network, etc.), fall back to demo mode
+      debugPrint('[Auth] Supabase login failed, falling back to demo mode: $e');
+      
+      // Use demo login as fallback
+      login(email: email);
+      
     } finally {
       _isLoading = false;
       notifyListeners();

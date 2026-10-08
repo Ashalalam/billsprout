@@ -1,9 +1,9 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import '../../config/app_theme.dart';
 import '../../config/responsive_layout.dart';
 import '../../models/rtv_model.dart';
 
-// â”€â”€â”€ Lightweight PO model (local only until Supabase is wired) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Lightweight PO model (local only until Supabase is wired) ───────────────
 class PurchaseOrderModel {
   final String id;
   final String poNumber;
@@ -45,7 +45,7 @@ class PoLineItem {
   double get totalCost => quantity * purchasePrice * (1 + taxPercent / 100);
 }
 
-// â”€â”€â”€ Vendor model â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Vendor model ─────────────────────────────────────────────────────────────
 class VendorModel {
   final String id;
   String name;
@@ -66,7 +66,7 @@ class VendorModel {
   });
 }
 
-// â”€â”€â”€ Main View â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Main View ────────────────────────────────────────────────────────────────
 class PurchaseOrderView extends StatefulWidget {
   const PurchaseOrderView({super.key});
 
@@ -204,7 +204,7 @@ class _PurchaseOrderViewState extends State<PurchaseOrderView>
                           color: AppTheme.primaryBlue),
                     ),
                     Text(
-                      'Vendor PO management · Goods Receipt Notes · Return to Vendor',
+                      'Vendor PO management � Goods Receipt Notes � Return to Vendor',
                       style: TextStyle(
                           color: AppTheme.textMuted, fontSize: 13),
                     ),
@@ -257,7 +257,7 @@ class _PurchaseOrderViewState extends State<PurchaseOrderView>
   }
 }
 
-// â”€â”€â”€ Tab 1: Purchase Orders â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Tab 1: Purchase Orders ───────────────────────────────────────────────────
 class _PurchaseOrderTab extends StatelessWidget {
   final List<PurchaseOrderModel> orders;
   final List<VendorModel> vendors;
@@ -313,19 +313,19 @@ class _PurchaseOrderTab extends StatelessWidget {
                         return ExpansionTile(
                           leading: CircleAvatar(
                             backgroundColor: _poStatusColor(po.status)
-                                .withValues(alpha: 0.12),
+                                .withOpacity(0.12),
                             child: Icon(Icons.shopping_bag,
                                 color: _poStatusColor(po.status)),
                           ),
                           title: Text(
-                            '${po.poNumber} – ${po.vendorName}',
+                            '${po.poNumber} � ${po.vendorName}',
                             style: const TextStyle(
                                 fontWeight: FontWeight.bold),
                           ),
                           subtitle: Text(
                             '${po.orderDate.day}/${po.orderDate.month}/${po.orderDate.year}  '
-                            '•  ${po.items.length} items  •  '
-                            'Total: ₹${po.totalAmount.toStringAsFixed(2)}',
+                            '�  ${po.items.length} items  �  '
+                            'Total: ?${po.totalAmount.toStringAsFixed(2)}',
                             style: TextStyle(fontSize: 12),
                           ),
                           trailing: Chip(
@@ -335,7 +335,7 @@ class _PurchaseOrderTab extends StatelessWidget {
                                     fontSize: 11,
                                     fontWeight: FontWeight.bold)),
                             backgroundColor: _poStatusColor(po.status)
-                                .withValues(alpha: 0.1),
+                                .withOpacity(0.1),
                           ),
                           children: [
                             Container(
@@ -359,8 +359,8 @@ class _PurchaseOrderTab extends StatelessWidget {
                                       _TH('Medicine'),
                                       _TH('HSN'),
                                       _TH('Qty'),
-                                      _TH('Rate (₹)'),
-                                      _TH('Total (₹)'),
+                                      _TH('Rate (?)'),
+                                      _TH('Total (?)'),
                                     ],
                                   ),
                                   ...po.items.map((item) => TableRow(
@@ -368,8 +368,8 @@ class _PurchaseOrderTab extends StatelessWidget {
                                           _TC(item.medicineName),
                                           _TC(item.hsnCode),
                                           _TC('${item.quantity}'),
-                                          _TC('₹${item.purchasePrice.toStringAsFixed(2)}'),
-                                          _TC('₹${item.totalCost.toStringAsFixed(2)}'),
+                                          _TC('?${item.purchasePrice.toStringAsFixed(2)}'),
+                                          _TC('?${item.totalCost.toStringAsFixed(2)}'),
                                         ],
                                       )),
                                 ],
@@ -416,7 +416,7 @@ class _PurchaseOrderTab extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 DropdownButtonFormField<String>(
-                  initialValue: selectedVendorId,
+                  value: selectedVendorId,
                   decoration:
                       const InputDecoration(labelText: 'Select Vendor *'),
                   items: vendors
@@ -447,7 +447,7 @@ class _PurchaseOrderTab extends StatelessWidget {
                           controller: priceCtrl,
                           keyboardType: TextInputType.number,
                           decoration: const InputDecoration(
-                              labelText: 'Purchase Rate (₹) *'))),
+                              labelText: 'Purchase Rate (?) *'))),
                 ]),
               ],
             ),
@@ -494,7 +494,7 @@ class _PurchaseOrderTab extends StatelessWidget {
   }
 }
 
-// â”€â”€â”€ Tab 2: Vendor Master â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Tab 2: Vendor Master ─────────────────────────────────────────────────────
 class _VendorTab extends StatelessWidget {
   final List<VendorModel> vendors;
   final void Function(VendorModel) onAdd;
@@ -537,7 +537,7 @@ class _VendorTab extends StatelessWidget {
                         return ListTile(
                           leading: CircleAvatar(
                             backgroundColor: AppTheme.primaryBlue
-                                .withValues(alpha: 0.1),
+                                .withOpacity(0.1),
                             child: const Icon(Icons.business,
                                 color: AppTheme.primaryBlue),
                           ),
@@ -545,8 +545,8 @@ class _VendorTab extends StatelessWidget {
                               style: const TextStyle(
                                   fontWeight: FontWeight.bold)),
                           subtitle: Text(
-                            'GSTIN: ${v.gstin}  •  DL: ${v.drugLicenseNo}\n'
-                            '${v.phone}  •  ${v.email}',
+                            'GSTIN: ${v.gstin}  �  DL: ${v.drugLicenseNo}\n'
+                            '${v.phone}  �  ${v.email}',
                             style: const TextStyle(
                                 fontSize: 12, height: 1.4),
                           ),
@@ -711,7 +711,7 @@ class _VendorTab extends StatelessWidget {
   }
 }
 
-// â”€â”€â”€ Tab 3: RTV Notes â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Tab 3: RTV Notes ─────────────────────────────────────────────────────────
 class _RtvTab extends StatelessWidget {
   final List<RtvNoteModel> rtvNotes;
   final List<VendorModel> vendors;
@@ -738,14 +738,14 @@ class _RtvTab extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(
                     horizontal: 16, vertical: 10),
                 decoration: BoxDecoration(
-                  color: AppTheme.warningAmber.withValues(alpha: 0.08),
+                  color: AppTheme.warningAmber.withOpacity(0.08),
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(
                       color:
-                          AppTheme.warningAmber.withValues(alpha: 0.4)),
+                          AppTheme.warningAmber.withOpacity(0.4)),
                 ),
                 child: Text(
-                  'Total Pending Refunds: ₹${totalRefund.toStringAsFixed(2)}',
+                  'Total Pending Refunds: ?${totalRefund.toStringAsFixed(2)}',
                   style: const TextStyle(
                       fontWeight: FontWeight.bold,
                       color: AppTheme.warningAmber),
@@ -781,18 +781,18 @@ class _RtvTab extends StatelessWidget {
                                 color: AppTheme.warningAmber),
                           ),
                           title: Text(
-                            '${rtv.rtvNumber} – ${rtv.productName}',
+                            '${rtv.rtvNumber} � ${rtv.productName}',
                             style: const TextStyle(
                                 fontWeight: FontWeight.bold),
                           ),
                           subtitle: Text(
-                            'Supplier: ${rtv.supplierName}  •  Batch: ${rtv.batchNumber}\n'
-                            'Reason: ${rtv.reason}  •  Qty: ${rtv.quantity}  •  '
+                            'Supplier: ${rtv.supplierName}  �  Batch: ${rtv.batchNumber}\n'
+                            'Reason: ${rtv.reason}  �  Qty: ${rtv.quantity}  �  '
                             '${rtv.date.day}/${rtv.date.month}/${rtv.date.year}',
                             style: TextStyle(fontSize: 12),
                           ),
                           trailing: Text(
-                            '₹${rtv.totalRefundAmount.toStringAsFixed(2)}',
+                            '?${rtv.totalRefundAmount.toStringAsFixed(2)}',
                             style: const TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 15,
@@ -828,7 +828,7 @@ class _RtvTab extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 DropdownButtonFormField<String>(
-                  initialValue: selectedVendorId,
+                  value: selectedVendorId,
                   decoration:
                       const InputDecoration(labelText: 'Supplier *'),
                   items: vendors
@@ -868,11 +868,11 @@ class _RtvTab extends StatelessWidget {
                           controller: priceCtrl,
                           keyboardType: TextInputType.number,
                           decoration: const InputDecoration(
-                              labelText: 'Unit Price (₹) *'))),
+                              labelText: 'Unit Price (?) *'))),
                 ]),
                 const SizedBox(height: 10),
                 DropdownButtonFormField<String>(
-                  initialValue: reason,
+                  value: reason,
                   decoration:
                       const InputDecoration(labelText: 'Reason'),
                   items: [
@@ -929,7 +929,7 @@ class _RtvTab extends StatelessWidget {
   }
 }
 
-// â”€â”€â”€ Table helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Table helpers ────────────────────────────────────────────────────────────
 class _TH extends StatelessWidget {
   final String text;
   const _TH(this.text);

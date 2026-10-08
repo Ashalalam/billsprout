@@ -23,6 +23,7 @@ class _CompanyProfileViewState extends State<CompanyProfileView> {
   late TextEditingController _pinCtrl;
   late TextEditingController _gstinCtrl;
   late TextEditingController _dlCtrl;
+  late TextEditingController _fssaiCtrl;
   late TextEditingController _phoneCtrl;
   late TextEditingController _altPhoneCtrl;
   late TextEditingController _emailCtrl;
@@ -52,6 +53,7 @@ class _CompanyProfileViewState extends State<CompanyProfileView> {
     _pinCtrl       = TextEditingController(text: p.pinCode);
     _gstinCtrl     = TextEditingController(text: p.gstin);
     _dlCtrl        = TextEditingController(text: p.drugLicenseNo);
+    _fssaiCtrl     = TextEditingController(text: p.fssaiLicenseNo);
     _phoneCtrl     = TextEditingController(text: p.phone);
     _altPhoneCtrl  = TextEditingController(text: p.altPhone);
     _emailCtrl     = TextEditingController(text: p.email);
@@ -71,7 +73,7 @@ class _CompanyProfileViewState extends State<CompanyProfileView> {
   @override
   void dispose() {
     for (final c in [_nameCtrl, _ownerCtrl, _addressCtrl, _cityCtrl,
-        _stateCtrl, _pinCtrl, _gstinCtrl, _dlCtrl, _phoneCtrl,
+        _stateCtrl, _pinCtrl, _gstinCtrl, _dlCtrl, _fssaiCtrl, _phoneCtrl,
         _altPhoneCtrl, _emailCtrl, _stateCodeCtrl, _bankCtrl,
         _acNoCtrl, _ifscCtrl, _whatsappCtrl, _panCtrl, _bankBranchCtrl,
         _termsCtrl, _signatoryCtrl, _logoPathCtrl]) {
@@ -95,6 +97,7 @@ class _CompanyProfileViewState extends State<CompanyProfileView> {
       pinCode:       _pinCtrl.text.trim(),
       gstin:         _gstinCtrl.text.trim().toUpperCase(),
       drugLicenseNo: _dlCtrl.text.trim(),
+      fssaiLicenseNo: _fssaiCtrl.text.trim(),
       phone:         _phoneCtrl.text.trim(),
       altPhone:      _altPhoneCtrl.text.trim(),
       email:         _emailCtrl.text.trim(),
@@ -163,10 +166,10 @@ class _CompanyProfileViewState extends State<CompanyProfileView> {
                   padding: const EdgeInsets.all(14),
                   margin: const EdgeInsets.only(bottom: 20),
                   decoration: BoxDecoration(
-                    color: AppTheme.primaryBlue.withValues(alpha: 0.06),
+                    color: AppTheme.primaryBlue.withOpacity(0.06),
                     borderRadius: BorderRadius.circular(10),
                     border: Border.all(
-                        color: AppTheme.primaryBlue.withValues(alpha: 0.2)),
+                        color: AppTheme.primaryBlue.withOpacity(0.2)),
                   ),
                   child: Row(
                     children: const [
@@ -188,7 +191,7 @@ class _CompanyProfileViewState extends State<CompanyProfileView> {
               _field(_ownerCtrl, 'Owner / Proprietor Name', Icons.person),
               const SizedBox(height: 8),
               DropdownButtonFormField<String>(
-                initialValue: _businessType,
+                value: _businessType,
                 decoration: const InputDecoration(
                   labelText: 'Business Type',
                   prefixIcon: Icon(Icons.business_center),
@@ -225,6 +228,8 @@ class _CompanyProfileViewState extends State<CompanyProfileView> {
                   }),
               _field(_dlCtrl, 'Drug License Number *', Icons.verified,
                   required: true, hint: 'e.g. DL-KA-2024-98123'),
+              _field(_fssaiCtrl, 'FSSAI License Number', Icons.food_bank,
+                  hint: 'e.g. 10012011000694 (for food supplements)'),
               const SizedBox(height: 20),
 
               _section('Contact'),

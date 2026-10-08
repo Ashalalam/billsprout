@@ -184,17 +184,35 @@ class RazorpayWebService {
           'color': '#182B68', // AppTheme.primaryBlue
         },
         'handler': js.allowInterop((response) {
-          final paymentId = response['razorpay_payment_id'] as String;
-          final signature = response['razorpay_signature'] as String;
-          final responseOrderId = response['razorpay_order_id'] as String;
+          try {
+            // Safely extract response data with null checks
+            final paymentId = response['razorpay_payment_id'];
+            final signature = response['razorpay_signature'];
+            final responseOrderId = response['razorpay_order_id'];
 
-          Logger.info('Razorpay payment success: $paymentId');
+            if (paymentId == null || signature == null || responseOrderId == null) {
+              Logger.error('Razorpay success handler: Missing required fields in response');
+              onError({
+                'code': 'INVALID_RESPONSE',
+                'description': 'Payment response is missing required fields',
+              });
+              return;
+            }
 
-          onSuccess({
-            'razorpay_payment_id': paymentId,
-            'razorpay_order_id': responseOrderId,
-            'razorpay_signature': signature,
-          });
+            Logger.info('Razorpay payment success: $paymentId');
+
+            onSuccess({
+              'razorpay_payment_id': paymentId.toString(),
+              'razorpay_order_id': responseOrderId.toString(),
+              'razorpay_signature': signature.toString(),
+            });
+          } catch (e) {
+            Logger.error('Razorpay success handler error: $e');
+            onError({
+              'code': 'SUCCESS_HANDLER_ERROR',
+              'description': 'Error processing payment success: ${e.toString()}',
+            });
+          }
         }),
         'modal': {
           'ondismiss': js.allowInterop(() {
@@ -207,14 +225,24 @@ class RazorpayWebService {
         }
       });
 
-      // Create and open Razorpay instance
-      final razorpay = js.JsObject(js.context['Razorpay'], [options]);
-      razorpay.callMethod('open', []);
+      // Verify Razorpay is available in global context
+      if (js.context['Razorpay'] == null) {
+        throw Exception('Razorpay SDK not loaded. Please check internet connection and refresh the page.');
+      }
+
+      // Create and open Razorpay instance with error handling
+      try {
+        final razorpay = js.JsObject(js.context['Razorpay'], [options]);
+        razorpay.callMethod('open', []);
+      } catch (jsError) {
+        Logger.error('Razorpay JavaScript error: $jsError');
+        throw Exception('Failed to initialize Razorpay checkout: ${jsError.toString()}');
+      }
     } catch (e) {
       Logger.error('Error opening Razorpay checkout', error: e);
       onError({
-        'code': 'UNKNOWN_ERROR',
-        'description': e.toString(),
+        'code': 'CHECKOUT_ERROR',
+        'description': e.toString().replaceAll('Instance of \'', '').replaceAll('\'', ''),
       });
     }
   }

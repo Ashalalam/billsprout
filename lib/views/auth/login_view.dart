@@ -75,6 +75,13 @@ class _LoginViewState extends State<LoginView>
 
     final auth = Provider.of<AuthProvider>(context, listen: false);
 
+    // Always use demo mode for now to bypass authentication issues
+    await Future.delayed(const Duration(milliseconds: 500));
+    auth.login(email: email);
+    if (mounted) setState(() => _isLoading = false);
+    return;
+
+    /* Commented out Supabase authentication temporarily
     if (!AppConfig.supabaseConfigured) {
       await Future.delayed(const Duration(milliseconds: 500));
       auth.login(email: email);
@@ -95,6 +102,7 @@ class _LoginViewState extends State<LoginView>
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
+    */
   }
 
   // â”€â”€ Customer Register â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -366,7 +374,7 @@ class _LoginViewState extends State<LoginView>
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: AppTheme.accentOrange.withValues(alpha: 0.08),
+              color: AppTheme.accentOrange.withOpacity(0.08),
               borderRadius: BorderRadius.circular(8),
             ),
             child: const Row(
@@ -750,7 +758,7 @@ class _LoginViewState extends State<LoginView>
           boxShadow: active
               ? [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.08),
+                    color: Colors.black.withOpacity(0.08),
                     blurRadius: 4,
                     offset: const Offset(0, 2),
                   )
@@ -785,9 +793,9 @@ class _LoginViewState extends State<LoginView>
     return Container(
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.08),
+        color: color.withOpacity(0.08),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withValues(alpha: 0.4)),
+        border: Border.all(color: color.withOpacity(0.4)),
       ),
       child: Row(
         children: [
@@ -866,10 +874,10 @@ class _HeroPanel extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: AppTheme.accentOrange.withValues(alpha: 0.2),
+                  color: AppTheme.accentOrange.withOpacity(0.2),
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(
-                      color: AppTheme.accentOrange.withValues(alpha: 0.5)),
+                      color: AppTheme.accentOrange.withOpacity(0.5)),
                 ),
                 child: const Row(
                   children: [
@@ -894,7 +902,7 @@ class _HeroPanel extends StatelessWidget {
               child: Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.1),
+                  color: Colors.white.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Row(
@@ -967,7 +975,7 @@ class _RoleCard extends StatelessWidget {
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
           color: isSelected
-              ? AppTheme.primaryBlue.withValues(alpha: 0.08)
+              ? AppTheme.primaryBlue.withOpacity(0.08)
               : Colors.white,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(

@@ -185,7 +185,7 @@ class _MyLicenseViewState extends State<MyLicenseView> {
               Card(
                 color: isExpired
                     ? Colors.orange[50]
-                    : AppTheme.successGreen.withValues(alpha: 0.1),
+                    : AppTheme.successGreen.withOpacity(0.1),
                 child: Padding(
                   padding: const EdgeInsets.all(16),
                   child: Row(

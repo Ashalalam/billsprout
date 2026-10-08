@@ -278,7 +278,7 @@ class _AddTenantDialogState extends State<AddTenantDialog> {
                 Row(children: [
                   Expanded(
                     child: DropdownButtonFormField<IndustryType>(
-                      initialValue: _industryType,
+                      value: _industryType,
                       decoration: const InputDecoration(
                           labelText: 'Industry Type',
                           border: OutlineInputBorder()),
@@ -293,7 +293,7 @@ class _AddTenantDialogState extends State<AddTenantDialog> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: DropdownButtonFormField<BusinessMode>(
-                      initialValue: _businessMode,
+                      value: _businessMode,
                       decoration: const InputDecoration(
                           labelText: 'Billing Mode',
                           border: OutlineInputBorder()),
@@ -310,7 +310,7 @@ class _AddTenantDialogState extends State<AddTenantDialog> {
                 Row(children: [
                   Expanded(
                     child: DropdownButtonFormField<String>(
-                      initialValue: _subscriptionPlan,
+                      value: _subscriptionPlan,
                       decoration: const InputDecoration(
                           labelText: 'Subscription Plan',
                           border: OutlineInputBorder()),
@@ -325,7 +325,7 @@ class _AddTenantDialogState extends State<AddTenantDialog> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: DropdownButtonFormField<int>(
-                      initialValue: _maxBranches,
+                      value: _maxBranches,
                       decoration: const InputDecoration(
                           labelText: 'Max Branches',
                           border: OutlineInputBorder()),

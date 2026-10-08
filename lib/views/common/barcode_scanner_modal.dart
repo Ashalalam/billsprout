@@ -1,8 +1,8 @@
-﻿import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import '../../config/app_theme.dart';
 
-// mobile_scanner is not supported on web – conditionally import only on native
+// mobile_scanner is not supported on web � conditionally import only on native
 import 'barcode_scanner_stub.dart'
     if (dart.library.io) 'barcode_scanner_native.dart';
 

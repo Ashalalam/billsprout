@@ -1,4 +1,4 @@
-﻿import 'package:fl_chart/fl_chart.dart';
+import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../config/app_config.dart';
@@ -49,7 +49,7 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard>
           children: const [
             Icon(Icons.admin_panel_settings, color: AppTheme.accentOrange),
             SizedBox(width: 10),
-            Text('BillSprout – Super Admin SaaS Portal'),
+            Text('BillSprout � Super Admin SaaS Portal'),
           ],
         ),
         actions: [
@@ -138,7 +138,7 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard>
     );
   }
 
-  // â”€â”€ Add Tenant Dialog â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Add Tenant Dialog ─────────────────────────────────────────────────────
   void _showAddTenantDialog(BuildContext context) {
     showDialog(
       context: context,
@@ -146,7 +146,7 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard>
     );
   }
 
-  // â”€â”€ Supabase Config Modal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Supabase Config Modal ─────────────────────────────────────────────────
   void _showSupabaseConfigModal(BuildContext context) {
     final urlCtrl = TextEditingController(
         text: 'https://your-project-ref.supabase.co');
@@ -169,7 +169,7 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard>
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: AppTheme.accentOrange.withValues(alpha: 0.08),
+                color: AppTheme.accentOrange.withOpacity(0.08),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: const Text(
@@ -215,9 +215,9 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard>
   }
 }
 
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-// Tab 1 – Overview
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─────────────────────────────────────────────────────────────────────────────
+// Tab 1 � Overview
+// ─────────────────────────────────────────────────────────────────────────────
 class _OverviewTab extends StatelessWidget {
   final SuperAdminProvider superAdmin;
   final OtaService ota;
@@ -276,7 +276,7 @@ class _OverviewTab extends StatelessWidget {
                       ),
                       SizedBox(height: 4),
                       Text(
-                        'Multi-Tenant Accounts · OTA Updates · Supabase Real-time Replication',
+                        'Multi-Tenant Accounts � OTA Updates � Supabase Real-time Replication',
                         style: TextStyle(color: Colors.white70, fontSize: 13),
                       ),
                     ],
@@ -294,7 +294,7 @@ class _OverviewTab extends StatelessWidget {
           ),
           const SizedBox(height: 24),
 
-          // KPI cards – responsive wrap on mobile
+          // KPI cards � responsive wrap on mobile
           KpiRow(kpis: [
             _MetricCard(
               title: 'Active Client Companies',
@@ -305,7 +305,7 @@ class _OverviewTab extends StatelessWidget {
             ),
             _MetricCard(
               title: 'Platform Revenue',
-              value: '₹${displayRevenue.toStringAsFixed(0)}',
+              value: '?${displayRevenue.toStringAsFixed(0)}',
               icon: Icons.payments,
               color: AppTheme.successGreen,
               subtitle: realRevenue > 0 ? 'Live POS data' : 'Monthly SaaS',
@@ -337,13 +337,13 @@ class _OverviewTab extends StatelessWidget {
                 const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
               color: AppConfig.supabaseConfigured
-                  ? AppTheme.successGreen.withValues(alpha: 0.06)
-                  : AppTheme.warningAmber.withValues(alpha: 0.06),
+                  ? AppTheme.successGreen.withOpacity(0.06)
+                  : AppTheme.warningAmber.withOpacity(0.06),
               borderRadius: BorderRadius.circular(10),
               border: Border.all(
                 color: AppConfig.supabaseConfigured
-                    ? AppTheme.successGreen.withValues(alpha: 0.3)
-                    : AppTheme.warningAmber.withValues(alpha: 0.3),
+                    ? AppTheme.successGreen.withOpacity(0.3)
+                    : AppTheme.warningAmber.withOpacity(0.3),
               ),
             ),
             child: Row(
@@ -360,8 +360,8 @@ class _OverviewTab extends StatelessWidget {
                 Expanded(
                   child: Text(
                     AppConfig.supabaseConfigured
-                        ? 'Supabase PostgreSQL: Connected – Real-time replication active ðŸŸ¢'
-                        : 'Supabase not configured – running in DEMO mode. '
+                        ? 'Supabase PostgreSQL: Connected � Real-time replication active 🟢'
+                        : 'Supabase not configured � running in DEMO mode. '
                             'Update AppConfig.supabaseUrl & supabaseAnonKey.',
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
@@ -434,9 +434,9 @@ class _OverviewTab extends StatelessWidget {
   }
 }
 
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-// Tab 2 – Tenant Accounts
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─────────────────────────────────────────────────────────────────────────────
+// Tab 2 � Tenant Accounts
+// ─────────────────────────────────────────────────────────────────────────────
 class _TenantsTab extends StatelessWidget {
   final SuperAdminProvider superAdmin;
   final VoidCallback onAddTenant;
@@ -466,8 +466,8 @@ class _TenantsTab extends StatelessWidget {
                 children: [
                   Text(
                     AppConfig.supabaseConfigured
-                        ? 'Supabase Replication: Active ðŸŸ¢'
-                        : 'Demo Mode ðŸŸ¡',
+                        ? 'Supabase Replication: Active 🟢'
+                        : 'Demo Mode 🟡',
                     style: TextStyle(
                       color: AppConfig.supabaseConfigured
                           ? AppTheme.successGreen
@@ -538,9 +538,9 @@ class _TenantsTab extends StatelessWidget {
   }
 }
 
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-// Tab 3 – Analytics – wired to real AccountingProvider + SuperAdminProvider
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─────────────────────────────────────────────────────────────────────────────
+// Tab 3 � Analytics � wired to real AccountingProvider + SuperAdminProvider
+// ─────────────────────────────────────────────────────────────────────────────
 class _AnalyticsTab extends StatelessWidget {
   final SuperAdminProvider superAdmin;
   final AccountingProvider accounting;
@@ -563,7 +563,7 @@ class _AnalyticsTab extends StatelessWidget {
     AppTheme.errorRed,
   ];
 
-  /// Build monthly revenue bars – real data for current month, backfill
+  /// Build monthly revenue bars � real data for current month, backfill
   /// preceding months with seeded progression so chart is always populated.
   List<double> _buildMonthlyRevenue() {
     // Real total from accounting provider
@@ -622,7 +622,7 @@ class _AnalyticsTab extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      'Revenue trends · Tenant mix · Store growth – wired to live data',
+                      'Revenue trends � Tenant mix � Store growth � wired to live data',
                       style: TextStyle(
                           color: AppTheme.textMuted, fontSize: 13),
                     ),
@@ -634,8 +634,8 @@ class _AnalyticsTab extends StatelessWidget {
                   avatar: const Icon(Icons.circle,
                       color: AppTheme.successGreen, size: 10),
                   label: Text(
-                    'Live: ${accounting.salesInvoices.length} invoices · '
-                    '₹${accounting.salesInvoices.fold<double>(0, (s, inv) => s + inv.grandTotal).toStringAsFixed(0)} total',
+                    'Live: ${accounting.salesInvoices.length} invoices � '
+                    '?${accounting.salesInvoices.fold<double>(0, (s, inv) => s + inv.grandTotal).toStringAsFixed(0)} total',
                     style: TextStyle(fontSize: 11),
                   ),
                 ),
@@ -643,7 +643,7 @@ class _AnalyticsTab extends StatelessWidget {
           ),
           const SizedBox(height: 24),
 
-          // Row 1: Revenue bar + industry pie – stacks on mobile
+          // Row 1: Revenue bar + industry pie � stacks on mobile
           LayoutBuilder(builder: (context, constraints) {
             final isNarrow = constraints.maxWidth < Bp.mobile;
             final children = [
@@ -664,7 +664,7 @@ class _AnalyticsTab extends StatelessWidget {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          'Oct 2025 – Sep 2026  '
+                          'Oct 2025 � Sep 2026  '
                           '${accounting.salesInvoices.isNotEmpty ? '(current month shows real POS data)' : '(seeded progression)'}',
                           style: const TextStyle(
                               fontSize: 11, color: AppTheme.textMuted),
@@ -681,7 +681,7 @@ class _AnalyticsTab extends StatelessWidget {
                                   tooltipRoundedRadius: 6,
                                   getTooltipItem: (g, gi, rod, ri) =>
                                       BarTooltipItem(
-                                    '₹${rod.toY.toStringAsFixed(1)}K',
+                                    '?${rod.toY.toStringAsFixed(1)}K',
                                     const TextStyle(
                                         color: Colors.white,
                                         fontWeight: FontWeight.bold,
@@ -713,7 +713,7 @@ class _AnalyticsTab extends StatelessWidget {
                                     reservedSize: 42,
                                     interval: maxY / 4,
                                     getTitlesWidget: (val, meta) => Text(
-                                      '₹${val.toInt()}K',
+                                      '?${val.toInt()}K',
                                       style: const TextStyle(
                                           fontSize: 9,
                                           color: AppTheme.textMuted),
@@ -766,7 +766,7 @@ class _AnalyticsTab extends StatelessWidget {
               ),
               const SizedBox(width: 16),
 
-              // Pie chart – from real tenant industry data
+              // Pie chart � from real tenant industry data
               Expanded(
                 flex: 2,
                 child: Card(
@@ -983,7 +983,7 @@ class _AnalyticsTab extends StatelessWidget {
                             belowBarData: BarAreaData(
                               show: true,
                               color: AppTheme.successGreen
-                                  .withValues(alpha: 0.08),
+                                  .withOpacity(0.08),
                             ),
                           ),
                         ],
@@ -1017,19 +1017,19 @@ class _AnalyticsTab extends StatelessWidget {
                       children: [
                         _gstKpi(
                           'Total Sales',
-                          '₹${accounting.salesInvoices.fold<double>(0, (s, inv) => s + inv.grandTotal).toStringAsFixed(2)}',
+                          '?${accounting.salesInvoices.fold<double>(0, (s, inv) => s + inv.grandTotal).toStringAsFixed(2)}',
                           AppTheme.primaryBlue,
                         ),
                         const SizedBox(width: 12),
                         _gstKpi(
                           'GST Collected',
-                          '₹${accounting.salesInvoices.fold<double>(0, (s, inv) => s + inv.totalTax).toStringAsFixed(2)}',
+                          '?${accounting.salesInvoices.fold<double>(0, (s, inv) => s + inv.totalTax).toStringAsFixed(2)}',
                           AppTheme.errorRed,
                         ),
                         const SizedBox(width: 12),
                         _gstKpi(
                           'Net Taxable',
-                          '₹${accounting.salesInvoices.fold<double>(0, (s, inv) => s + (inv.grandTotal - inv.totalTax)).toStringAsFixed(2)}',
+                          '?${accounting.salesInvoices.fold<double>(0, (s, inv) => s + (inv.grandTotal - inv.totalTax)).toStringAsFixed(2)}',
                           AppTheme.successGreen,
                         ),
                       ],
@@ -1058,9 +1058,9 @@ class _AnalyticsTab extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.06),
+          color: color.withOpacity(0.06),
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: color.withValues(alpha: 0.2)),
+          border: Border.all(color: color.withOpacity(0.2)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1081,9 +1081,9 @@ class _AnalyticsTab extends StatelessWidget {
   }
 }
 
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─────────────────────────────────────────────────────────────────────────────
 // Shared widgets
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─────────────────────────────────────────────────────────────────────────────
 class _MetricCard extends StatelessWidget {
   final String title;
   final String value;
@@ -1108,7 +1108,7 @@ class _MetricCard extends StatelessWidget {
           children: [
             CircleAvatar(
               radius: 24,
-              backgroundColor: color.withValues(alpha: 0.12),
+              backgroundColor: color.withOpacity(0.12),
               child: Icon(icon, color: color, size: 26),
             ),
             const SizedBox(width: 14),
@@ -1151,9 +1151,9 @@ class _ErrorBanner extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
-        color: AppTheme.errorRed.withValues(alpha: 0.07),
+        color: AppTheme.errorRed.withOpacity(0.07),
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: AppTheme.errorRed.withValues(alpha: 0.35)),
+        border: Border.all(color: AppTheme.errorRed.withOpacity(0.35)),
       ),
       child: Row(
         children: [
@@ -1195,7 +1195,7 @@ class _TenantListTile extends StatelessWidget {
     return ListTile(
       leading: CircleAvatar(
         backgroundColor: tenant.isActive
-            ? AppTheme.primaryBlue.withValues(alpha: 0.1)
+            ? AppTheme.primaryBlue.withOpacity(0.1)
             : Colors.grey.shade200,
         child: Icon(
           switch (tenant.industryType) {
@@ -1215,9 +1215,9 @@ class _TenantListTile extends StatelessWidget {
           style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
       subtitle: Text(
         showFullDetails
-            ? 'Owner: ${tenant.ownerName}  •  ${tenant.industryType.label}  •  GSTIN: ${tenant.gstin}\n'
-                '${tenant.email}  •  ${tenant.phone}'
-            : 'Owner: ${tenant.ownerName}  •  ${tenant.industryType.label}',
+            ? 'Owner: ${tenant.ownerName}  �  ${tenant.industryType.label}  �  GSTIN: ${tenant.gstin}\n'
+                '${tenant.email}  �  ${tenant.phone}'
+            : 'Owner: ${tenant.ownerName}  �  ${tenant.industryType.label}',
         style: const TextStyle(fontSize: 12, height: 1.4),
       ),
       trailing: Row(

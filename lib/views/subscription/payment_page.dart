@@ -334,7 +334,7 @@ class _PaymentPageState extends State<PaymentPage> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: AppTheme.accentOrange.withValues(alpha: 0.1),
+                color: AppTheme.accentOrange.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: const Column(
@@ -480,7 +480,7 @@ class _PaymentPageState extends State<PaymentPage> {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: AppTheme.accentOrange.withValues(alpha: 0.1),
+                    color: AppTheme.accentOrange.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: const Column(

@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import '../../config/app_theme.dart';
 
@@ -94,7 +94,7 @@ class _NativeScannerWidgetState extends State<_NativeScannerWidget> {
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
                       colors: [
-                        Colors.black.withValues(alpha: 0.7),
+                        Colors.black.withOpacity(0.7),
                         Colors.transparent,
                       ],
                     ),
@@ -139,7 +139,7 @@ class _NativeScannerWidgetState extends State<_NativeScannerWidget> {
                       begin: Alignment.bottomCenter,
                       end: Alignment.topCenter,
                       colors: [
-                        Colors.black.withValues(alpha: 0.7),
+                        Colors.black.withOpacity(0.7),
                         Colors.transparent,
                       ],
                     ),

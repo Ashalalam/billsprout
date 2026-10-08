@@ -82,10 +82,10 @@ class _PharmacistManagementTabState extends State<PharmacistManagementTab> {
                 margin: const EdgeInsets.only(bottom: 12),
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: AppTheme.errorRed.withValues(alpha: 0.07),
+                  color: AppTheme.errorRed.withOpacity(0.07),
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(
-                      color: AppTheme.errorRed.withValues(alpha: 0.3)),
+                      color: AppTheme.errorRed.withOpacity(0.3)),
                 ),
                 child: Row(
                   children: [
@@ -110,10 +110,10 @@ class _PharmacistManagementTabState extends State<PharmacistManagementTab> {
                 margin: const EdgeInsets.only(bottom: 12),
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: AppTheme.warningAmber.withValues(alpha: 0.08),
+                  color: AppTheme.warningAmber.withOpacity(0.08),
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(
-                      color: AppTheme.warningAmber.withValues(alpha: 0.4)),
+                      color: AppTheme.warningAmber.withOpacity(0.4)),
                 ),
                 child: const Row(
                   children: [
@@ -162,7 +162,7 @@ class _PharmacistManagementTabState extends State<PharmacistManagementTab> {
     return ListTile(
       leading: CircleAvatar(
         backgroundColor: p.isActive
-            ? AppTheme.successGreen.withValues(alpha: 0.15)
+            ? AppTheme.successGreen.withOpacity(0.15)
             : Colors.grey.shade200,
         child: Icon(Icons.local_pharmacy,
             color: p.isActive ? AppTheme.successGreen : Colors.grey),

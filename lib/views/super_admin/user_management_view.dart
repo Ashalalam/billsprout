@@ -82,7 +82,7 @@ class _UserManagementViewState extends State<UserManagementView> {
               color: Colors.white,
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.05),
+                  color: Colors.black.withOpacity(0.05),
                   blurRadius: 4,
                   offset: const Offset(0, 2),
                 ),
@@ -146,7 +146,7 @@ class _UserManagementViewState extends State<UserManagementView> {
           // Stats Cards
           Container(
             padding: const EdgeInsets.all(16),
-            color: AppTheme.primaryBlue.withValues(alpha: 0.05),
+            color: AppTheme.primaryBlue.withOpacity(0.05),
             child: Row(
               children: [
                 Expanded(
@@ -219,7 +219,7 @@ class _UserManagementViewState extends State<UserManagementView> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withValues(alpha: 0.3)),
+        border: Border.all(color: color.withOpacity(0.3)),
       ),
       child: Column(
         children: [
@@ -261,8 +261,8 @@ class _UserManagementViewState extends State<UserManagementView> {
                 CircleAvatar(
                   radius: 24,
                   backgroundColor: isActive 
-                      ? AppTheme.successGreen.withValues(alpha: 0.1)
-                      : AppTheme.errorRed.withValues(alpha: 0.1),
+                      ? AppTheme.successGreen.withOpacity(0.1)
+                      : AppTheme.errorRed.withOpacity(0.1),
                   child: Icon(
                     isActive ? Icons.person : Icons.person_off,
                     color: isActive ? AppTheme.successGreen : AppTheme.errorRed,
@@ -290,8 +290,8 @@ class _UserManagementViewState extends State<UserManagementView> {
                             ),
                             decoration: BoxDecoration(
                               color: isActive
-                                  ? AppTheme.successGreen.withValues(alpha: 0.1)
-                                  : AppTheme.errorRed.withValues(alpha: 0.1),
+                                  ? AppTheme.successGreen.withOpacity(0.1)
+                                  : AppTheme.errorRed.withOpacity(0.1),
                               borderRadius: BorderRadius.circular(4),
                             ),
                             child: Text(
@@ -334,7 +334,7 @@ class _UserManagementViewState extends State<UserManagementView> {
                           vertical: 6,
                         ),
                         decoration: BoxDecoration(
-                          color: AppTheme.accentOrange.withValues(alpha: 0.1),
+                          color: AppTheme.accentOrange.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(6),
                           border: Border.all(color: AppTheme.accentOrange),
                         ),

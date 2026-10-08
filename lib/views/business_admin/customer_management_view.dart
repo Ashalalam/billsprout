@@ -58,7 +58,7 @@ class _CustomerManagementViewState extends State<CustomerManagementView> {
               color: Colors.white,
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.05),
+                  color: Colors.black.withOpacity(0.05),
                   blurRadius: 4,
                   offset: const Offset(0, 2),
                 ),
@@ -145,7 +145,7 @@ class _CustomerManagementViewState extends State<CustomerManagementView> {
           // Customer Stats
           Container(
             padding: const EdgeInsets.all(16),
-            color: AppTheme.primaryBlue.withValues(alpha: 0.05),
+            color: AppTheme.primaryBlue.withOpacity(0.05),
             child: Row(
               children: [
                 Expanded(
@@ -221,7 +221,7 @@ class _CustomerManagementViewState extends State<CustomerManagementView> {
                             child: ListTile(
                               leading: CircleAvatar(
                                 backgroundColor: _getCustomerColor(customer.customerType)
-                                    .withValues(alpha: 0.1),
+                                    .withOpacity(0.1),
                                 child: Icon(
                                   _getCustomerIcon(customer.customerType),
                                   color: _getCustomerColor(customer.customerType),
@@ -257,7 +257,7 @@ class _CustomerManagementViewState extends State<CustomerManagementView> {
                                     ),
                                     decoration: BoxDecoration(
                                       color: _getCustomerColor(customer.customerType)
-                                          .withValues(alpha: 0.1),
+                                          .withOpacity(0.1),
                                       borderRadius: BorderRadius.circular(4),
                                     ),
                                     child: Text(
@@ -292,7 +292,7 @@ class _CustomerManagementViewState extends State<CustomerManagementView> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withValues(alpha: 0.3)),
+        border: Border.all(color: color.withOpacity(0.3)),
       ),
       child: Column(
         children: [

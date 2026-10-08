@@ -282,7 +282,7 @@ class _PayPalSettingsViewState extends State<PayPalSettingsView> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: isConfigured ? AppTheme.successGreen.withValues(alpha: 0.1) : Colors.orange.shade50,
+        color: isConfigured ? AppTheme.successGreen.withOpacity(0.1) : Colors.orange.shade50,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: isConfigured ? AppTheme.successGreen : Colors.orange.shade300,
@@ -587,7 +587,7 @@ class _EnvironmentChip extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
         decoration: BoxDecoration(
-          color: isSelected ? color.withValues(alpha: 0.1) : Colors.grey.shade100,
+          color: isSelected ? color.withOpacity(0.1) : Colors.grey.shade100,
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
             color: isSelected ? color : Colors.grey.shade300,
@@ -635,9 +635,9 @@ class _StatCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
+        color: color.withOpacity(0.1),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withValues(alpha: 0.3)),
+        border: Border.all(color: color.withOpacity(0.3)),
       ),
       child: Column(
         children: [

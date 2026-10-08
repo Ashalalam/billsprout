@@ -112,15 +112,15 @@ class AppTheme {
       ),
 
       // ── Cards ───────────────────────────────────────────────────────────
-      cardTheme: CardThemeData(
-        color: cardSurface,
-        elevation: 1,
-        shadowColor: Colors.black.withValues(alpha: 0.06),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(14),
-          side: const BorderSide(color: Color(0xFFE5E7EB), width: 0.8),
-        ),
-      ),
+      // cardTheme: CardThemeData(
+      //   color: cardSurface,
+      //   elevation: 1,
+      //   shadowColor: Colors.black.withOpacity(0.06),
+      //   shape: RoundedRectangleBorder(
+      //     borderRadius: BorderRadius.circular(14),
+      //     side: const BorderSide(color: Color(0xFFE5E7EB), width: 0.8),
+      //   ),
+      // ),
 
       // ── Elevated buttons ─────────────────────────────────────────────────
       elevatedButtonTheme: ElevatedButtonThemeData(
@@ -253,21 +253,21 @@ class AppTheme {
       ),
 
       // ── Tab bar ───────────────────────────────────────────────────────────
-      tabBarTheme: TabBarThemeData(
-        labelStyle: GoogleFonts.nunito(
-          fontSize: 13,
-          fontWeight: FontWeight.w700,
-        ),
-        unselectedLabelStyle: GoogleFonts.nunito(
-          fontSize: 13,
-          fontWeight: FontWeight.w500,
-        ),
-        labelColor: primaryBlue,
-        unselectedLabelColor: textMuted,
-        indicatorColor: primaryBlue,
-        indicatorSize: TabBarIndicatorSize.tab,
-        dividerColor: dividerColor,
-      ),
+      // tabBarTheme: TabBarThemeData(
+      //   labelStyle: GoogleFonts.nunito(
+      //     fontSize: 13,
+      //     fontWeight: FontWeight.w700,
+      //   ),
+      //   unselectedLabelStyle: GoogleFonts.nunito(
+      //     fontSize: 13,
+      //     fontWeight: FontWeight.w500,
+      //   ),
+      //   labelColor: primaryBlue,
+      //   unselectedLabelColor: textMuted,
+      //   indicatorColor: primaryBlue,
+      //   indicatorSize: TabBarIndicatorSize.tab,
+      //   dividerColor: dividerColor,
+      // ),
 
       // ── Snackbar ──────────────────────────────────────────────────────────
       snackBarTheme: SnackBarThemeData(
@@ -283,23 +283,23 @@ class AppTheme {
       ),
 
       // ── Dialog ────────────────────────────────────────────────────────────
-      dialogTheme: DialogThemeData(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
-        titleTextStyle: GoogleFonts.poppins(
-          fontSize: 17,
-          fontWeight: FontWeight.w700,
-          color: textDark,
-        ),
-        contentTextStyle: GoogleFonts.nunito(
-          fontSize: 14,
-          fontWeight: FontWeight.w400,
-          color: textDark,
-          height: 1.5,
-        ),
-        elevation: 4,
-      ),
+      // dialogTheme: DialogThemeData(
+      //   shape: RoundedRectangleBorder(
+      //     borderRadius: BorderRadius.circular(16),
+      //   ),
+      //   titleTextStyle: GoogleFonts.poppins(
+      //     fontSize: 17,
+      //     fontWeight: FontWeight.w700,
+      //     color: textDark,
+      //   ),
+      //   contentTextStyle: GoogleFonts.nunito(
+      //     fontSize: 14,
+      //     fontWeight: FontWeight.w400,
+      //     color: textDark,
+      //     height: 1.5,
+      //   ),
+      //   elevation: 4,
+      // ),
 
       // ── List tiles ────────────────────────────────────────────────────────
       listTileTheme: ListTileThemeData(

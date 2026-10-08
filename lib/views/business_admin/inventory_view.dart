@@ -192,7 +192,7 @@ class _InventoryViewState extends State<InventoryView> with SingleTickerProvider
                   final product = inventoryProvider.products[index];
                   return ExpansionTile(
                     leading: CircleAvatar(
-                      backgroundColor: AppTheme.primaryBlue.withValues(alpha: 0.1),
+                      backgroundColor: AppTheme.primaryBlue.withOpacity(0.1),
                       child: const Icon(Icons.medication, color: AppTheme.primaryBlue),
                     ),
                     title: Text(
@@ -212,9 +212,9 @@ class _InventoryViewState extends State<InventoryView> with SingleTickerProvider
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                             decoration: BoxDecoration(
-                              color: AppTheme.successGreen.withValues(alpha: 0.15),
+                              color: AppTheme.successGreen.withOpacity(0.15),
                               borderRadius: BorderRadius.circular(4),
-                              border: Border.all(color: AppTheme.successGreen.withValues(alpha: 0.3)),
+                              border: Border.all(color: AppTheme.successGreen.withOpacity(0.3)),
                             ),
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
@@ -241,7 +241,7 @@ class _InventoryViewState extends State<InventoryView> with SingleTickerProvider
                         if (product.isScheduleH || product.isScheduleH1)
                           Chip(
                             label: Text(product.isScheduleH1 ? 'SCH H1' : 'SCH H'),
-                            backgroundColor: AppTheme.errorRed.withValues(alpha: 0.15),
+                            backgroundColor: AppTheme.errorRed.withOpacity(0.15),
                             labelStyle: const TextStyle(color: AppTheme.errorRed, fontSize: 10, fontWeight: FontWeight.bold),
                           ),
                         const SizedBox(width: 4),
@@ -463,7 +463,7 @@ class _InventoryViewState extends State<InventoryView> with SingleTickerProvider
                           ),
                           trailing: Chip(
                             label: Text(trf.status),
-                            backgroundColor: AppTheme.primaryBlue.withValues(alpha: 0.1),
+                            backgroundColor: AppTheme.primaryBlue.withOpacity(0.1),
                             labelStyle: const TextStyle(color: AppTheme.primaryBlue, fontWeight: FontWeight.bold, fontSize: 11),
                           ),
                         );
@@ -773,7 +773,7 @@ class _InventoryViewState extends State<InventoryView> with SingleTickerProvider
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         DropdownButtonFormField<DoseType>(
-                          initialValue: doseType,
+                          value: doseType,
                           decoration: const InputDecoration(labelText: 'Dose Type / Form *'),
                           items: DoseType.values.map((d) =>
                             DropdownMenuItem(value: d, child: Text(d.label, style: const TextStyle(fontSize: 13)))).toList(),
@@ -787,7 +787,7 @@ class _InventoryViewState extends State<InventoryView> with SingleTickerProvider
                         ),
                         const SizedBox(height: 10),
                         DropdownButtonFormField<String>(
-                          initialValue: packagingConfig?.label,
+                          value: packagingConfig?.label,
                           decoration: const InputDecoration(labelText: 'Packaging Configuration'),
                           items: PackagingConfig.presetsFor(doseType).map((p) =>
                             DropdownMenuItem(value: p.label, child: Text(p.label, style: const TextStyle(fontSize: 13)))).toList(),
@@ -805,7 +805,7 @@ class _InventoryViewState extends State<InventoryView> with SingleTickerProvider
                   const SizedBox(height: 10),
                   // GST tax slab
                   DropdownButtonFormField<double>(
-                    initialValue: taxPercent,
+                    value: taxPercent,
                     decoration:
                         const InputDecoration(labelText: 'GST Tax Slab'),
                     items: [0.0, 5.0, 12.0, 18.0, 28.0]
@@ -834,9 +834,9 @@ class _InventoryViewState extends State<InventoryView> with SingleTickerProvider
                     Container(
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
-                        color: AppTheme.primaryBlue.withValues(alpha: 0.05),
+                        color: AppTheme.primaryBlue.withOpacity(0.05),
                         borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: AppTheme.primaryBlue.withValues(alpha: 0.2)),
+                        border: Border.all(color: AppTheme.primaryBlue.withOpacity(0.2)),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -897,9 +897,9 @@ class _InventoryViewState extends State<InventoryView> with SingleTickerProvider
                     Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: AppTheme.successGreen.withValues(alpha: 0.07),
+                        color: AppTheme.successGreen.withOpacity(0.07),
                         borderRadius: BorderRadius.circular(6),
-                        border: Border.all(color: AppTheme.successGreen.withValues(alpha: 0.2)),
+                        border: Border.all(color: AppTheme.successGreen.withOpacity(0.2)),
                       ),
                       child: Row(
                         children: const [
@@ -927,7 +927,7 @@ class _InventoryViewState extends State<InventoryView> with SingleTickerProvider
                         label: const Text('Schedule H'),
                         selected: isScheduleH,
                         selectedColor:
-                            AppTheme.errorRed.withValues(alpha: 0.15),
+                            AppTheme.errorRed.withOpacity(0.15),
                         onSelected: (v) =>
                             setDlg(() => isScheduleH = v),
                       ),
@@ -935,7 +935,7 @@ class _InventoryViewState extends State<InventoryView> with SingleTickerProvider
                         label: const Text('Schedule H1'),
                         selected: isScheduleH1,
                         selectedColor:
-                            AppTheme.errorRed.withValues(alpha: 0.15),
+                            AppTheme.errorRed.withOpacity(0.15),
                         onSelected: (v) =>
                             setDlg(() => isScheduleH1 = v),
                       ),
@@ -943,7 +943,7 @@ class _InventoryViewState extends State<InventoryView> with SingleTickerProvider
                         label: const Text('Narcotic / Psychotropic'),
                         selected: isNarcotic,
                         selectedColor:
-                            AppTheme.errorRed.withValues(alpha: 0.15),
+                            AppTheme.errorRed.withOpacity(0.15),
                         onSelected: (v) =>
                             setDlg(() => isNarcotic = v),
                       ),
@@ -1041,10 +1041,10 @@ class _InventoryViewState extends State<InventoryView> with SingleTickerProvider
                     Container(
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
-                        color: AppTheme.primaryBlue.withValues(alpha: 0.07),
+                        color: AppTheme.primaryBlue.withOpacity(0.07),
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(
-                            color: AppTheme.primaryBlue.withValues(alpha: 0.3)),
+                            color: AppTheme.primaryBlue.withOpacity(0.3)),
                       ),
                       child: Row(
                         children: [
@@ -1196,11 +1196,11 @@ class _InventoryViewState extends State<InventoryView> with SingleTickerProvider
                   Container(
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: AppTheme.successGreen.withValues(alpha: 0.07),
+                      color: AppTheme.successGreen.withOpacity(0.07),
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(
                           color:
-                              AppTheme.successGreen.withValues(alpha: 0.3)),
+                              AppTheme.successGreen.withOpacity(0.3)),
                     ),
                     child: const Row(
                       children: [
@@ -1505,7 +1505,7 @@ class _InventoryViewState extends State<InventoryView> with SingleTickerProvider
                   children: [
                     // Product selector
                     DropdownButtonFormField<String>(
-                      initialValue: selectedProductId,
+                      value: selectedProductId,
                       decoration: const InputDecoration(
                           labelText: 'Select Medicine *'),
                       items: inventoryProvider.products
@@ -1884,7 +1884,7 @@ class _InventoryViewState extends State<InventoryView> with SingleTickerProvider
         duration: const Duration(milliseconds: 150),
         padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
         decoration: BoxDecoration(
-          color: active ? color.withValues(alpha: 0.1) : Colors.grey.shade100,
+          color: active ? color.withOpacity(0.1) : Colors.grey.shade100,
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
             color: active ? color : Colors.grey.shade300,
@@ -1937,7 +1937,7 @@ class _InventoryViewState extends State<InventoryView> with SingleTickerProvider
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: AppTheme.errorRed.withValues(alpha: 0.1),
+                color: AppTheme.errorRed.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Column(

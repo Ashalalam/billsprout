@@ -136,6 +136,9 @@ class PrintingService {
                         if (profile.drugLicenseNo.isNotEmpty)
                           pw.Text('Drug Licence: ${profile.drugLicenseNo}',
                               style: const pw.TextStyle(fontSize: 9)),
+                        if (profile.fssaiLicenseNo.isNotEmpty)
+                          pw.Text('FSSAI Licence: ${profile.fssaiLicenseNo}',
+                              style: const pw.TextStyle(fontSize: 9)),
                       ],
                     ),
                   ),
@@ -205,13 +208,22 @@ class PrintingService {
                         if (invoice.customerPhone.isNotEmpty)
                           pw.Text('Phone: ${invoice.customerPhone}',
                               style: const pw.TextStyle(fontSize: 9)),
-                        if (invoice.customerGstin != null)
+                        if (invoice.customerEmail?.isNotEmpty == true)
+                          pw.Text('Email: ${invoice.customerEmail}',
+                              style: const pw.TextStyle(fontSize: 9)),
+                        if (invoice.customerAddress?.isNotEmpty == true)
+                          pw.Text('Address: ${invoice.customerAddress}',
+                              style: const pw.TextStyle(fontSize: 9)),
+                        if (invoice.customerGstin?.isNotEmpty == true)
                           pw.Text('GSTIN: ${invoice.customerGstin}',
                               style: pw.TextStyle(
                                 fontSize: 9,
                                 fontWeight: pw.FontWeight.bold,
                                 color: PdfColors.blue800,
                               )),
+                        if (invoice.customerDlNo?.isNotEmpty == true)
+                          pw.Text('Drug License: ${invoice.customerDlNo}',
+                              style: const pw.TextStyle(fontSize: 9)),
                       ],
                     ),
                   ),
@@ -496,7 +508,7 @@ class PrintingService {
         final expFmt = '${item.batch.expDate.month.toString().padLeft(2, '0')}/${item.batch.expDate.year}';
         return [
           '${idx + 1}',
-          '${item.product.name}\n${item.product.genericSalt}',
+          '${item.product.name}\n${item.product.manufacturer ?? 'N/A'} | ${item.product.genericSalt}',
           item.batch.batchNumber,
           expFmt,
           item.product.hsnCode,
@@ -657,6 +669,9 @@ class PrintingService {
                                       fontWeight: pw.FontWeight.bold)),
                             if (profile.drugLicenseNo.isNotEmpty)
                               pw.Text('D.L. No: ${profile.drugLicenseNo}',
+                                  style: const pw.TextStyle(fontSize: 8)),
+                            if (profile.fssaiLicenseNo.isNotEmpty)
+                              pw.Text('FSSAI No: ${profile.fssaiLicenseNo}',
                                   style: const pw.TextStyle(fontSize: 8)),
                             if (profile.panNumber != null)
                               pw.Text('PAN: ${profile.panNumber}',
@@ -828,7 +843,7 @@ class PrintingService {
                       '${item.batch.expDate.month.toString().padLeft(2, '0')}/${item.batch.expDate.year}';
                   return [
                     '${idx + 1}',
-                    '${item.product.name}\n${item.product.genericSalt}',
+                    '${item.product.name}\n${item.product.manufacturer ?? 'N/A'} | ${item.product.genericSalt}',
                     item.product.hsnCode,
                     item.batch.batchNumber,
                     expFmt,

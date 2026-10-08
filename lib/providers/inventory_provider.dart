@@ -63,7 +63,15 @@ class InventoryProvider extends ChangeNotifier {
   /// Update auth provider and re-sync if tenant context changed
   void updateAuth(AuthProvider auth) {
     final tenantChanged = authProvider.tenantId != auth.tenantId;
+    
+    if (tenantChanged) {
+      // Clear products for previous tenant when switching tenants
+      _products.clear();
+      debugPrint('[Inventory] Tenant changed from ${authProvider.tenantId} to ${auth.tenantId}, clearing products');
+    }
+    
     authProvider = auth;
+    
     if (tenantChanged && auth.tenantId != null) {
       _initializeInventory();
     }
@@ -73,9 +81,13 @@ class InventoryProvider extends ChangeNotifier {
   Future<void> forceRefreshFromDatabase() async {
     _products.clear();
     final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('inv_products');
-    await prefs.remove('inv_rtv');
-    await prefs.remove('inv_transfers');
+    final tenantId = authProvider.tenantId ?? 'default';
+    
+    // Clear tenant-specific cache
+    await prefs.remove('inv_products_$tenantId');
+    await prefs.remove('inv_rtv_$tenantId');
+    await prefs.remove('inv_transfers_$tenantId');
+    
     await _syncFromSupabase();
     notifyListeners();
   }
@@ -336,22 +348,26 @@ class InventoryProvider extends ChangeNotifier {
   Future<void> _saveToDisk() async {
     try {
       final prefs = await SharedPreferences.getInstance();
+      final tenantId = authProvider.tenantId ?? 'default';
+      
       final productsJson = jsonEncode(_products.map((p) => p.toJson()).toList());
       final rtvJson = jsonEncode(_rtvNotes.map((r) => r.toJson()).toList());
       final trfJson = jsonEncode(_transfers.map((t) => t.toJson()).toList());
 
-      await prefs.setString('inv_products', productsJson);
-      await prefs.setString('inv_rtv', rtvJson);
-      await prefs.setString('inv_transfers', trfJson);
+      await prefs.setString('inv_products_$tenantId', productsJson);
+      await prefs.setString('inv_rtv_$tenantId', rtvJson);
+      await prefs.setString('inv_transfers_$tenantId', trfJson);
     } catch (_) {}
   }
 
   Future<void> _loadFromDisk() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final productsStr = prefs.getString('inv_products');
-      final rtvStr = prefs.getString('inv_rtv');
-      final trfStr = prefs.getString('inv_transfers');
+      final tenantId = authProvider.tenantId ?? 'default';
+      
+      final productsStr = prefs.getString('inv_products_$tenantId');
+      final rtvStr = prefs.getString('inv_rtv_$tenantId');
+      final trfStr = prefs.getString('inv_transfers_$tenantId');
 
       if (productsStr != null) {
         final List list = jsonDecode(productsStr);
