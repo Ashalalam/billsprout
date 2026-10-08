@@ -1,24 +1,17 @@
 {
-  "version": 2,
-  "name": "billsprout",
-  "buildCommand": "echo 'BillSprout ERP - Customer management updates deployed'",
-  "outputDirectory": "web",
-  "routes": [
+  "functions": {
+    "supabase/functions/**": {
+      "runtime": "nodejs18.x"
+    }
+  },
+  "buildCommand": "flutter build web --release",
+  "outputDirectory": "build/web",
+  "installCommand": "flutter pub get",
+  "framework": "flutter",
+  "rewrites": [
     {
-      "src": "/assets/(.*)",
-      "dest": "/assets/$1"
-    },
-    {
-      "src": "/canvaskit/(.*)",
-      "dest": "/canvaskit/$1"
-    },
-    {
-      "src": "/(.*\\.(js|css|json|ico|png|jpg|jpeg|svg|woff|woff2|ttf|eot))",
-      "dest": "/$1"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/index.html"
+      "source": "/(.*)",
+      "destination": "/index.html"
     }
   ],
   "headers": [
@@ -26,12 +19,17 @@
       "source": "/(.*)",
       "headers": [
         {
-          "key": "Cross-Origin-Embedder-Policy",
-          "value": "require-corp"
-        },
+          "key": "Cache-Control",
+          "value": "public, max-age=86400"
+        }
+      ]
+    },
+    {
+      "source": "/flutter_service_worker.js",
+      "headers": [
         {
-          "key": "Cross-Origin-Opener-Policy",
-          "value": "same-origin"
+          "key": "Cache-Control",
+          "value": "no-cache"
         }
       ]
     }

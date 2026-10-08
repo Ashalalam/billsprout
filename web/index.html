@@ -1,8 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <base href="$FLUTTER_BASE_HREF">
-
+  <base href="/">
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
   <meta name="description" content="BillSprout — Smart ERP &amp; Fast POS Billing System by LIFESPROUT Care">
@@ -27,8 +26,161 @@
 
   <!-- Razorpay Web Checkout -->
   <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      margin: 0;
+      padding: 0;
+      background: #182B68;
+      color: white;
+      min-height: 100vh;
+    }
+    .loading-container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      flex-direction: column;
+    }
+    .logo {
+      width: 120px;
+      height: 120px;
+      background: white;
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      color: #182B68;
+      font-size: 48px;
+      margin-bottom: 30px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    }
+    .loading-spinner {
+      width: 50px;
+      height: 50px;
+      border: 5px solid rgba(255,255,255,0.3);
+      border-radius: 50%;
+      border-top-color: white;
+      animation: spin 1s ease-in-out infinite;
+      margin: 20px 0;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    .status {
+      text-align: center;
+      max-width: 600px;
+      padding: 0 20px;
+    }
+    .status h1 {
+      font-size: 2.5em;
+      margin: 0 0 20px;
+    }
+    .status p {
+      font-size: 1.1em;
+      opacity: 0.8;
+      line-height: 1.6;
+    }
+    .retry-btn {
+      background: rgba(255,255,255,0.2);
+      border: 2px solid rgba(255,255,255,0.3);
+      color: white;
+      padding: 12px 24px;
+      border-radius: 8px;
+      cursor: pointer;
+      margin-top: 20px;
+      font-size: 16px;
+    }
+    .retry-btn:hover {
+      background: rgba(255,255,255,0.3);
+    }
+  </style>
 </head>
 <body>
-  <script src="flutter_bootstrap.js" async></script>
+  <div class="loading-container">
+    <div class="logo">BS</div>
+    <div class="status">
+      <h1>BillSprout ERP</h1>
+      <p>Loading your pharmacy management system...</p>
+      <div class="loading-spinner"></div>
+      <p id="status-message">Initializing Flutter application...</p>
+      <button class="retry-btn" onclick="location.reload()" style="display: none;" id="retry-btn">
+        Retry Loading
+      </button>
+    </div>
+  </div>
+
+  <script>
+    let loadAttempt = 0;
+    const maxAttempts = 3;
+    
+    function updateStatus(message) {
+      document.getElementById('status-message').textContent = message;
+    }
+
+    function showRetryButton() {
+      document.getElementById('retry-btn').style.display = 'inline-block';
+    }
+
+    function attemptFlutterLoad() {
+      loadAttempt++;
+      
+      if (loadAttempt === 1) {
+        updateStatus('Loading Flutter framework...');
+        loadFlutterBootstrap();
+      } else if (loadAttempt === 2) {
+        updateStatus('Trying alternative loading method...');
+        loadMainDart();
+      } else {
+        updateStatus('Flutter app is being built. This may take a few moments...');
+        setTimeout(() => {
+          updateStatus('If the app doesn\'t load, Vercel may still be building your Flutter project.');
+          showRetryButton();
+        }, 5000);
+      }
+    }
+
+    function loadFlutterBootstrap() {
+      const script = document.createElement('script');
+      script.src = 'flutter_bootstrap.js';
+      script.async = true;
+      script.onload = function() {
+        updateStatus('Flutter loaded successfully!');
+      };
+      script.onerror = function() {
+        console.warn('flutter_bootstrap.js not found, trying alternative...');
+        setTimeout(attemptFlutterLoad, 1000);
+      };
+      document.body.appendChild(script);
+    }
+
+    function loadMainDart() {
+      const script = document.createElement('script');
+      script.src = 'main.dart.js';
+      script.async = true;
+      script.onload = function() {
+        updateStatus('Flutter app loaded!');
+        document.querySelector('.loading-container').style.display = 'none';
+      };
+      script.onerror = function() {
+        console.warn('main.dart.js not found, Flutter may still be building...');
+        setTimeout(attemptFlutterLoad, 2000);
+      };
+      document.body.appendChild(script);
+    }
+
+    // Start loading process
+    setTimeout(attemptFlutterLoad, 1000);
+
+    // Fallback: show message after 10 seconds
+    setTimeout(() => {
+      if (loadAttempt >= maxAttempts) {
+        updateStatus('Your Flutter app is being prepared by Vercel. Please refresh in a moment.');
+        showRetryButton();
+      }
+    }, 10000);
+  </script>
 </body>
 </html>
