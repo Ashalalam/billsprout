@@ -370,35 +370,45 @@ class _CustomerManagementViewState extends State<CustomerManagementView> {
     DateTime? selectedDrugLicenseExpiry = customer?.drugLicenseExpiry;
     CustomerType selectedType = customer?.customerType ?? CustomerType.retail;
 
+    // Create a ValueNotifier to properly track state changes
+    final selectedTypeNotifier = ValueNotifier<CustomerType>(selectedType);
+
     showDialog(
       context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (context, setState) => AlertDialog(
-          title: Text(customer == null ? 'Add New Customer' : 'Edit Customer'),
-          content: SingleChildScrollView(
-            child: SizedBox(
-              width: 500,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  DropdownButtonFormField<CustomerType>(
-                    value: selectedType,
-                    decoration: const InputDecoration(
-                      labelText: 'Customer Type *',
-                      border: OutlineInputBorder(),
+      builder: (ctx) => ValueListenableBuilder<CustomerType>(
+        valueListenable: selectedTypeNotifier,
+        builder: (context, currentType, child) => StatefulBuilder(
+          builder: (context, setState) => AlertDialog(
+            title: Text(customer == null ? 'Add New Customer' : 'Edit Customer'),
+            content: SingleChildScrollView(
+              child: SizedBox(
+                width: 500,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    DropdownButtonFormField<CustomerType>(
+                      value: currentType,
+                      decoration: const InputDecoration(
+                        labelText: 'Customer Type *',
+                        border: OutlineInputBorder(),
+                      ),
+                      items: CustomerType.values.map((type) {
+                        return DropdownMenuItem(
+                          value: type,
+                          child: Text(type.label),
+                        );
+                      }).toList(),
+                      onChanged: (value) {
+                        if (value != null) {
+                          selectedTypeNotifier.value = value;
+                          // Clear drug license fields when switching to retail
+                          if (value == CustomerType.retail) {
+                            drugLicenseCtrl.clear();
+                            selectedDrugLicenseExpiry = null;
+                          }
+                        }
+                      },
                     ),
-                    items: CustomerType.values.map((type) {
-                      return DropdownMenuItem(
-                        value: type,
-                        child: Text(type.label),
-                      );
-                    }).toList(),
-                    onChanged: (value) {
-                      setState(() {
-                        selectedType = value!;
-                      });
-                    },
-                  ),
                   const SizedBox(height: 12),
                   TextField(
                     controller: nameCtrl,
@@ -487,13 +497,13 @@ class _CustomerManagementViewState extends State<CustomerManagementView> {
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text(
-                      'Selected Type: ${selectedType.name} (${selectedType.label})',
+                      'Selected Type: ${currentType.name} (${currentType.label})',
                       style: const TextStyle(fontSize: 12, color: Colors.blue),
                     ),
                   ),
                   
                   // Show Drug License fields ONLY for wholesale customers
-                  if (selectedType == CustomerType.wholesale) ...[
+                  if (currentType == CustomerType.wholesale) ...[
                     const SizedBox(height: 12),
                     Container(
                       padding: const EdgeInsets.all(8),
@@ -575,6 +585,7 @@ class _CustomerManagementViewState extends State<CustomerManagementView> {
             ),
             ElevatedButton(
               onPressed: () async {
+                final selectedType = selectedTypeNotifier.value;
                 // Validate required fields based on customer type
                 if (nameCtrl.text.isEmpty ||
                     phoneCtrl.text.isEmpty ||
@@ -675,7 +686,10 @@ class _CustomerManagementViewState extends State<CustomerManagementView> {
           ],
         ),
       ),
-    );
+    ).then((_) {
+      // Dispose the notifier when dialog closes
+      selectedTypeNotifier.dispose();
+    });
   }
 
   void _showCustomerDetails(CustomerModel customer) {
